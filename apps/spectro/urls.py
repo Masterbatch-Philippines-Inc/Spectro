@@ -13,4 +13,5 @@ urlpatterns = [
     path("api/visual-judgement/", views.save_visual_judgement_view, name="api_save_visual_judgement"),
     path("api/visual-judgement/reason/", views.save_visual_fail_reason_view, name="api_save_visual_fail_reason"),
     path("api/spectro-judgement/remarks/", views.save_spectro_remarks_view, name="api_save_spectro_remarks"),
+    path("api/special-pass/", views.save_special_pass_by_view, name="api_save_special_pass_by"),
 ]

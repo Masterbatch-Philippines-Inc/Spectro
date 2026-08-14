@@ -17,6 +17,7 @@ from apps.spectro.models import (
     SpectroJudgement,
     VisualJudgement,
     SpecialCase,
+    SpecialCaseChangelog,
 )
 
 def format_datetime_no_leading_zeros(dt):
@@ -192,6 +193,47 @@ def save_spectro_remarks(request):
 
 
 @login_required
+def save_special_pass_by(request):
+    if request.method != "POST":
+        return JsonResponse({"tone": "danger", "message": "Invalid request method."}, status=405)
+
+    lot_sample_id = request.POST.get("lot_sample_id", "").strip()
+    value = request.POST.get("value", "").strip()
+
+    if not lot_sample_id:
+        return JsonResponse({"tone": "danger", "message": "lot_sample_id is required."}, status=400)
+    if not value:
+        return JsonResponse({"tone": "danger", "message": "Please select who passed this sample."}, status=400)
+
+    lot_sample = LotSample.objects.filter(pk=lot_sample_id).first()
+    if not lot_sample:
+        return JsonResponse({"tone": "danger", "message": "Sample not found."}, status=404)
+
+    special_case = SpecialCase.objects.filter(lot_sample=lot_sample).order_by("-date_time").first()
+
+    if special_case and special_case.passed_by and special_case.passed_by != value:
+        SpecialCaseChangelog.objects.create(
+            special_case_ref=special_case,
+            is_pass=special_case.is_pass,
+            old_passed_by=special_case.passed_by,
+            user=request.user,
+        )
+
+    if special_case:
+        special_case.is_pass = True
+        special_case.passed_by = value
+        special_case.save(update_fields=["is_pass", "passed_by"])
+    else:
+        special_case = SpecialCase.objects.create(
+            lot_sample=lot_sample,
+            is_pass=True,
+            passed_by=value,
+        )
+
+    return JsonResponse({"tone": "success", "message": "Special pass saved.", "passed_by": value})
+
+
+@login_required
 def save_std_delta_e_used(request):
     if request.method != "POST":
         return JsonResponse({"tone": "danger", "message": "Invalid request method."}, status=405)
@@ -229,7 +271,7 @@ def save_std_delta_e_used(request):
         user=request.user,
     )
 
-    record.std_delta_e_used = new_value
+    record.std_delta_e_used = new_value # type: ignore
     record.save(update_fields=["std_delta_e_used"])
 
     return JsonResponse({

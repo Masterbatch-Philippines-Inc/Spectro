@@ -13,7 +13,7 @@
 
     <div class="flex items-center gap-2">
       <label for="stdDeUsedBox" class="text-[11px] font-bold whitespace-nowrap">STD ΔE USED:</label>
-      {% include "components/shared/ui/input.html" with input_id="stdDeUsedBox" input_type="text" input_placeholder="—" input_class="w-[68px] text-center font-semibold" %}
+      {% include "components/shared/ui/input.html" with input_id="stdDeUsedBox" input_type="text" input_placeholder="-" input_class="w-[68px] text-center font-semibold" %}
     </div>
 
     {% include "components/shared/ui/dropdown.html" with dropdown_type="menu" dropdown_id="freezeDropdown" dropdown_label="Freeze Columns Filter" dropdown_disabled=True %}
@@ -94,13 +94,18 @@
     {
       key: 'specialPass', label: 'Special Pass?', type: 'bool',
       render: function (row) {
-        return '<div class="text-center"><input type="checkbox" disabled class="w-3.5 h-3.5 accent-foreground cursor-not-allowed"' + (row.specialPass ? ' checked' : '') + '></div>';
+        return '<div class="text-center"><input type="checkbox" class="special-pass-checkbox w-3.5 h-3.5 accent-foreground cursor-pointer" data-row-id="' + row.id + '"' + (row.specialPass ? ' checked' : '') + '></div>';
       }
     },
     {
       key: 'specialPassBy', label: 'Special Pass BY', type: 'select',
       render: function (row) {
-        return '<select disabled class="text-[11.5px] px-2 py-1 pr-6 rounded-md border border-border bg-card min-w-[110px] cursor-not-allowed opacity-60 disabled:opacity-45 disabled:cursor-not-allowed disabled:bg-muted"><option>' + (row.specialPassBy || 'Select…') + '</option></select>';
+        const disabled = !row.specialPass;
+        const options = ['Ana S.', 'Jinky V.', 'Ernie P.', 'Elton A.'];
+        return '<select class="special-pass-by-select text-[11.5px] px-2 py-1 pr-6 rounded-md border border-border bg-card min-w-[110px] cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed disabled:bg-muted" data-row-id="' + row.id + '"' + (disabled ? ' disabled' : '') + '>'
+          + '<option value=""' + (row.specialPassBy ? '' : ' selected') + '>Select…</option>'
+          + options.map(function (name) { return '<option' + (row.specialPassBy === name ? ' selected' : '') + '>' + name + '</option>'; }).join('')
+          + '</select>';
       }
     },
   ];
@@ -223,9 +228,19 @@
 
       function commit() {
         const newVal = input.value.trim();
+
+        if (!newVal) {
+          if (currentVal) {
+            showToast('toastStack', 'This field cannot be left empty.', 'danger');
+          }
+          cell.className = 'editable-cell rounded-md px-1.5 py-1 cursor-text min-w-[140px] max-w-[220px] whitespace-normal' + (currentVal ? '' : ' text-muted-foreground italic');
+          cell.textContent = currentVal || 'Click to add…';
+          return;
+        }
+
         row[action] = newVal;
-        cell.className = 'editable-cell rounded-md px-1.5 py-1 cursor-text min-w-[140px] max-w-[220px] whitespace-normal' + (newVal ? '' : ' text-muted-foreground italic');
-        cell.textContent = newVal || 'Click to add…';
+        cell.className = 'editable-cell rounded-md px-1.5 py-1 cursor-text min-w-[140px] max-w-[220px] whitespace-normal';
+        cell.textContent = newVal;
 
         const endpoint = action === 'reasonIfFail'
           ? '{% url "api_save_visual_fail_reason" %}'
@@ -266,11 +281,37 @@
       columns: COLUMNS,
       leadingColumns: leadingColumns,
       getDataset: function () { return dataset; },
+      onHeaderRendered: function () {
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        if (!selectAllCheckbox) return;
+        selectAllCheckbox.checked = dataset.length > 0 && dataset.every(function (r) { return selectedRows.has(String(r.id)); });
+        selectAllCheckbox.addEventListener('change', function () {
+          if (selectAllCheckbox.checked) {
+            dataset.forEach(function (r) { selectedRows.add(String(r.id)); });
+          } else {
+            selectedRows.clear();
+          }
+          dataTable.renderBody();
+          if (window.renderScatter) window.renderScatter();
+        });
+      },
       onBodyRendered: function () {
         document.querySelectorAll('.row-checkbox').forEach(function (cb) {
+          const rowIdInit = cb.dataset.rowId;
+          const trInit = cb.closest('tr[data-row-id]');
+          if (trInit) trInit.classList.toggle('bg-success-bg', selectedRows.has(String(rowIdInit)));
+
           cb.addEventListener('change', function () {
             const id = cb.dataset.rowId;
             if (cb.checked) selectedRows.add(id); else selectedRows.delete(id);
+            const tr = cb.closest('tr[data-row-id]');
+            if (tr) tr.classList.toggle('bg-success-bg', cb.checked);
+
+            const allCheckbox = document.getElementById('selectAllCheckbox');
+            if (allCheckbox) {
+              allCheckbox.checked = dataset.length > 0 && dataset.every(function (r) { return selectedRows.has(String(r.id)); });
+            }
+
             if (window.renderScatter) window.renderScatter();
           });
         });
@@ -317,8 +358,75 @@
             makeEditableCellSaveable(cell);
           });
         });
+
+        document.querySelectorAll('.special-pass-checkbox').forEach(function (cb) {
+          cb.addEventListener('change', function () {
+            const rowId = cb.dataset.rowId;
+            const row = dataset.find(function (r) { return String(r.id) === String(rowId); });
+            if (!row) return;
+            row.specialPass = cb.checked;
+            const select = document.querySelector('.special-pass-by-select[data-row-id="' + rowId + '"]');
+            if (select) {
+              select.disabled = !cb.checked;
+              if (!cb.checked) select.value = '';
+            }
+          });
+        });
+
+        document.querySelectorAll('.special-pass-by-select').forEach(function (sel) {
+          sel.addEventListener('change', function () {
+            const rowId = sel.dataset.rowId;
+            const row = dataset.find(function (r) { return String(r.id) === String(rowId); });
+            if (!row || !sel.value) return;
+            row.specialPassBy = sel.value;
+
+            fetch('{% url "api_save_special_pass_by" %}', {
+              method: 'POST',
+              headers: { 'X-Requested-With': 'XMLHttpRequest' },
+              body: new URLSearchParams({
+                lot_sample_id: row.lotSampleId,
+                value: sel.value,
+                csrfmiddlewaretoken: getCsrfToken(),
+              }),
+            })
+              .then(function (res) { return res.json(); })
+              .then(function (data) {
+                showToast('toastStack', data.message, data.tone || 'info');
+              })
+              .catch(function () {
+                showToast('toastStack', 'Failed to save special pass.', 'danger');
+              });
+          });
+        });
       },
     });
+
+    const emptyStateTitle = document.getElementById('emptyStateTitle');
+    const emptyStateSubtitle = document.getElementById('emptyStateSubtitle');
+    const emptyStateActionLabel = document.getElementById('emptyStateActionLabel');
+    const DEFAULT_EMPTY_TITLE = emptyStateTitle ? emptyStateTitle.textContent : 'No Data Available';
+    const DEFAULT_EMPTY_SUBTITLE = emptyStateSubtitle ? emptyStateSubtitle.textContent : 'Try selecting one product code and one standard sample';
+    const DEFAULT_EMPTY_ACTION = 'Select one product code';
+    let emptyStateMode = 'default';
+
+    function showEmptyState(mode) {
+      emptyStateMode = mode;
+      if (mode === 'need-standard') {
+        if (emptyStateTitle) emptyStateTitle.textContent = 'Select one Standard';
+        if (emptyStateSubtitle) emptyStateSubtitle.textContent = 'Choose a standard sample to load its readings.';
+        if (emptyStateActionLabel) emptyStateActionLabel.textContent = 'Select one standard';
+      } else {
+        if (emptyStateTitle) emptyStateTitle.textContent = DEFAULT_EMPTY_TITLE;
+        if (emptyStateSubtitle) emptyStateSubtitle.textContent = DEFAULT_EMPTY_SUBTITLE;
+        if (emptyStateActionLabel) emptyStateActionLabel.textContent = DEFAULT_EMPTY_ACTION;
+      }
+      emptyState.style.display = 'flex';
+    }
+
+    function setStdDeEditable(enabled) {
+      if (!stdDeUsedBox) return;
+      stdDeUsedBox.readOnly = !enabled;
+    }
 
     function tryLoadTable() {
       const hasProduct = !!productCodeFilter.value;
@@ -337,14 +445,22 @@
             dataTable.resetSort();
             dataTable.renderHeader();
             dataTable.renderBody();
-            dataTable.showTable();
+
+            if (dataset.length === 0) {
+              dataTable.hideTable();
+              showEmptyState('need-standard');
+              setStdDeEditable(false);
+            } else {
+              dataTable.showTable();
+              emptyState.style.display = 'none';
+              setStdDeEditable(true);
+            }
             if (window.renderScatter) window.renderScatter();
           })
           .catch(function () {
             showToast('toastStack', 'Failed to load samples for this standard.', 'danger');
           });
 
-        emptyState.style.display = 'none';
         noResultsState.classList.add('hidden');
         noResultsState.classList.remove('flex');
 
@@ -356,7 +472,8 @@
       } else {
         dataset = [];
         dataTable.hideTable();
-        emptyState.style.display = 'flex';
+        setStdDeEditable(false);
+        showEmptyState(hasProduct ? 'need-standard' : 'default');
         noResultsState.classList.add('hidden');
         noResultsState.classList.remove('flex');
 
@@ -373,7 +490,7 @@
 
         standardFilter.innerHTML = '<option value="">Select one standard</option>';
         standardFilter.disabled = true;
-        stdDeUsedBox.value = '';
+        stdDeUsedBox.value = ''; 
         tryLoadTable();
 
         if (!productCode) return;
@@ -509,12 +626,12 @@
     const emptySelectBtn = document.getElementById('emptySelectBtn');
     if (emptySelectBtn) {
       emptySelectBtn.addEventListener('click', function () {
-        const comboInput = document.getElementById('productCodeFilter'); // the visible text input
-        if (!comboInput) return;
-        comboInput.focus();
-        comboInput.classList.add('ring-2', 'ring-ring/40', 'border-ring');
+        const target = emptyStateMode === 'need-standard' ? standardFilter : document.getElementById('productCodeFilter');
+        if (!target) return;
+        target.focus();
+        target.classList.add('ring-2', 'ring-ring/40', 'border-ring');
         setTimeout(function () {
-          comboInput.classList.remove('ring-2', 'ring-ring/40', 'border-ring');
+          target.classList.remove('ring-2', 'ring-ring/40', 'border-ring');
         }, 1200);
       });
     }
@@ -526,6 +643,17 @@
         const showNoResults = !!q && visibleCount === 0;
         noResultsState.classList.toggle('hidden', !showNoResults);
         noResultsState.classList.toggle('flex', showNoResults);
+      });
+    }
+
+    const noResultsClearBtn = document.getElementById('noResultsClearBtn');
+    if (noResultsClearBtn) {
+      noResultsClearBtn.addEventListener('click', function () {
+        searchInput.value = '';
+        dataTable.applySearch('');
+        noResultsState.classList.add('hidden');
+        noResultsState.classList.remove('flex');
+        searchInput.focus();
       });
     }
 

@@ -16,6 +16,7 @@ from apps.spectro.modules.samples_record import (
     save_visual_judgement,
     save_visual_fail_reason,
     save_spectro_remarks,
+    save_special_pass_by,
 )
 
 
@@ -48,3 +49,6 @@ def save_visual_fail_reason_view(request):
 
 def save_spectro_remarks_view(request):
     return save_spectro_remarks(request)
+
+def save_special_pass_by_view(request):
+    return save_special_pass_by(request)
