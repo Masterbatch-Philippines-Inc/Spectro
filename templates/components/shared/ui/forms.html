@@ -1,0 +1,37 @@
+{% load static %}
+
+   {% comment %} 
+   
+   Shared form shell.
+   Usage (from any page template):
+
+   {% include "components/shared/ui/forms.html" with
+       form_id="standardForm"
+       form_action=some_url
+       toast_stack="toastStack"
+       submit_label="Save Standard" %}
+
+   Then place your page-specific <div class="field">...</div> markup
+   inside a {% block form_fields %} on the including template, OR
+   just write your fields directly where this include sits if you
+   don't need block overriding.
+
+   The <form> here only provides: CSRF token, data-ajax-form hook,
+   and the submit button. Field markup is supplied per page. 
+   
+   {% endcomment %}
+
+<form id="{{ form_id|default:'ajaxForm' }}"
+      method="post"
+      action="{{ form_action }}"
+      data-ajax-form
+      data-toast-stack="{{ toast_stack|default:'toastStack' }}"
+      class="flex flex-col gap-3.5">
+  {% csrf_token %}
+
+  {% block form_fields %}{% endblock %}
+
+  <button type="submit" class="btn bg-primary text-primary-foreground border border-primary text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer w-full hover:opacity-90 transition">
+    {{ submit_label|default:"Submit" }}
+  </button>
+</form>

@@ -1,0 +1,38 @@
+{% comment %}
+============================================================
+Shared data-table shell. Structure only -- no data, no columns.
+The page including this must supply its own COLUMNS config + dataset
+via inline <script>, then call `createDataTable({...})` from table.js.
+============================================================
+{% endcomment %}
+
+<div id="{{ table_area_id|default:'tableArea' }}" class="flex-1 min-h-0 relative overflow-auto bg-background">
+  <table id="{{ table_id|default:'dataTable' }}" class="hidden border-separate border-spacing-0 w-full text-xs">
+    <thead><tr id="{{ header_row_id|default:'headerRow' }}"></tr></thead>
+    <tbody id="{{ table_body_id|default:'tableBody' }}"></tbody>
+  </table>
+
+  <div id="{{ no_results_state_id|default:'noResultsState' }}" class="hidden absolute inset-0 z-20 flex-col items-center justify-center gap-3.5 p-10 text-center bg-background">
+    <div class="w-16 h-16 rounded-2xl border-[1.5px] border-border flex items-center justify-center text-muted-foreground">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <div class="text-[15px] font-bold">No Matching Results</div>
+    <div class="text-[12.5px] text-muted-foreground max-w-xs leading-relaxed">Try a different keyword or clear your search.</div>
+    <button id="{{ no_results_clear_btn_id|default:'noResultsClearBtn' }}" class="inline-flex items-center gap-1.5 text-[12.5px] font-semibold px-3.5 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Clear search
+    </button>
+  </div>
+
+  <div id="{{ empty_state_id|default:'emptyState' }}" class="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3.5 p-10 text-center bg-background">
+    <div class="w-16 h-16 rounded-2xl border-[1.5px] border-border flex items-center justify-center text-muted-foreground">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+    </div>
+    <div class="text-[15px] font-bold">{{ empty_title|default:"No Data Available" }}</div>
+    <div class="text-[12.5px] text-muted-foreground max-w-xs leading-relaxed">{{ empty_subtitle|default:"Try selecting the filters above" }}</div>
+    <button id="{{ empty_select_btn_id|default:'emptySelectBtn' }}" class="inline-flex items-center gap-1.5 text-[12.5px] font-semibold px-3.5 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+      {{ empty_action_label|default:"Select one product code" }}
+    </button>
+  </div>
+</div>

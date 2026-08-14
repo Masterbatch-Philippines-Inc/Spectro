@@ -1,0 +1,25 @@
+{% comment %}
+============================================================
+Shared standalone input component (no label, no error slot --
+use field.html inside forms.html for that). For search boxes,
+inline filter inputs, etc.
+
+  {% include "components/shared/ui/input.html" with
+      input_id="searchInput"
+      input_type="text"
+      input_placeholder="Search anything in the table..."
+      input_class="flex-1 min-w-[180px] max-w-[340px]" %}
+
+============================================================
+{% endcomment %}
+
+<input
+  id="{{ input_id }}"
+  type="{{ input_type|default:'text' }}"
+  {% if input_name %}name="{{ input_name }}"{% endif %}
+  value="{{ input_value|default:'' }}"
+  placeholder="{{ input_placeholder|default:'' }}"
+  {% if input_disabled %}disabled{% endif %}
+  {% if input_readonly %}readonly{% endif %}
+  class="text-[12.5px] px-2.5 py-1.5 rounded-md border border-border bg-card outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring disabled:opacity-50 disabled:cursor-not-allowed {{ input_class }}"
+  >

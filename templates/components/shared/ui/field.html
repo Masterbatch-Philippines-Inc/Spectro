@@ -1,0 +1,44 @@
+{% comment %}
+
+   Reusable field partial. Usage:
+
+   {% include "components/shared/ui/field.html" with
+       field_type="text"
+       field_name="cma_lot"
+       field_label="CMA/Lot"
+       field_placeholder="e.g. CMA-0001"
+       field_value=""
+       field_required=True %}
+
+   field_type: "text" | "email" | "password" | "number" | "textarea" | "select"
+   For "select", pass field_options as a list of (value, label) tuples.
+
+{% endcomment %}
+
+<div class="field mb-3.5" data-field-wrapper="{{ field_name }}">
+  <label for="id_{{ field_name }}" class="block text-xs font-semibold mb-1.5">{{ field_label }}</label>
+
+  {% if field_type == "textarea" %}
+    <textarea name="{{ field_name }}" id="id_{{ field_name }}"
+      placeholder="{{ field_placeholder }}"
+      {% if field_required %}required{% endif %}
+      class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-border bg-card text-foreground outline-none focus:border-ring focus:ring-[3px] focus:ring-ring/40">{{ field_value }}</textarea>
+
+  {% elif field_type == "select" %}
+    <select name="{{ field_name }}" id="id_{{ field_name }}"
+      {% if field_required %}required{% endif %}
+      class="select w-full text-[13px] py-2.5 pl-2.5 pr-[30px] rounded-lg border border-border bg-card text-foreground outline-none appearance-none">
+      {% for value, label in field_options %}
+        <option value="{{ value }}" {% if value == field_value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+  {% else %}
+    <input type="{{ field_type|default:'text' }}" name="{{ field_name }}" id="id_{{ field_name }}"
+      value="{{ field_value }}" placeholder="{{ field_placeholder }}"
+      {% if field_required %}required{% endif %}
+      class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-border bg-card text-foreground outline-none focus:border-ring focus:ring-[3px] focus:ring-ring/40">
+  {% endif %}
+
+  <div class="hint err text-[11px] text-danger mt-[5px] leading-relaxed" data-field-error="{{ field_name }}" style="display:none;"></div>
+</div>

@@ -1,0 +1,64 @@
+{% if user.is_authenticated %}
+{% block extra_css %}
+<style>
+  .hamburger-btn { position: relative; }
+
+  .hamburger-bars {
+    position: relative;
+    width: 14px;
+    height: 12px;
+  }
+
+  .hamburger-bars span {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 100%;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transform-origin: center;
+    transition: transform .6s cubic-bezier(.65,0,.35,1), opacity .6s cubic-bezier(.65,0,.35,1), width .6s cubic-bezier(.65,0,.35,1);
+  }
+
+  /* default (sidebar open): chevron-left + pipe, pipe on the LEFT, chevron on the RIGHT
+     span2 = vertical pipe (shifted left), span1/span3 = chevron shrunk + angled (shifted right) */
+  .hamburger-bars span:nth-child(1) {
+    width: 55%;
+    transform: translate(3px, -2px) rotate(-40deg);
+    left: 2px;
+  }
+  .hamburger-bars span:nth-child(2) {
+    width: 100%;
+    transform: translateX(-4px) rotate(90deg);
+  }
+  .hamburger-bars span:nth-child(3) {
+    width: 55%;
+    transform: translate(3px, 2px) rotate(40deg);
+    left: 2px;
+  }
+
+  /* is-closed state -> plain hamburger bars */
+  .hamburger-btn.is-closed .hamburger-bars span:nth-child(1) { transform: translateY(-5px); width: 100%; left: 0px; top: 6px;}
+  .hamburger-btn.is-closed .hamburger-bars span:nth-child(2) { transform: translateY(0); width: 100%; left: 0px; }
+  .hamburger-btn.is-closed .hamburger-bars span:nth-child(3) { transform: translateY(5px); width: 100%; left: 0px; top: 4px;}
+</style>
+{% endblock %}
+<header class="h-[52px] shrink-0 flex items-center gap-3.5 px-5 border-b border-border bg-card">
+  <button id="hamburgerBtn" class="hamburger-btn w-[30px] h-[30px] rounded-md border border-border bg-card flex items-center justify-center hover:bg-accent">
+    <span class="hamburger-bars">
+      <span></span>
+      <span></span>
+      <span></span>
+    </span>
+  </button>
+  <div class="w-px h-5 bg-border"></div>
+  <div class="text-[15px] font-bold tracking-wide">
+    {% if request.resolver_match.url_name == 'samples_record' %}
+      Samples Record
+    {% elif request.resolver_match.url_name == 'samples_reader' %}
+      Value Reader
+    {% endif %}
+  </div>
+</header>
+{% endif %}

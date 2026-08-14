@@ -1,0 +1,65 @@
+{% comment %}
+============================================================
+Generic modal system. Any modal is a div[data-modal="<id>"], opened by
+any element with data-modal-target="<id>", closed by any element
+inside it with data-modal-close (or clicking the overlay backdrop).
+modal.js handles all of this generically -- no modal-specific JS here.
+
+Two concrete modals included below (STD ΔE confirm, Scatter maximize).
+Add more by copying the pattern -- no changes to modal.js needed.
+============================================================
+{% endcomment %}
+
+<div data-modal="stdDeModal" class="fixed inset-0 bg-black/40 backdrop-blur-[2px] hidden items-center justify-center z-[100] p-5">
+  <div class="modal-anim bg-card border border-border rounded-xl shadow-lg p-6 w-full max-w-sm">
+    <div class="w-14 h-14 rounded-full bg-warn-bg border border-warn-border flex items-center justify-center mx-auto mb-4">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--warn))" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+    </div>
+    <h2 class="text-[16px] font-bold text-center mb-1.5">Recalculate Spectro Judgement?</h2>
+    <p class="text-[12.5px] text-muted-foreground text-center leading-relaxed mb-1">
+      Changing Standard ΔE Used to <span class="font-semibold text-foreground" id="deModalNewValue">—</span> will re-evaluate every row:
+    </p>
+    <p class="text-[12px] text-muted-foreground text-center leading-relaxed mb-5">
+      ΔE*00 greater than this value → <span class="font-semibold text-danger">Failed</span>, otherwise → <span class="font-semibold text-success">Passed</span>.
+    </p>
+    <div class="flex gap-2.5">
+      <button data-modal-close class="flex-1 text-[12.5px] font-semibold px-3.5 py-2 rounded-md border border-border bg-card hover:bg-accent">Cancel</button>
+      <button id="deModalConfirm" class="flex-1 text-[12.5px] font-semibold px-3.5 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90">Apply &amp; Recalculate</button>
+    </div>
+  </div>
+</div>
+
+<div data-modal="scatterModal" class="fixed inset-0 bg-black/40 backdrop-blur-[2px] hidden items-center justify-center z-[100] p-5">
+  <div class="modal-anim bg-card border border-border rounded-xl shadow-lg p-6 w-full max-w-[520px]">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-[13px] font-bold uppercase tracking-wide text-muted-foreground">Δa* and Δb* Graph</span>
+      <button data-modal-close type="button" class="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <svg class="w-full h-auto block" id="scatterSvgModal" viewBox="0 0 200 180">
+      <line x1="10" y1="20" x2="10" y2="160" stroke="hsl(var(--border))" stroke-width="1"/>
+      <line x1="95" y1="20" x2="95" y2="160" stroke="hsl(var(--border))" stroke-width="1"/>
+      <line x1="10" y1="20" x2="180" y2="20" stroke="hsl(var(--border))" stroke-width="1"/>
+      <line x1="10" y1="90" x2="180" y2="90" stroke="hsl(var(--border))" stroke-width="1"/>
+      <line x1="10" y1="160" x2="180" y2="160" stroke="hsl(var(--border))" stroke-width="1"/>
+      <line x1="10" y1="90" x2="180" y2="90" stroke="hsl(var(--foreground))" stroke-width="1.4"/>
+      <line x1="95" y1="20" x2="95" y2="160" stroke="hsl(var(--foreground))" stroke-width="1.4"/>
+      <text x="10" y="172" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">-1</text>
+      <text x="52" y="172" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">-0.5</text>
+      <text x="95" y="172" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">0</text>
+      <text x="138" y="172" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">0.5</text>
+      <text x="180" y="172" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">1</text>
+      <text x="4" y="23" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">1</text>
+      <text x="4" y="92" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">0</text>
+      <text x="4" y="163" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">-1</text>
+      <text x="100" y="14" font-size="8" font-weight="700" fill="hsl(var(--foreground))" text-anchor="end">Δa*</text>
+      <text x="-60" y="212" font-size="8" font-weight="700" fill="hsl(var(--foreground))" text-anchor="start" transform="rotate(-90 6 30)">Δb*</text>
+      <g id="scatterPointsModal"></g>
+    </svg>
+    <div class="flex items-center gap-3 mt-2 text-[13px] text-muted-foreground">
+      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block bg-muted-foreground/50"></span>Passed</span>
+      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-danger inline-block"></span>Failed</span>
+    </div>
+  </div>
+</div>

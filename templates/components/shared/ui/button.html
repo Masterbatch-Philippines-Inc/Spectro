@@ -1,0 +1,21 @@
+{% comment %}
+============================================================
+Shared button component. `btn_variant`: primary | secondary | danger | ghost
+
+  {% include "components/shared/ui/button.html" with
+      btn_id="generateReportBtn"
+      btn_label="Generate Report"
+      btn_variant="primary"
+      btn_disabled=True %}
+============================================================
+{% endcomment %}
+
+<button
+  id="{{ btn_id }}"
+  type="{{ btn_type|default:'button' }}"
+  {% if btn_disabled %}disabled{% endif %}
+  {% if btn_onclick %}onclick="{{ btn_onclick }}"{% endif %}
+  class="btn btn-variant-{{ btn_variant|default:'primary' }} inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-[12.5px] font-semibold px-3.5 py-2 rounded-md cursor-pointer transition disabled:opacity-45 disabled:cursor-not-allowed {{ btn_extra_class }}">
+  {% if btn_icon_svg %}{{ btn_icon_svg|safe }}{% endif %}
+  {{ btn_label|default:"Button" }}
+</button>
