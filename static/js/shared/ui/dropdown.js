@@ -25,9 +25,31 @@ function initCombobox() {
       options = [];
     }
 
+    let highlightedIndex = -1;
+    let committed = { value: hiddenInput.value || '', label: textInput.value || '' };
+
+    function selectOption(item) {
+      textInput.value = item.dataset.label;
+      hiddenInput.value = item.dataset.value;
+      committed = { value: item.dataset.value, label: item.dataset.label };
+      suggestions.classList.add('hidden');
+      hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function setHighlight(index) {
+      const items = suggestions.querySelectorAll('[data-value]');
+      items.forEach(function (el) { el.classList.remove('bg-accent'); });
+      if (index >= 0 && index < items.length) {
+        items[index].classList.add('bg-accent');
+        items[index].scrollIntoView({ block: 'nearest' });
+      }
+      highlightedIndex = index;
+    }
+
     function renderSuggestions(query) {
       const q = query.trim().toLowerCase();
       const matches = q ? options.filter(function (o) { return o[1].toLowerCase().includes(q); }) : options;
+      highlightedIndex = -1;
 
       if (!matches.length) {
         suggestions.innerHTML = '<div class="px-3 py-2 text-[12.5px] text-muted-foreground italic">Try different keyword</div>';
@@ -42,10 +64,7 @@ function initCombobox() {
 
       suggestions.querySelectorAll('[data-value]').forEach(function (item) {
         item.addEventListener('click', function () {
-          textInput.value = item.dataset.label;
-          hiddenInput.value = item.dataset.value;
-          suggestions.classList.add('hidden');
-          hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+          selectOption(item);
         });
       });
     }
@@ -59,6 +78,35 @@ function initCombobox() {
       // suggestion is explicitly clicked
       hiddenInput.value = '';
       renderSuggestions(textInput.value);
+    });
+
+    textInput.addEventListener('keydown', function (e) {
+      const items = suggestions.querySelectorAll('[data-value]');
+      if (suggestions.classList.contains('hidden') || !items.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setHighlight(Math.min(highlightedIndex + 1, items.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setHighlight(Math.max(highlightedIndex - 1, 0));
+      } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+        e.preventDefault();
+        selectOption(items[highlightedIndex]);
+      } else if (e.key === 'Escape') {
+        suggestions.classList.add('hidden');
+      }
+    });
+
+    // 6b: leaving the input empty (no explicit selection made) reverts
+    // to whatever was last actually committed, instead of clearing it
+    textInput.addEventListener('blur', function () {
+      setTimeout(function () {
+        if (!hiddenInput.value) {
+          textInput.value = committed.label;
+          hiddenInput.value = committed.value;
+        }
+      }, 150); // let a suggestion click register first
     });
 
     document.addEventListener('click', function (e) {

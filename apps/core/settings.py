@@ -11,7 +11,7 @@ from decouple import config, Csv
 # apps/core/settings.py -> apps/core -> apps -> project root)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = config('DJANGO_SECRET_KEY'),
+SECRET_KEY = config('DJANGO_SECRET_KEY')
 
 DEBUG = config('DJANGO_DEV_DEBUG', default=False, cast=bool)
 

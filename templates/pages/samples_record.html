@@ -156,6 +156,7 @@
     const emptyState = document.getElementById('emptyState');
     const noResultsState = document.getElementById('noResultsState');
     const searchInput = document.getElementById('searchInput');
+    const generateReportBtn = document.getElementById('generateReportBtn');
     const freezeDropdownBtn = document.getElementById('freezeDropdownBtn');
     const freezeDropdownLabel = document.getElementById('freezeDropdownLabel');
     const freezeDropdownPanel = document.getElementById('freezeDropdownPanel');
@@ -455,6 +456,7 @@
               emptyState.style.display = 'none';
               setStdDeEditable(true);
             }
+            if (generateReportBtn) generateReportBtn.disabled = dataset.length === 0;
             if (window.renderScatter) window.renderScatter();
           })
           .catch(function () {
@@ -473,6 +475,7 @@
         dataset = [];
         dataTable.hideTable();
         setStdDeEditable(false);
+        if (generateReportBtn) generateReportBtn.disabled = true;
         showEmptyState(hasProduct ? 'need-standard' : 'default');
         noResultsState.classList.add('hidden');
         noResultsState.classList.remove('flex');
@@ -484,9 +487,17 @@
       }
     }
 
+    let currentlyLoadedProductCode = null;
+
     if (productCodeFilter) {
       productCodeFilter.addEventListener('change', function () {
         const productCode = productCodeFilter.value;
+
+        if (productCode && productCode === currentlyLoadedProductCode) {
+          showToast('toastStack', 'This product code is already showing sample data.', 'info');
+          return;
+        }
+        currentlyLoadedProductCode = productCode || null;
 
         standardFilter.innerHTML = '<option value="">Select one standard</option>';
         standardFilter.disabled = true;
@@ -543,10 +554,7 @@
         stdDeUsedBox.value = sanitizeStdDe(stdDeUsedBox.value);
       });
 
-      stdDeUsedBox.addEventListener('keydown', function (e) {
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
-
+      function commitStdDeUsed() {
         const raw = stdDeUsedBox.value.trim();
 
         if (!raw) {
@@ -578,6 +586,16 @@
         document.getElementById('deModalNewValue').textContent = newValue.toFixed(2);
         stdDeUsedBox.dataset.pendingValue = newValue;
         openModal('stdDeModal');
+      }
+
+      stdDeUsedBox.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        commitStdDeUsed();
+      });
+
+      stdDeUsedBox.addEventListener('blur', function () {
+        commitStdDeUsed();
       });
     }
 

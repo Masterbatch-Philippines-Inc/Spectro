@@ -183,11 +183,12 @@ def save_spectro_remarks(request):
         return JsonResponse({"tone": "danger", "message": "Sample or standard not found."}, status=404)
 
     spectro_j, _ = SpectroJudgement.objects.get_or_create(
-        lot_sample=lot_sample, standard_id=standards_id,
-        defaults={"spectro_remarks": remarks},
+        lot_sample=lot_sample,
+        defaults={"spectro_remarks": remarks, "standard_id": standards_id},
     )
     spectro_j.spectro_remarks = remarks
-    spectro_j.save(update_fields=["spectro_remarks"])
+    spectro_j.standard_id = standards_id # type: ignore
+    spectro_j.save(update_fields=["spectro_remarks", "standard_id"])
 
     return JsonResponse({"tone": "success", "message": "Remarks saved."})
 
@@ -274,11 +275,40 @@ def save_std_delta_e_used(request):
     record.std_delta_e_used = new_value # type: ignore
     record.save(update_fields=["std_delta_e_used"])
 
+    _recalculate_spectro_judgements(record, new_value)
+
     return JsonResponse({
         "tone": "success",
         "message": "Standard ΔE Used updated successfully.",
         "std_delta_e_used": new_value,
     })
+
+
+def _recalculate_spectro_judgements(record, threshold):
+    """
+    Re-evaluate is_pass for every lot sample under this record's standards
+    against the new threshold. Matches by lot_sample (+ its standard) and
+    updates the existing SpectroJudgement row in place -- same pattern as
+    save_visual_judgement -- instead of inserting a new row per change.
+    """
+    standards = SpectroStandard.objects.filter(record=record)
+    lot_samples = LotSample.objects.filter(standard__in=standards)
+
+    for lot_sample in lot_samples:
+        raw = lot_sample.raw_values.order_by("-date_time").first() # type: ignore
+        delta = raw.delta_values.order_by("-date_time").first() if raw else None
+        if delta is None:
+            continue
+
+        is_pass = float(delta.delta_e) <= threshold
+
+        spectro_j, _ = SpectroJudgement.objects.get_or_create(
+            lot_sample=lot_sample,
+            defaults={"is_pass": is_pass, "standard": lot_sample.standard},
+        )
+        spectro_j.is_pass = is_pass
+        spectro_j.standard = lot_sample.standard
+        spectro_j.save(update_fields=["is_pass", "standard"])
 
 
 @login_required
@@ -299,7 +329,7 @@ def get_standards_for_product_code(request):
     standards = list(
         SpectroStandard.objects
         .filter(record=record)
-        .order_by("-date_time")
+        .order_by("-is_active_standard", "-date_time")
         .values("standards_id", "standard_name")
     )
 
