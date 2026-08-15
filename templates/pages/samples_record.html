@@ -132,7 +132,7 @@
         return '<div class="flex items-center justify-center py-2"><input type="checkbox" id="selectAllCheckbox" class="w-3.5 h-3.5 accent-white cursor-pointer"></div>';
       },
       renderCell: function (row) {
-        const checked = selectedRows.has(row.id) ? 'checked' : '';
+        const checked = selectedRows.has(String(row.id)) ? 'checked' : '';
         return '<div class="flex items-center justify-center"><input type="checkbox" class="row-checkbox w-3.5 h-3.5 accent-foreground cursor-pointer" data-row-id="' + row.id + '" ' + checked + '></div>';
       },
       width: 'w-[38px]',
@@ -157,6 +157,13 @@
     const noResultsState = document.getElementById('noResultsState');
     const searchInput = document.getElementById('searchInput');
     const generateReportBtn = document.getElementById('generateReportBtn');
+
+    if (generateReportBtn) {
+      generateReportBtn.addEventListener('click', function () {
+        if (!standardFilter.value || dataset.length === 0) return;
+        window.location.href = '{% url "api_export_samples_report" %}?standards_id=' + encodeURIComponent(standardFilter.value);
+      });
+    }
     const freezeDropdownBtn = document.getElementById('freezeDropdownBtn');
     const freezeDropdownLabel = document.getElementById('freezeDropdownLabel');
     const freezeDropdownPanel = document.getElementById('freezeDropdownPanel');
@@ -412,7 +419,11 @@
 
     function showEmptyState(mode) {
       emptyStateMode = mode;
-      if (mode === 'need-standard') {
+      if (mode === 'no-standards') {
+        if (emptyStateTitle) emptyStateTitle.textContent = 'No Standards Found';
+        if (emptyStateSubtitle) emptyStateSubtitle.textContent = 'Create standard reading at Values Reader page.';
+        if (emptyStateActionLabel) emptyStateActionLabel.textContent = 'Create standard reading';
+      } else if (mode === 'need-standard') {
         if (emptyStateTitle) emptyStateTitle.textContent = 'Select one Standard';
         if (emptyStateSubtitle) emptyStateSubtitle.textContent = 'Choose a standard sample to load its readings.';
         if (emptyStateActionLabel) emptyStateActionLabel.textContent = 'Select one standard';
@@ -511,13 +522,15 @@
         })
           .then(function (res) { return res.json(); })
           .then(function (data) {
-            (data.standards || []).forEach(function (std) {
+            const standardsList = data.standards || [];
+
+            standardsList.forEach(function (std) {
               const opt = document.createElement('option');
               opt.value = std.standards_id;
               opt.textContent = std.standard_name;
               standardFilter.appendChild(opt);
             });
-            standardFilter.disabled = (data.standards || []).length === 0;
+            standardFilter.disabled = standardsList.length === 0;
 
             currentStdDeUsed = (data.std_delta_e_used !== null && data.std_delta_e_used !== undefined)
               ? Number(data.std_delta_e_used)
@@ -525,7 +538,12 @@
             currentThreshold = currentStdDeUsed !== null ? currentStdDeUsed : 1.00;
             stdDeUsedBox.value = currentStdDeUsed !== null ? currentStdDeUsed.toFixed(2) : '';
 
-            if (data.message) showToast('toastStack', data.message, data.tone || 'info');
+            if (standardsList.length === 0) {
+              showEmptyState('no-standards');
+              showToast('toastStack', 'No standard found.', 'info');
+            } else if (data.message) {
+              showToast('toastStack', data.message, data.tone || 'info');
+            }
           })
           .catch(function () {
             showToast('toastStack', 'Failed to load standards for this product code.', 'danger');
@@ -552,6 +570,12 @@
     if (stdDeUsedBox) {
       stdDeUsedBox.addEventListener('input', function () {
         stdDeUsedBox.value = sanitizeStdDe(stdDeUsedBox.value);
+      });
+
+      stdDeUsedBox.addEventListener('click', function () {
+        if (stdDeUsedBox.readOnly) {
+          showToast('toastStack', 'Please select a standard first.', 'info');
+        }
       });
 
       function commitStdDeUsed() {
@@ -594,7 +618,13 @@
         commitStdDeUsed();
       });
 
+      stdDeUsedBox.addEventListener('focus', function () {
+        stdDeUsedBox.dataset.valueOnFocus = stdDeUsedBox.value;
+      });
+
       stdDeUsedBox.addEventListener('blur', function () {
+        if (stdDeUsedBox.readOnly) return; // locked, no standard selected yet
+        if (stdDeUsedBox.value === stdDeUsedBox.dataset.valueOnFocus) return; // nothing actually changed
         commitStdDeUsed();
       });
     }
@@ -644,6 +674,10 @@
     const emptySelectBtn = document.getElementById('emptySelectBtn');
     if (emptySelectBtn) {
       emptySelectBtn.addEventListener('click', function () {
+        if (emptyStateMode === 'no-standards') {
+          window.location.href = '{% url "samples_reader" %}';
+          return;
+        }
         const target = emptyStateMode === 'need-standard' ? standardFilter : document.getElementById('productCodeFilter');
         if (!target) return;
         target.focus();
@@ -679,6 +713,7 @@
   });
   
 </script>
+
 <script>
   window.getScatterPlotPoints = function () {
     return dataset

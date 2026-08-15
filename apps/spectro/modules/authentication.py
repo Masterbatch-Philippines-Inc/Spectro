@@ -17,7 +17,7 @@ def render_login(request):
         if user is not None:
             login(request, user)
             return redirect("samples_record")
-        return render(request, "auth/login.html", {
+        return render(request, "pages/auth/login.html", {
             "error": "Invalid username or password."
         })
 

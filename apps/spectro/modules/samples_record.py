@@ -3,11 +3,18 @@ apps/spectro/modules/samples_record.py
 
 Module for the "Samples Record".
 """
+import io
 import json
 
+import openpyxl
+from openpyxl.formatting.rule import CellIsRule
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
+
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.utils import timezone
 
 from apps.spectro.models import (
     SpectrometerRecord,
@@ -24,7 +31,6 @@ def format_datetime_no_leading_zeros(dt):
     if not dt:
         return "-"
     return "{}/{}/{} {}:{:02d}".format(dt.month, dt.day, dt.year, dt.hour, dt.minute)
-
 
 def _serialize_lot_sample_row(lot_sample, standards_id):
     raw = lot_sample.raw_values.order_by("-date_time").first()
@@ -83,6 +89,32 @@ def _serialize_lot_sample_row(lot_sample, standards_id):
         "specialPass": bool(special.is_pass) if special else False,
         "specialPassBy": special.passed_by if special and special.passed_by else "",
     }
+
+def _recalculate_spectro_judgements(record, threshold):
+    """
+    Re-evaluate is_pass for every lot sample under this record's standards
+    against the new threshold. Matches by lot_sample (+ its standard) and
+    updates the existing SpectroJudgement row in place -- same pattern as
+    save_visual_judgement -- instead of inserting a new row per change.
+    """
+    standards = SpectroStandard.objects.filter(record=record)
+    lot_samples = LotSample.objects.filter(standard__in=standards)
+
+    for lot_sample in lot_samples:
+        raw = lot_sample.raw_values.order_by("-date_time").first() # type: ignore
+        delta = raw.delta_values.order_by("-date_time").first() if raw else None
+        if delta is None:
+            continue
+
+        is_pass = float(delta.delta_e) <= threshold
+
+        spectro_j, _ = SpectroJudgement.objects.get_or_create(
+            lot_sample=lot_sample,
+            defaults={"is_pass": is_pass, "standard": lot_sample.standard},
+        )
+        spectro_j.is_pass = is_pass
+        spectro_j.standard = lot_sample.standard
+        spectro_j.save(update_fields=["is_pass", "standard"])
 
 
 @login_required
@@ -284,31 +316,128 @@ def save_std_delta_e_used(request):
     })
 
 
-def _recalculate_spectro_judgements(record, threshold):
+REPORT_COLUMNS = [
+    ("colorSimulation", "Color Simulation"),
+    ("dateTime", "Date Time"),
+    ("code", "Code"),
+    ("stickerLot", "Sticker Lot Number"),
+    ("bag", "Bag Number"),
+    ("internalLot", "Internal Lot"),
+    ("de00", "ΔE*00"),
+    ("L", "L*"),
+    ("C", "C*"),
+    ("h", "h°"),
+    ("a", "a*"),
+    ("b", "b*"),
+    ("dL", "ΔL*"),
+    ("dC", "ΔC*"),
+    ("dH", "ΔH*"),
+    ("da", "Δa*"),
+    ("db", "Δb*"),
+    ("colorOffset", "Color Offset"),
+    ("spectroJudgement", "Spectro Judgement"),
+    ("stdDeUsed", "STD ΔE used"),
+    ("visualJudgement", "Visual Judgement"),
+    ("finalQcEval", "Final QC Evaluation"),
+    ("reasonIfFail", "Reason for Fail (if not color)"),
+    ("spectroRemarks", "Spectro Remarks"),
+    ("specialPass", "Special Pass?"),
+    ("specialPassBy", "Special Pass BY:"),
+]
+
+REPORT_COLUMN_WIDTHS = [20, 17, 16, 22, 12, 12, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 14, 16, 13, 16, 18, 24, 20, 12, 16]
+
+
+@login_required
+def export_samples_report(request):
     """
-    Re-evaluate is_pass for every lot sample under this record's standards
-    against the new threshold. Matches by lot_sample (+ its standard) and
-    updates the existing SpectroJudgement row in place -- same pattern as
-    save_visual_judgement -- instead of inserting a new row per change.
+    Builds the "Generate Report for this Product Code" Excel export.
+    Pulls straight from the database using standards_id -- same query
+    used to populate the table -- so the export always matches what the
+    currently selected product code and standard are showing on screen.
     """
-    standards = SpectroStandard.objects.filter(record=record)
-    lot_samples = LotSample.objects.filter(standard__in=standards)
+    standards_id = request.GET.get("standards_id", "").strip()
+    if not standards_id:
+        return JsonResponse({"tone": "danger", "message": "standards_id is required."}, status=400)
 
-    for lot_sample in lot_samples:
-        raw = lot_sample.raw_values.order_by("-date_time").first() # type: ignore
-        delta = raw.delta_values.order_by("-date_time").first() if raw else None
-        if delta is None:
-            continue
+    standard = SpectroStandard.objects.filter(pk=standards_id).select_related("record").first()
+    if not standard:
+        return JsonResponse({"tone": "danger", "message": "Standard not found."}, status=404)
 
-        is_pass = float(delta.delta_e) <= threshold
+    record = standard.record
+    product_code = record.product_code
+    std_de_used = float(record.std_delta_e_used) if record.std_delta_e_used is not None else None
 
-        spectro_j, _ = SpectroJudgement.objects.get_or_create(
-            lot_sample=lot_sample,
-            defaults={"is_pass": is_pass, "standard": lot_sample.standard},
-        )
-        spectro_j.is_pass = is_pass
-        spectro_j.standard = lot_sample.standard
-        spectro_j.save(update_fields=["is_pass", "standard"])
+    lot_samples = LotSample.objects.filter(standard_id=standards_id).order_by("date_time")
+    rows = [_serialize_lot_sample_row(ls, standards_id) for ls in lot_samples]
+    # export needs real datetime objects (not the UI's display string) so Excel can sort/filter dates.
+    # Excel/openpyxl can't hold timezone-aware datetimes, so convert to local time and strip tzinfo.
+    for lot_sample, row in zip(lot_samples, rows):
+        dt = lot_sample.date_time
+        if dt and timezone.is_aware(dt):
+            dt = timezone.localtime(dt).replace(tzinfo=None)
+        row["dateTime"] = dt
+        row["code"] = product_code
+        row["stdDeUsed"] = std_de_used
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"{product_code} from_spectro"[:31]
+
+    header_font = Font(name="Roboto", size=11, bold=True, color="FF000000")
+    header_fill = PatternFill(fill_type="solid", fgColor="FFFFFF00")
+
+    for idx, (_key, label) in enumerate(REPORT_COLUMNS, start=1):
+        cell = ws.cell(row=1, column=idx, value=label)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="left")
+
+    for r_idx, row in enumerate(rows, start=2):
+        for c_idx, (key, _label) in enumerate(REPORT_COLUMNS, start=1):
+            value = row.get(key)
+            cell = ws.cell(row=r_idx, column=c_idx, value=value)
+
+            if key == "dateTime" and value:
+                cell.number_format = "m/d/yyyy h:mm"
+
+            if key == "colorSimulation" and isinstance(value, str) and value.startswith("#") and len(value) in (7, 9):
+                hexval = value.lstrip("#")
+                if len(hexval) == 6:
+                    hexval = "FF" + hexval
+                try:
+                    cell.fill = PatternFill(fill_type="solid", fgColor=hexval)
+                except ValueError:
+                    pass
+
+    last_row = max(len(rows) + 1, 2)
+    last_col_letter = get_column_letter(len(REPORT_COLUMNS))
+
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:{last_col_letter}{last_row}"
+
+    green = Font(color="FF00B050")
+    red = Font(color="FFFF0000")
+    for rng in (f"S2:S{last_row}", f"U2:U{last_row}"):
+        ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=['"Pass"'], font=green))
+        ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=['"Passed"'], font=green))
+        ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=['"Fail"'], font=red))
+        ws.conditional_formatting.add(rng, CellIsRule(operator="equal", formula=['"Failed"'], font=red))
+
+    for idx, w in enumerate(REPORT_COLUMN_WIDTHS, start=1):
+        ws.column_dimensions[get_column_letter(idx)].width = w
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    filename = f"{product_code} from_spectro.xlsx"
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required
@@ -341,3 +470,4 @@ def get_standards_for_product_code(request):
             float(record.std_delta_e_used) if record.std_delta_e_used is not None else None
         ),
     })
+

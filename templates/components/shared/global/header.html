@@ -21,27 +21,30 @@
     transition: transform .6s cubic-bezier(.65,0,.35,1), opacity .6s cubic-bezier(.65,0,.35,1), width .6s cubic-bezier(.65,0,.35,1);
   }
 
-  /* default (sidebar open): chevron-left + pipe, pipe on the LEFT, chevron on the RIGHT
-     span2 = vertical pipe (shifted left), span1/span3 = chevron shrunk + angled (shifted right) */
-  .hamburger-bars span:nth-child(1) {
-    width: 55%;
-    transform: translate(3px, -2px) rotate(-40deg);
-    left: 2px;
-  }
-  .hamburger-bars span:nth-child(2) {
-    width: 100%;
-    transform: translateX(-4px) rotate(90deg);
-  }
-  .hamburger-bars span:nth-child(3) {
-    width: 55%;
-    transform: translate(3px, 2px) rotate(40deg);
-    left: 2px;
-  }
+  /* default (sidebar open): plain hamburger bars */
+  .hamburger-bars span:nth-child(1) { transform: translateY(-5px); width: 100%; left: 0px; top: 6px; }
+  .hamburger-bars span:nth-child(2) { transform: translateY(0); width: 100%; left: 0px; }
+  .hamburger-bars span:nth-child(3) { transform: translateY(5px); width: 100%; left: 0px; top: 4px; }
 
-  /* is-closed state -> plain hamburger bars */
-  .hamburger-btn.is-closed .hamburger-bars span:nth-child(1) { transform: translateY(-5px); width: 100%; left: 0px; top: 6px;}
-  .hamburger-btn.is-closed .hamburger-bars span:nth-child(2) { transform: translateY(0); width: 100%; left: 0px; }
-  .hamburger-btn.is-closed .hamburger-bars span:nth-child(3) { transform: translateY(5px); width: 100%; left: 0px; top: 4px;}
+  /* is-closed state (sidebar collapsed) -> arrow-right, built from the same 3 spans:
+     span2 stays as the shaft, span1/span3 angle in near the right edge as the arrowhead */
+  .hamburger-btn.is-closed .hamburger-bars span:nth-child(1) {
+    width: 45%;
+    left: 7px;
+    top: 2px;
+    transform: rotate(45deg);
+  }
+  .hamburger-btn.is-closed .hamburger-bars span:nth-child(2) {
+    width: 100%;
+    left: 0px;
+    transform: translateY(0);
+  }
+  .hamburger-btn.is-closed .hamburger-bars span:nth-child(3) {
+    width: 45%;
+    left: 7px;
+    top: 8px;
+    transform: rotate(-45deg);
+  }
 </style>
 {% endblock %}
 <header class="h-[52px] shrink-0 flex items-center gap-3.5 px-5 border-b border-border bg-card">
