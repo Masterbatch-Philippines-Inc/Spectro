@@ -6,6 +6,7 @@ urlpatterns = [
     path("", views.login_view, name="auth_login"),
     path("logout/", views.logout_view, name="auth_logout"),
     path("samples-reader/", views.samples_reader_view, name="samples_reader"),
+    path("api/spectrometer-info/", views.spectrometer_info_view, name="api_spectrometer_info"),
     path("samples-record/", views.samples_record_view, name="samples_record"),
     path("api/standards/", views.standards_for_product_code_view, name="api_standards_for_product_code"),
     path("api/std-delta-e/", views.save_std_delta_e_used_view, name="api_save_std_delta_e"),

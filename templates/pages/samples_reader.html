@@ -62,14 +62,11 @@
             </div>
           </div>
           <span class="badge inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-[3px] rounded-full border whitespace-nowrap border-[hsl(var(--border))] bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))]" id="connBadge">
-            <span class="bdot w-1.5 h-1.5 rounded-full bg-[hsl(var(--muted-foreground))]"></span>
+            <span class="bdot w-1.5 h-1.5 rounded-full bg-[hsl(var(--muted-foreground))]" style="margin-bottom: 2px !important;"></span>
             Offline
           </span>
         </div>
-        <button class="btn border text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 w-full hover:opacity-90 transition bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]" id="connectBtn">
-          <span class="spinner"></span>
-          <span class="btn-label" id="connectLabel">Connect BLE Dongle</span>
-        </button>
+        {% include "components/shared/ui/button.html" with btn_id="connectBtn" btn_variant="primary" btn_label=" " btn_extra_class="w-full" btn_icon_svg='<span class="spinner"></span><span class="btn-label" id="connectLabel">Connect BLE Dongle</span>' %}
 
         <div id="deviceInfo" style="display:none;">
           <div class="h-px bg-[hsl(var(--border))] my-4"></div>
@@ -96,14 +93,13 @@
             <div class="w-11 h-11 rounded-[9px] border border-[hsl(var(--border))] flex items-center justify-center relative bg-[#18181b]"><svg viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg></div>
             <div><div class="text-[10.5px] text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Step 1</div><div class="text-[12.5px] font-semibold">Black Reference</div></div>
             <div class="progress-track h-[3px] w-full bg-[hsl(var(--accent))] rounded-full overflow-hidden mt-0.5" style="display:none;" id="blackTrack"><div class="progress-fill h-full w-0 bg-[hsl(var(--foreground))] rounded-full transition-[width] duration-150 linear" id="blackFill" style="width: 0%;"></div></div>
-            <button class="btn calib-btn w-full py-[7px] px-2.5 text-xs bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-md cursor-pointer flex items-center justify-center gap-2 hover:bg-[hsl(var(--accent))] disabled:opacity-45 disabled:cursor-not-allowed transition" id="blackBtn" disabled=""><span class="spinner"></span><span class="btn-label">Calibrate</span></button>
+            {% include "components/shared/ui/button.html" with btn_id="blackBtn" btn_variant="secondary" btn_disabled=True btn_label=" " btn_extra_class="calib-btn w-full" btn_icon_svg='<span class="spinner"></span><span class="btn-label">Calibrate</span>' %}
           </div>
           <div class="calib-cell border border-[hsl(var(--border))] rounded-[9px] p-3.5 text-center bg-[hsl(var(--card))] flex flex-col items-center gap-2.5 relative" id="whiteCell">
             <div class="calib-check absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full bg-[hsl(var(--success))] border-2 border-[hsl(var(--card))] items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" width="10" height="10" stroke="#fff"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
             <div class="w-11 h-11 rounded-[9px] border border-[hsl(var(--border))] flex items-center justify-center relative bg-white shadow-[inset_0_0_0_1px_#e4e4e7]"><svg viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg></div>
             <div><div class="text-[10.5px] text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Step 2</div><div class="text-[12.5px] font-semibold">White Reference</div></div>
-            <div class="progress-track h-[3px] w-full bg-[hsl(var(--accent))] rounded-full overflow-hidden mt-0.5" style="display:none;" id="whiteTrack"><div class="progress-fill h-full w-0 bg-[hsl(var(--foreground))] rounded-full transition-[width] duration-150 linear" id="whiteFill" style="width: 0%;"></div></div>
-            <button class="btn calib-btn w-full py-[7px] px-2.5 text-xs bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-md cursor-pointer flex items-center justify-center gap-2 hover:bg-[hsl(var(--accent))] disabled:opacity-45 disabled:cursor-not-allowed transition" id="blackBtn" disabled=""><span class="spinner"></span><span class="btn-label">Calibrate</span></button>
+            {% include "components/shared/ui/button.html" with btn_id="whiteBtn" btn_variant="secondary" btn_disabled=True btn_label=" " btn_extra_class="calib-btn w-full" btn_icon_svg='<span class="spinner"></span><span class="btn-label">Calibrate</span>' %}
           </div>
         </div>
       </div><p class="text-center text-[11.5px] text-[hsl(var(--muted-foreground))] mt-5 mb-5 leading-relaxed" id="step1FooterNote" style="display: block;">Connect the device first to unlock calibration.<br>Both references must be calibrated to continue.</p>
@@ -128,15 +124,23 @@
 
 {% block extra_js %}
 <script>
-  /* ---- Task 11(b): dev-toggleable connection simulation ---- */
-  const CONNECTED = false;
-  const DISCONNECTED = false;
-  const ACCIDENTAL = false;
-
   let instrumentConnected = false;
   let calibrationData = {};   // cached so user isn't asked to re-calibrate (Task 11c2)
   let currentStep = 1;
   let completedSteps = new Set();
+
+  // Step 1 connect flow result — held in memory only, submitted later by
+  // the final atomic save button (built in a later task), never written
+  // to the DB from here.
+  const wizardDevice = { model: null, serial: null };
+
+  // ===========================================================
+  // DEV TOGGLE — flip to false once the real agent + DB flow is
+  // ready to test end-to-end. While true, clicking Connect just
+  // fakes a successful connection (no agent call, no DB check) so
+  // UI/flow can be checked without the local agent running.
+  // ===========================================================
+  const DEV_SKIP_CONNECT = true;
 
   /* ---- Stepper (Task 10) — follows ts-step/ts-circle/ts-line pattern ---- */
   const checkSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
@@ -185,54 +189,175 @@
     });
   }
 
-  /* ---- Step 1: Connect & Calibrate (Task 11) ---- */
-  function setConnectionUI(connected) {
-    const badge = document.getElementById('connBadge');
-    const subtitle = document.getElementById('connSubtitle');
-    if (subtitle) subtitle.textContent = connected ? 'Linked to a spectrometer' : 'Not linked to a spectrometer yet';
-    if (badge) {
-      badge.classList.toggle('success', connected);
-      badge.innerHTML = connected
-        ? '<span class="bdot w-1.5 h-1.5 rounded-full" style="margin-bottom: 0.5px;"></span>Online'
-        : '<span class="bdot w-1.5 h-1.5 rounded-full bg-[hsl(var(--muted-foreground))]" style="margin-bottom: 0.5px;"></span>Offline';
+  /* ---- Step 1: Connect & Calibrate ---- */
+  const connectBtn = document.getElementById('connectBtn');
+  const connectLabel = document.getElementById('connectLabel');
+  const connBadge = document.getElementById('connBadge');
+  const connSubtitle = document.getElementById('connSubtitle');
+  const deviceInfo = document.getElementById('deviceInfo');
+  const devModel = document.getElementById('devModel');
+  const devSerial = document.getElementById('devSerial');
+  const blackBtn = document.getElementById('blackBtn');
+  const whiteBtn = document.getElementById('whiteBtn');
+  const blackCell = document.getElementById('blackCell');
+  const whiteCell = document.getElementById('whiteCell');
+
+  function setBadge(state) {
+    if (!connBadge) return;
+    connBadge.classList.remove('success', 'warn');
+    connBadge.classList.remove('border-[hsl(var(--danger-border))]', 'bg-[hsl(var(--danger-bg))]', 'text-danger');
+    if (state === 'connecting') {
+      connBadge.classList.add('warn');
+      connBadge.innerHTML = '<span class="bdot w-1.5 h-1.5 rounded-full" style="margin-bottom: 2px !important;"></span>Connecting…';
+    } else if (state === 'disconnecting') {
+      connBadge.classList.add('border-[hsl(var(--danger-border))]', 'bg-[hsl(var(--danger-bg))]', 'text-danger');
+      connBadge.innerHTML = '<span class="bdot w-1.5 h-1.5 rounded-full bg-[hsl(var(--danger))]" style="margin-bottom: 2px !important;"></span>Disconnecting…';
+    } else if (state === 'online') {
+      connBadge.classList.add('success');
+      connBadge.innerHTML = '<span class="bdot w-1.5 h-1.5 rounded-full" style="margin-bottom: 2px !important;"></span>Online';
+    } else {
+      connBadge.classList.remove('text-danger');
+      connBadge.innerHTML = '<span class="bdot w-1.5 h-1.5 rounded-full bg-[hsl(var(--muted-foreground))]" style="margin-bottom: 2px !important;"></span>Offline';
     }
-    document.querySelectorAll('[data-calibrate-btn]').forEach(function (btn) {
-      btn.disabled = !connected;
-    });
   }
 
-  function initConnectionState() {
-    if (ACCIDENTAL) {
-      instrumentConnected = false;
-      showToast('toastStack', 'Instrument unexpectedly disconnected', 'warning');
-    } else if (CONNECTED) {
-      if (!instrumentConnected) {
-        showToast('toastStack', 'Instrument successfully connected', 'success');
-        subtitle.textContent = 'Linked over Bluetooth LE';
-        devModel.textContent = 'NH-YS3010'; devSerial.textContent = 'SN-48213X';
-        deviceInfo.style.display = 'block';
-        connectBtn.classList.remove('bg-[hsl(var(--primary))]','text-[hsl(var(--primary-foreground))]','border-[hsl(var(--primary))]');
-        connectBtn.classList.add('text-[hsl(var(--danger))]','border-[hsl(var(--danger-border))]','bg-[hsl(var(--danger-bg))]');
+  function setCalibrateButtonsEnabled(enabled) {
+    [blackBtn, whiteBtn].forEach(function (b) { if (b) b.disabled = !enabled; });
+  }
+
+  // (b) check DB for an existing Spectrometer row first; if none, fall
+  // back to whatever the agent itself reported on /connect.
+  function resolveDeviceInfo(agentInfo) {
+    return fetch('{% url "api_spectrometer_info" %}', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.found) {
+          wizardDevice.model = data.device_model;
+          wizardDevice.serial = data.device_sn;
+        } else {
+          wizardDevice.model = agentInfo.model;
+          wizardDevice.serial = agentInfo.serial_number;
+        }
+      });
+  }
+
+  function doConnect() {
+    connectBtn.classList.add('loading');
+    connectBtn.disabled = true;
+    connectLabel.textContent = 'Scanning for dongle…';
+    setBadge('connecting');
+    if (connSubtitle) connSubtitle.textContent = 'Searching for BLE spectrometer…';
+
+    if (DEV_SKIP_CONNECT) {
+      setTimeout(function () {
+        wizardDevice.model = '(Dev) NH-YS3010';
+        wizardDevice.serial = '(Dev) SN-48213X';
+        instrumentConnected = true;
+        connectBtn.classList.remove('loading');
+        connectBtn.disabled = false;
+        connectBtn.classList.remove('bg-[hsl(var(--primary))]', 'text-[hsl(var(--primary-foreground))]', 'border-[hsl(var(--primary))]');
+        connectBtn.classList.add('text-[hsl(var(--danger))]', 'border-[hsl(var(--danger-border))]', 'bg-[hsl(var(--danger-bg))]');
         connectLabel.textContent = 'Disconnect';
-        [blackCell, whiteCell].forEach(c => c.classList.add('done'));
-        [blackBtn, whiteBtn].forEach(b => { b.disabled = false; b.querySelector('.btn-label').textContent = 'Recalibrate'; });
-      }
-      instrumentConnected = true;
-    } else if (DISCONNECTED) {
-      if (instrumentConnected) {
-        showToast('toastStack', 'Instrument successfully disconnected', 'info');
-      } else {
-        showToast('toastStack', 'Instrument not yet connected', 'info');
-      }
-      instrumentConnected = false;
+        setBadge('online');
+        if (connSubtitle) connSubtitle.textContent = '(Dev) Linked over Bluetooth LE';
+        if (devModel) devModel.textContent = wizardDevice.model;
+        if (devSerial) devSerial.textContent = wizardDevice.serial;
+        if (deviceInfo) deviceInfo.style.display = 'block';
+        setCalibrateButtonsEnabled(true);
+        showToast('toastStack', '(Dev) Instrument connected', 'success');
+      }, 600);
+      return;
     }
-    setConnectionUI(instrumentConnected);
+
+    fetch('http://localhost:5151/connect', { method: 'POST' })
+      .then(function (res) { return res.json(); })
+      .then(function (agentData) {
+        if (!agentData.ok) {
+          throw new Error(agentData.error || 'Connection failed');
+        }
+        return resolveDeviceInfo(agentData);
+      })
+      .then(function () {
+        instrumentConnected = true;
+        connectBtn.classList.remove('loading');
+        connectBtn.disabled = false;
+        connectBtn.classList.remove('bg-[hsl(var(--primary))]', 'text-[hsl(var(--primary-foreground))]', 'border-[hsl(var(--primary))]');
+        connectBtn.classList.add('text-[hsl(var(--danger))]', 'border-[hsl(var(--danger-border))]', 'bg-[hsl(var(--danger-bg))]');
+        connectLabel.textContent = 'Disconnect';
+        setBadge('online');
+        if (connSubtitle) connSubtitle.textContent = 'Linked over Bluetooth LE';
+        if (devModel) devModel.textContent = wizardDevice.model || '—';
+        if (devSerial) devSerial.textContent = wizardDevice.serial || '—';
+        if (deviceInfo) deviceInfo.style.display = 'block';
+        setCalibrateButtonsEnabled(true);
+        showToast('toastStack', 'Instrument connected', 'success');
+      })
+      .catch(function (err) {
+        connectBtn.classList.remove('loading');
+        connectBtn.disabled = false;
+        connectLabel.textContent = 'Connect BLE Dongle';
+        setBadge('offline');
+        if (connSubtitle) connSubtitle.textContent = 'Not linked to a spectrometer yet';
+        showToast('toastStack', 'Connection failed.', 'danger');
+        console.error(err);
+      });
+  }
+
+  function doDisconnect() {
+    connectBtn.classList.add('loading');
+    connectBtn.disabled = true;
+    connectLabel.textContent = 'Disconnecting from spectrometer…';
+    setBadge('disconnecting');
+    if (connSubtitle) connSubtitle.textContent = 'Disconnecting from spectrometer…';
+
+    function finishDisconnect() {
+      instrumentConnected = false;
+      calibrationData = {};
+      wizardDevice.model = null;
+      wizardDevice.serial = null;
+      connectBtn.classList.remove('loading');
+      connectBtn.disabled = false;
+      connectBtn.classList.remove('text-[hsl(var(--danger))]', 'border-[hsl(var(--danger-border))]', 'bg-[hsl(var(--danger-bg))]');
+      connectBtn.classList.add('bg-[hsl(var(--primary))]', 'text-[hsl(var(--primary-foreground))]', 'border-[hsl(var(--primary))]');
+      connectLabel.textContent = 'Connect BLE Dongle';
+      setBadge('offline');
+      if (connSubtitle) connSubtitle.textContent = 'Not linked to a spectrometer yet';
+      if (deviceInfo) deviceInfo.style.display = 'none';
+      setCalibrateButtonsEnabled(false);
+      [blackCell, whiteCell].forEach(function (c) { if (c) c.classList.remove('done'); });
+      [blackBtn, whiteBtn].forEach(function (b) {
+        if (!b) return;
+        const label = b.querySelector('.btn-label');
+        if (label) label.textContent = 'Calibrate';
+      });
+      showToast('toastStack', 'Instrument disconnected', 'info');
+    }
+
+    if (DEV_SKIP_CONNECT) {
+      setTimeout(finishDisconnect, 600);
+      return;
+    }
+
+    fetch('http://localhost:5151/disconnect', { method: 'POST' })
+      .then(function (res) { return res.json(); })
+      .catch(function () {})
+      .finally(finishDisconnect);
+  }
+
+  if (connectBtn) {
+    connectBtn.addEventListener('click', function () {
+      if (instrumentConnected) doDisconnect(); else doConnect();
+    });
   }
 
   function markCalibrated(type) {
     calibrationData[type] = true;
     const cell = document.getElementById(type + 'Cell');
     if (cell) cell.classList.add('done');
+    const btn = type === 'black' ? blackBtn : whiteBtn;
+    const label = btn ? btn.querySelector('.btn-label') : null;
+    if (label) label.textContent = 'Recalibrate';
+    showToast('toastStack', (type === 'black' ? 'Black' : 'White') + ' calibration complete', 'info');
     if (calibrationData.black && calibrationData.white) {
       completedSteps.add(1);
       renderStepper();
@@ -241,9 +366,19 @@
 
   function runCalibration(type) {
     if (!instrumentConnected) return;
+    const btn = type === 'black' ? blackBtn : whiteBtn;
+    const label = btn ? btn.querySelector('.btn-label') : null;
+    const isRecalibration = !!calibrationData[type];
+    if (btn) { btn.classList.add('loading'); btn.disabled = true; }
+    if (label) label.textContent = isRecalibration ? 'Recalibrating…' : 'Calibrating…';
 
-    // (11c2) skip re-calibrating if already cached
-    if (calibrationData[type]) return;
+    if (DEV_SKIP_CONNECT) {
+      setTimeout(function () {
+        markCalibrated(type);
+        if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+      }, 600);
+      return;
+    }
 
     fetch('http://localhost:5151/calibrate/' + type, { method: 'POST' })
       .then(function (res) { return res.json(); })
@@ -251,6 +386,7 @@
         if (!data.ok) {
           showToast('toastStack', 'Calibration failed.', 'danger');
           console.error(data.error);
+          if (label) label.textContent = isRecalibration ? 'Recalibrate' : 'Calibrate';
           return;
         }
         markCalibrated(type);
@@ -258,17 +394,19 @@
       .catch(function (err) {
         showToast('toastStack', 'Calibration failed.', 'danger');
         console.error(err);
+        if (label) label.textContent = isRecalibration ? 'Recalibrate' : 'Calibrate';
+      })
+      .finally(function () {
+        if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
       });
   }
 
-  document.querySelectorAll('[data-calibrate-btn]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      runCalibration(btn.dataset.calibrateBtn);
-    });
-  });
+  if (blackBtn) blackBtn.addEventListener('click', function () { runCalibration('black'); });
+  if (whiteBtn) whiteBtn.addEventListener('click', function () { runCalibration('white'); });
 
   window.addEventListener('load', function () {
-    initConnectionState();
+    setBadge('offline');
+    setCalibrateButtonsEnabled(false);
     renderStepper();
   });
 

@@ -7,7 +7,7 @@ in this file -- it just receives the request and hands it off.
 """
 
 from apps.spectro.modules.authentication import render_login, do_logout
-from apps.spectro.modules.samples_reader import render_samples_reader
+from apps.spectro.modules.samples_reader import render_samples_reader, get_spectrometer_info
 from apps.spectro.modules.samples_record import (
     render_samples_record,
     get_standards_for_product_code,
@@ -29,6 +29,9 @@ def logout_view(request):
 
 def samples_reader_view(request):
     return render_samples_reader(request)
+
+def spectrometer_info_view(request):
+    return get_spectrometer_info(request)
 
 def samples_record_view(request):
     return render_samples_record(request)
