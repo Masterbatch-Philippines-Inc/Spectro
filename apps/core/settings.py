@@ -102,3 +102,9 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# --- TAILWIND V4 CONFIGURATION ---
+TAILWIND_CLI_PATH = "npx"
+TAILWIND_CLI_AUTOMATIC_DOWNLOAD = False
+TAILWIND_CLI_SRC_CSS = "css/input.css"
+TAILWIND_CLI_DIST_CSS = "css/output.css"

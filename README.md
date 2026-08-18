@@ -85,6 +85,8 @@ This is an internal-only project.
 ```
 mbpi_spectro/
 ├── manage.py
+├── package.json
+├── package-lock.json
 ├── requirements.txt
 ├── .env                            # local environment variables (gitignored)
 │
@@ -137,7 +139,8 @@ mbpi_spectro/
 ## 4. Setup and Installation
 
 ### Requirements
-- Python 3.11+
+- Python 3.11+- 
+- Node.js (v18+ recommended) & npm
 - PostgreSQL (running instance, credentials you control)
 - pip
 - see other libraries at `requirements.txt` file
@@ -194,7 +197,14 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-### Step 6 — Run the dev server
+### Step 6 — Run the development environment
+To run the project locally, open two terminal windows in the project root:
+
+**Terminal 1 — Tailwind CSS Compiler (Watcher)**
+```bash
+npm run dev:css
+```
+**Terminal 2 — Where Django (venv) is active**
 ```bash
 python manage.py runserver
 ```

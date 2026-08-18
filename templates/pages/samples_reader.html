@@ -1,30 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block extra_css %}
-<style>
-  .ts-circle{
-    width:32px; height:32px; border-radius:9999px; display:flex; align-items:center; justify-content:center;
-    font-size:13px; font-weight:700; flex-shrink:0; transition:all .2s ease;
-    background: hsl(var(--card)); color: hsl(var(--muted-foreground));
-    border:2px solid hsl(var(--border));
-  }
-  .ts-step.active .ts-circle{ background: hsl(var(--foreground)); color: hsl(var(--background)); border-color: hsl(var(--foreground)); }
-  .ts-step.done .ts-circle{ background: hsl(var(--success)); color:#fff; border-color: hsl(var(--success)); }
-  .ts-label{ font-size:13.5px; font-weight:600; color: hsl(var(--muted-foreground)); transition: color .2s ease; }
-  .ts-step.active .ts-label{ color: hsl(var(--foreground)); font-weight:700; }
-  .ts-step.done .ts-label{ color: hsl(var(--foreground)); }
-  .ts-line{ width:2px; background: hsl(var(--border)); transition: background .2s ease; }
-  .ts-line.done{ background: hsl(var(--success)); }
-  .badge.success{ background: hsl(var(--success-bg)); border-color: hsl(var(--success-border)); color: hsl(var(--success)); }
-  .badge.success .bdot{ background: hsl(var(--success)); box-shadow:0 0 0 3px hsl(var(--success-bg)); animation:pulse 2s infinite; }
-  .badge.warn{ background: hsl(var(--warn-bg)); border-color: hsl(var(--warn-border)); color: hsl(var(--warn)); }
-  .badge.warn .bdot{ background: hsl(var(--warn)); }
-  .calib-cell.done .calib-check{ display:flex; }
-  .calib-check{ display:none; }
-</style>
-{% endblock %}
-
 {% block content %}
 <section class="flex-1 min-h-0 flex overflow-hidden">
 
@@ -48,8 +24,11 @@
 
   <div id="contentArea" class="flex-1 min-h-0 overflow-y-auto bg-background">
 
-    <!-- Step 1: Instrument Setup -->
-    <div class="step-panel max-w-[520px] mx-auto px-5 pt-8 pb-16" id="stepPanel1">
+    <!-- ===================================================
+        STEP 1 — INSTRUMENT SETUP
+    ==================================================== -->
+    <div class="step-panel min-h-[calc(100vh-104px)] flex items-center justify-center px-5" id="stepPanel1">
+      <div class="max-w-[520px] w-full pt-8 pb-16">
       <div class="bg-card border border-border rounded-[10px] shadow-sm p-5 mb-4">
         <div class="flex items-start justify-between gap-3 mb-4">
           <div class="flex gap-3 items-start">
@@ -66,12 +45,18 @@
             Offline
           </span>
         </div>
-        {% include "components/shared/ui/button.html" with btn_id="connectBtn" btn_variant="primary" btn_label=" " btn_extra_class="w-full" btn_icon_svg='<span class="spinner"></span><span class="btn-label" id="connectLabel">Connect BLE Dongle</span>' %}
+        {% include "components/shared/ui/button.html" with btn_id="connectBtn" btn_variant="primary" btn_label=" " btn_extra_class="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]" btn_icon_svg='<span class="spinner"></span><span class="btn-label" id="connectLabel">Connect BLE Dongle</span>' %}
 
         <div id="deviceInfo" style="display:none;">
           <div class="h-px bg-[hsl(var(--border))] my-4"></div>
-          <div class="flex justify-between text-xs text-[hsl(var(--muted-foreground))] py-[5px]"><span>Model</span><span class="text-[hsl(var(--foreground))] font-medium font-mono" id="devModel">—</span></div>
-          <div class="flex justify-between text-xs text-[hsl(var(--muted-foreground))] py-[5px]"><span>Serial number</span><span class="text-[hsl(var(--foreground))] font-medium font-mono" id="devSerial">—</span></div>
+          <div class="flex justify-between text-xs text-[hsl(var(--muted-foreground))] py-[5px]">
+            <span>Model</span>
+            <span class="text-[hsl(var(--foreground))] font-medium font-mono" id="devModel">—</span>
+          </div>
+          <div class="flex justify-between text-xs text-[hsl(var(--muted-foreground))] py-[5px]">
+            <span>Serial number</span>
+            <span class="text-[hsl(var(--foreground))] font-medium font-mono" id="devSerial">—</span>
+          </div>
         </div>
       </div>
 
@@ -91,30 +76,263 @@
           <div class="calib-cell border border-[hsl(var(--border))] rounded-[9px] p-3.5 text-center bg-[hsl(var(--card))] flex flex-col items-center gap-2.5 relative" id="blackCell">
             <div class="calib-check absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full bg-[hsl(var(--success))] border-2 border-[hsl(var(--card))] items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" width="10" height="10" stroke="#fff"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
             <div class="w-11 h-11 rounded-[9px] border border-[hsl(var(--border))] flex items-center justify-center relative bg-[#18181b]"><svg viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg></div>
-            <div><div class="text-[10.5px] text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Step 1</div><div class="text-[12.5px] font-semibold">Black Reference</div></div>
+            <div><div class="text-[10.5px] text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Scan</div><div class="text-[12.5px] font-semibold">Black Reference</div></div>
             <div class="progress-track h-[3px] w-full bg-[hsl(var(--accent))] rounded-full overflow-hidden mt-0.5" style="display:none;" id="blackTrack"><div class="progress-fill h-full w-0 bg-[hsl(var(--foreground))] rounded-full transition-[width] duration-150 linear" id="blackFill" style="width: 0%;"></div></div>
-            {% include "components/shared/ui/button.html" with btn_id="blackBtn" btn_variant="secondary" btn_disabled=True btn_label=" " btn_extra_class="calib-btn w-full" btn_icon_svg='<span class="spinner"></span><span class="btn-label">Calibrate</span>' %}
+            {% include "components/shared/ui/button.html" with btn_id="blackBtn" btn_variant="secondary" btn_disabled=True btn_label=" " btn_extra_class="calib-btn w-full border border-[hsl(var(--border))] rounded-md cursor-pointer hover:bg-[hsl(var(--accent))]" btn_icon_svg='<span class="spinner"></span><span class="btn-label">Calibrate</span>' %}
           </div>
           <div class="calib-cell border border-[hsl(var(--border))] rounded-[9px] p-3.5 text-center bg-[hsl(var(--card))] flex flex-col items-center gap-2.5 relative" id="whiteCell">
             <div class="calib-check absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full bg-[hsl(var(--success))] border-2 border-[hsl(var(--card))] items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" width="10" height="10" stroke="#fff"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
             <div class="w-11 h-11 rounded-[9px] border border-[hsl(var(--border))] flex items-center justify-center relative bg-white shadow-[inset_0_0_0_1px_#e4e4e7]"><svg viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg></div>
-            <div><div class="text-[10.5px] text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Step 2</div><div class="text-[12.5px] font-semibold">White Reference</div></div>
-            {% include "components/shared/ui/button.html" with btn_id="whiteBtn" btn_variant="secondary" btn_disabled=True btn_label=" " btn_extra_class="calib-btn w-full" btn_icon_svg='<span class="spinner"></span><span class="btn-label">Calibrate</span>' %}
+            <div><div class="text-[10.5px] text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Scan</div><div class="text-[12.5px] font-semibold">White Reference</div></div>
+            {% include "components/shared/ui/button.html" with btn_id="whiteBtn" btn_variant="secondary" btn_disabled=True btn_label=" " btn_extra_class="calib-btn w-full border border-[hsl(var(--border))] rounded-md cursor-pointer hover:bg-[hsl(var(--accent))]" btn_icon_svg='<span class="spinner"></span><span class="btn-label">Calibrate</span>' %}
           </div>
         </div>
-      </div><p class="text-center text-[11.5px] text-[hsl(var(--muted-foreground))] mt-5 mb-5 leading-relaxed" id="step1FooterNote" style="display: block;">Connect the device first to unlock calibration.<br>Both references must be calibrated to continue.</p>
+      </div>
+      <p class="text-center text-[11.5px] text-[hsl(var(--muted-foreground))] mt-5 mb-5 leading-relaxed" id="step1FooterNote" style="display: block;">Connect the device first to unlock calibration.<br>Both references must be calibrated to continue.</p>
+      </div>
     </div>
 
-    <!-- Step 2: Product & Standard -->
-    <div class="step-panel hidden max-w-[520px] mx-auto px-5 pt-8 pb-16" id="stepPanel2">
-      <!-- Step 2 content goes here -->
+    <!-- ===================================================
+          STEP 2 — INPUT STANDARD DATA
+    ==================================================== -->
+    <div class="step-panel max-w-[520px] mx-auto px-5 pt-8 pb-16" id="stepPanel2">
+      <div class="step-page max-w-[520px] mx-auto px-5" id="page2">
+        <div id="step2Lock" class="relative">
+          <div id="step2LockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
+            <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Complete instrument setup first
+            </div>
+          </div>
+          <div id="step2LockedContent" class="opacity-40 pointer-events-none select-none transition-opacity duration-300 pt-8">
+            <div id="productCodeStep" class="mt-4">
+              <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
+                <p class="text-sm font-semibold m-0">Product Code</p>
+                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Start typing to match an existing code, or enter a new one.</p>
+
+                <div class="field mb-3.5 relative">
+                  <label for="productCodeGlobal" class="block text-xs font-semibold mb-1.5">Product Code</label>
+                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="productCodeGlobal" placeholder="e.g. WA15190E" autocomplete="off" maxlength="8">
+                  <div id="productCodeSuggestions" class="absolute left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-md max-h-[180px] overflow-y-auto z-50" style="display:none;"></div>
+                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Format: 2 letters + up to 5 digits + E (e.g. <strong>WA15190E</strong>).</div>
+                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="productCodeGlobalErr">Invalid format — must be 2 letters, up to 5 digits, then "E".</div>
+                  <div class="hint text-[11px] text-[hsl(var(--success))] mt-[5px] leading-relaxed" id="productCodeGlobalMatch" style="display:none;">Matched an existing product code — its saved standards will be available below.</div>
+                </div>
+              </div>
+            </div>
+            <div id="modeSelect" class="relative">
+              <div id="modeSelectLockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
+                <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  Enter a valid product code above first
+                </div>
+              </div>
+              <div id="modeSelectContent" class="opacity-40 pointer-events-none select-none transition-opacity duration-300">
+                <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
+                  <p class="text-sm font-semibold m-0">What would you like to do?</p>
+                  <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Pick one — the fields below open automatically.</p>
+                  <div class="flex flex-col gap-2.5" id="modeCardGroup">
+                    <button type="button" class="mode-card flex items-start gap-3 border-[1.5px] border-[hsl(var(--border))] rounded-[10px] p-3.5 bg-[hsl(var(--card))] cursor-pointer text-left w-full transition hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="modeCardNew" data-mode="new">
+                      <div class="mode-icon w-9 h-9 rounded-lg shrink-0 bg-[hsl(var(--accent))] border border-[hsl(var(--border))] flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg></div>
+                      <div class="mode-text flex-1 min-w-0"><div class="mode-title text-[13.5px] font-semibold mb-[3px]">New Standard + Sample</div><div class="mode-desc text-[11.5px] text-[hsl(var(--muted-foreground))] leading-relaxed">Register a brand-new product code and standard.</div></div>
+                    </button>
+                    <button type="button" class="mode-card flex items-start gap-3 border-[1.5px] border-[hsl(var(--border))] rounded-[10px] p-3.5 bg-[hsl(var(--card))] cursor-pointer text-left w-full transition hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="modeCardExisting" data-mode="existing">
+                      <div class="mode-icon w-9 h-9 rounded-lg shrink-0 bg-[hsl(var(--accent))] border border-[hsl(var(--border))] flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+                      <div class="mode-text flex-1 min-w-0"><div class="mode-title text-[13.5px] font-semibold mb-[3px]">Use Existing Standard</div><div class="mode-desc text-[11.5px] text-[hsl(var(--muted-foreground))] leading-relaxed">Pick a product code and standard that already exist.</div></div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- FLOW A: NEW STANDARD -->
+            <div id="flowNewStandard" style="display:none;">
+              <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4" id="stepDetails">
+                <p class="text-sm font-semibold m-0">Standard Details</p>
+                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">These fields build the reference name automatically.</p>
+
+                <div class="seq-warning items-start gap-2 text-xs text-[hsl(var(--warn))] bg-[hsl(var(--warn-bg))] border border-[hsl(var(--warn-border))] rounded-lg py-2.5 px-3 mb-4 leading-relaxed" id="seqWarning" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" class="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="seqWarningText">Please complete the fields in order.</span></div>
+
+                <!-- <div class="field mb-3.5" id="field_productCode">
+                  <label for="productCodeNew" class="block text-xs font-semibold mb-1.5">Product Code</label>
+                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)]" id="productCodeNew" placeholder="e.g. WA15190E" autocomplete="off" maxlength="8">
+                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Format: 2 letters + up to 5 digits + E (e.g. <strong>WA15190E</strong>).</div>
+                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="productCodeErr">Invalid format — must be 2 letters, up to 5 digits, then "E".</div>
+                </div> -->
+
+                <input type="hidden" id="prefixSelect" value="STD">
+                <div class="field mb-3.5" style="max-width:180px;">
+                  <label for="stdDeInput" class="block text-xs font-semibold mb-1.5">Standard ΔE</label>
+                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="stdDeInput" placeholder="e.g. 1.00" autocomplete="off" value="1.00" inputmode="decimal" disabled>
+                </div>
+
+                <div class="field mb-3.5" id="field_cma">
+                  <label for="cma_lot" class="block text-xs font-semibold mb-1.5">CMA/Lot Number</label>
+                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)]" id="cma_lot" placeholder="e.g. CMA-0001" autocomplete="off">
+                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">4–5 digits, then an optional 1–2 letter suffix. The <strong>CMA-</strong> prefix is optional.</div>
+                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="cmaErr">Invalid format — enter 4–5 digits (optionally starting with "CMA-"), then an optional 1–2 letters.</div>
+                </div>
+
+                <div class="field mb-3.5" id="field_dosage">
+                  <label for="dosage" class="block text-xs font-semibold mb-1.5">Dosage</label>
+                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)]" id="dosage" autocomplete="off" inputmode="decimal">
+                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Digits only — the "%" is fixed.</div>
+                  <div class="hint warn text-[11px] text-[hsl(var(--warn))] mt-[5px] leading-relaxed" id="dosageWarn" style="display:none;">Dosage is below the typical minimum of 1.000% — double check before continuing.</div>
+                </div>
+
+                <div class="preview-box border border-dashed border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--accent))] py-3 px-3.5 mt-[18px] mb-1">
+                  <div class="preview-label text-[10.5px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1.5 flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Reference Name Preview</div>
+                  <div class="preview-name font-mono text-sm font-semibold break-words" id="previewName"><span class="placeholder text-[#a1a1aa] font-normal">Fill in the fields above…</span></div>
+                </div>
+
+                <div class="h-px bg-[hsl(var(--border))] my-4"></div>
+                <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 w-full hover:opacity-90 transition" id="continueBtn"><span id="continueLabel">Continue to Measurement</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+              </div>
+
+              <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4" id="stepMeasure" style="display:none;">
+                <p class="text-sm font-semibold m-0">Capture Reflectance</p>
+                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Place the spectrometer aperture flat on the reference sample.</p>
+
+                <div class="ref-chip bg-[hsl(var(--accent))] border border-[hsl(var(--border))] rounded-lg py-2.5 px-3 mb-[18px]">
+                  <div class="flex items-center justify-between"><div><div class="text-[10.5px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] font-semibold">Reference</div><div class="font-mono text-[13px] font-semibold" id="refChipName">—</div></div><button class="bg-transparent border-none text-[hsl(var(--muted-foreground))] text-[11.5px] cursor-pointer underline hover:text-[hsl(var(--foreground))] disabled:opacity-50 disabled:cursor-not-allowed" id="editRefBtn">Edit</button></div>
+                  <div class="text-[11px] text-[hsl(var(--muted-foreground))] mt-1.5 pt-1.5 border-t border-[hsl(var(--border))]">Standard ΔE Used: <span class="font-semibold text-[hsl(var(--foreground))] font-mono" id="refChipDe">1.00</span></div>
+                </div>
+
+                <div class="flex items-center justify-center py-4 pb-5">
+                  <svg class="aperture w-[88px] h-[88px]" id="apertureSvg1" viewBox="0 0 96 96">
+                    <circle class="pulse" cx="48" cy="48" r="30" fill="none" stroke="#a1a1aa" stroke-width="2" opacity="0"/>
+                    <circle cx="48" cy="48" r="38" fill="none" stroke="#e4e4e7" stroke-width="2"/>
+                    <g class="ring"><circle cx="48" cy="48" r="38" fill="none" stroke="#18181b" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="40 199"/></g>
+                    <circle cx="48" cy="48" r="22" fill="#18181b"/><circle cx="48" cy="48" r="8" fill="#fafafa"/>
+                  </svg>
+                </div>
+
+                <p class="text-center text-[13px] font-medium mb-1" id="statusText1">Ready to scan</p>
+                <p class="text-center text-[11.5px] text-[hsl(var(--muted-foreground))] mb-[18px]" id="statusSub1">Press the button below once the sample is in position.</p>
+
+                <div class="results" id="resultsBlock1" style="display:none;">
+                  <div class="grid grid-cols-5 gap-2 mb-4">
+                    <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">L*</div><div class="font-mono text-[13px] font-semibold" id="valL1">—</div></div>
+                    <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">C*</div><div class="font-mono text-[13px] font-semibold" id="valC1">—</div></div>
+                    <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">h°</div><div class="font-mono text-[13px] font-semibold" id="valH1">—</div></div>
+                    <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">a*</div><div class="font-mono text-[13px] font-semibold" id="valA1">—</div></div>
+                    <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">b*</div><div class="font-mono text-[13px] font-semibold" id="valB1">—</div></div>
+                  </div>
+                  <div class="flex justify-center mb-[18px]"><span class="badge success inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-[3px] rounded-full border whitespace-nowrap"><span class="bdot w-1.5 h-1.5 rounded-full"></span>Capture successful</span></div>
+                </div>
+
+                <div class="flex gap-2.5">
+                  <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition" style="flex:2;" id="measureBtn1"><span class="spinner"></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span class="btn-label" id="measureLabel1">Read Reference</span></button>
+                  <button class="btn bg-[hsl(var(--card))] border border-[hsl(var(--border))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:bg-[hsl(var(--accent))] transition" style="flex:1; display:none;" id="rereadStdBtn">Re-read</button>
+                  <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition" style="flex:1; display:none;" id="saveStdBtn">Save</button>
+                </div>
+              </div>
+
+              <p class="text-center text-[11.5px] text-[hsl(var(--muted-foreground))] mt-5 leading-relaxed">Standards are stored once and reused across every sample comparison.</p>
+            </div>
+            <!-- FLOW B: EXISTING STANDARD -->
+            <div id="flowExistingStandard" style="display:none;">
+              <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
+                <p class="text-sm font-semibold m-0">Use Existing Standard</p>
+                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Picking this option means the latest standard under this product code will be used across the samples.</p>
+
+                <!-- <div class="field mb-3.5">
+                  <label for="existingProductCode" class="block text-xs font-semibold mb-1.5">Product Code</label>
+                  <select class="select w-full text-[13px] py-2.5 pl-2.5 pr-[30px] rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none appearance-none bg-no-repeat bg-[right_10px_center]" id="existingProductCode" style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2714%27 height=%2714%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2371717a%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');">
+                    <option value="">Select product code…</option>
+                    <option value="BA10821E">BA10821E</option>
+                    <option value="BA20933F">BA20933F</option>
+                    <option value="CC44120A">CC44120A</option>
+                  </select>
+                </div> -->
+
+                <div class="field mb-3.5">
+                  <label for="existingStandardSelect" class="block text-xs font-semibold mb-1.5">Standard</label>
+                  <select class="select w-full text-[13px] py-2.5 pl-2.5 pr-[30px] rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none appearance-none bg-no-repeat bg-[right_10px_center] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="existingStandardSelect" disabled style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2714%27 height=%2714%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2371717a%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');"><option value="">Select product code first…</option></select>
+                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Only standards already saved for this product code appear here. Selecting one opens the sample fields below.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Step 3: Read Samples -->
-    <div class="step-panel hidden max-w-full mx-auto px-5 pb-[60px]" id="stepPanel3">
-      <!-- Step 3 content goes here -->
-      <div class="flex justify-end mt-4">
-        <button id="finishReadingBtn" type="button" class="btn btn-variant-primary text-[12.5px] font-semibold px-3.5 py-2 rounded-md">Finish Reading</button>
+    <!-- ===================================================
+          STEP 3 — INPUT SAMPLES DATA
+    ==================================================== -->
+    <div class="step-panel max-w-full mx-auto px-5 pb-[60px]" id="stepPanel3">
+      <div class="step-page wide max-w-full mx-auto px-5 pb-[60px]" id="page3">
+        <div id="step3Lock" class="relative">
+          <div id="step3LockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
+            <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Finish Standard Data above first
+            </div>
+          </div>
+          <div id="step3LockedContent" class="opacity-40 pointer-events-none select-none transition-opacity duration-300 mt-4 pt-8">
+            <button type="button" class="back-link inline-flex items-center gap-1.5 text-xs font-semibold text-[hsl(var(--muted-foreground))] bg-transparent border-none cursor-pointer p-0 mb-3.5 hover:text-[hsl(var(--foreground))]" id="backFromSampleBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Change what you're doing</button>
+
+            <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 flex flex-col" style="height: calc(100vh - 260px); min-height: 420px;" id="sampleStepMeasure">
+              <div class="flex items-start justify-between gap-4 flex-wrap mb-4 shrink-0">
+                <div>
+                  <p class="text-sm font-semibold m-0">
+                    <span id="sampleRefChipName"></span>
+                    <span class="font-normal text-[12px] text-[hsl(var(--muted-foreground))]" id="sampleRefChipDe"></span>
+                  </p>
+                  <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 leading-relaxed" id="sampleRefChipProductCode"></p>
+                </div>
+                <div class="flex items-end gap-5 flex-wrap">
+                  <span class="text-[11px] font-semibold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--accent))] border border-[hsl(var(--border))] rounded-full py-0.5 px-2.5 whitespace-nowrap" id="historyCount">0 Samples</span>
+                </div>
+              </div>
+
+              <div class="flex-1 min-h-0 flex gap-3">
+                <div class="w-[130px] shrink-0 flex flex-col gap-2">
+                  <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3 rounded-lg cursor-pointer flex items-center justify-center gap-2 w-full hover:opacity-90 transition disabled:opacity-45 disabled:cursor-not-allowed" id="measureBtn2"><span class="btn-label" id="measureLabel2">Read Sample</span></button>
+                  <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3 rounded-lg cursor-pointer flex items-center justify-center gap-2 w-full hover:opacity-90 transition disabled:opacity-45 disabled:cursor-not-allowed" id="readLightBtn"><span class="btn-label">Read Light</span></button>
+                  <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3 rounded-lg cursor-pointer flex items-center justify-center gap-2 w-full hover:opacity-90 transition disabled:opacity-45 disabled:cursor-not-allowed" id="readDarkBtn"><span class="btn-label">Read Dark</span></button>
+                </div>
+
+                <div class="flex-1 min-w-0 border border-[hsl(var(--border))] rounded-lg overflow-auto relative">
+                  <table class="w-full text-[11.5px] border-collapse" id="samplesTable">
+                    <thead>
+                      <tr>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">Lot Number</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap">ΔE*00</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap">L*</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap">C*</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">h°</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">a*</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">b*</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap">ΔL*</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap">ΔC*</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap">ΔH*</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">Δa*</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">Δb*</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap">Judgement</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap min-w-[160px]">Spectro Remarks</th>
+                      <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-center py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap w-9"></th>
+                    </tr>
+                    </thead>
+                    <tbody id="historyTableBody"></tbody>
+                  </table>
+                  <div class="absolute inset-0 top-9 flex flex-col items-center justify-center text-center px-3 text-[hsl(var(--muted-foreground))] text-[13px] leading-relaxed pointer-events-none" id="historyEmpty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28" class="mb-2 opacity-40"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    <div class="font-semibold text-[hsl(var(--foreground))] mb-1">Scanned samples will appear here</div>
+                    <div>Press the "Read Sample" button on the top left or hit "Spacebar" key once the sample is in position.</div>
+                  </div>
+                </div>
+
+                <div class="w-[130px] shrink-0 flex flex-col gap-2">
+                  <button class="btn bg-[hsl(var(--card))] border border-[hsl(var(--border))] text-[13px] font-medium py-2.5 px-3 rounded-lg cursor-pointer flex items-center justify-center gap-2 w-full hover:bg-[hsl(var(--accent))] transition disabled:opacity-45 disabled:cursor-not-allowed" id="rereadSampleBtn" disabled>Re-read sample</button>
+                  <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3 rounded-lg cursor-pointer flex items-center justify-center gap-2 w-full hover:opacity-90 transition" id="finishSessionBtn">Finish Reading</button>
+                </div>
+              </div>
+
+              <p class="text-center text-[11px] text-[hsl(var(--muted-foreground))] mt-3 leading-relaxed shrink-0" id="step3Caption">Press the "Read Sample" button on the top left or hit "Spacebar" key once the sample is in position.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -159,24 +377,56 @@
     [1, 2].forEach(function (n) {
       tsLines[n].classList.toggle('done', completedSteps.has(n));
     });
-
-    document.querySelectorAll('.step-panel').forEach(function (p) { p.classList.add('hidden'); });
-    const activePanel = document.getElementById('stepPanel' + currentStep);
-    if (activePanel) activePanel.classList.remove('hidden');
   }
 
-  // (10a) click text/circle to jump; (10c) going to an earlier step reverts
-  // that step and everything after it back to the default number UI
+  function scrollToStep(n) {
+    const panel = document.getElementById('stepPanel' + n);
+    if (!panel) return;
+    // briefly suspend scroll-spy so the programmatic scroll from a click
+    // doesn't fight with the observer mid-animation
+    scrollSyncEnabled = false;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(function () { scrollSyncEnabled = true; }, 700);
+  }
+
+  // (10a) click text/circle to jump — navigating no longer clears
+  // completed/checkmark state; a step stays marked done once finished
+  // regardless of which step the user is currently viewing.
   function goToStep(n) {
-    if (n < currentStep) {
-      for (let i = n; i <= 3; i++) completedSteps.delete(i);
-    }
     currentStep = n;
     renderStepper();
+    scrollToStep(n);
   }
 
   [1, 2, 3].forEach(function (n) {
     tsSteps[n].addEventListener('click', function () { goToStep(n); });
+  });
+
+  // Scroll-spy: highlight whichever step's panel is currently in view,
+  // same idea as a scroll-linked nav — clicking still jumps via goToStep,
+  // but scrolling manually keeps the active label in sync on its own.
+  let scrollSyncEnabled = true;
+  const stepObserver = new IntersectionObserver(function (entries) {
+    if (!scrollSyncEnabled) return;
+    let bestEntry = null;
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      if (!bestEntry || entry.intersectionRatio > bestEntry.intersectionRatio) {
+        bestEntry = entry;
+      }
+    });
+    if (bestEntry) {
+      const n = parseInt(bestEntry.target.id.replace('stepPanel', ''), 10);
+      if (n !== currentStep) {
+        currentStep = n;
+        renderStepper();
+      }
+    }
+  }, { root: document.getElementById('contentArea'), threshold: [0.25, 0.5, 0.75] });
+
+  [1, 2, 3].forEach(function (n) {
+    const panel = document.getElementById('stepPanel' + n);
+    if (panel) stepObserver.observe(panel);
   });
 
   const finishReadingBtn = document.getElementById('finishReadingBtn');
@@ -256,7 +506,7 @@
         connectBtn.classList.remove('loading');
         connectBtn.disabled = false;
         connectBtn.classList.remove('bg-[hsl(var(--primary))]', 'text-[hsl(var(--primary-foreground))]', 'border-[hsl(var(--primary))]');
-        connectBtn.classList.add('text-[hsl(var(--danger))]', 'border-[hsl(var(--danger-border))]', 'bg-[hsl(var(--danger-bg))]');
+        connectBtn.classList.add('text-[hsl(var(--danger))]', 'border', 'border-[hsl(var(--danger-border))]', 'bg-[hsl(var(--danger-bg))]');
         connectLabel.textContent = 'Disconnect';
         setBadge('online');
         if (connSubtitle) connSubtitle.textContent = '(Dev) Linked over Bluetooth LE';

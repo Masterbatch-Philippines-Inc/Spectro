@@ -14,6 +14,7 @@ venv/
 env/
 .venv/
 ENV/
+node_modules/
 
 # Django
 migrations/
@@ -23,6 +24,7 @@ db.sqlite3-journal
 *.log
 staticfiles/
 media/
+*.bak
 
 # IDE / editor
 .vscode/

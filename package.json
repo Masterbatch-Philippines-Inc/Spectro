@@ -1,0 +1,25 @@
+{
+  "name": "mbpi-spectro",
+  "version": "1.0.0",
+  "description": "A web-based color measurement system built for Masterbatch Philippines Inc., replacing manual, spreadsheet-based color quality checks with a digital workflow connected directly to spectrophotometer hardware. Lab technicians connect a spectrometer, calibrate it, and read color measurements from production samples straight from their browser — each sample is automatically compared against its approved color standard to determine a pass/fail result, with every reading, standard, and judgement stored centrally for the QC team to review.",
+  "main": "index.js",
+  "scripts": {
+    "dev:css": "npx @tailwindcss/cli -i ./static/css/input.css -o ./static/css/output.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dan-mbpi/MBPI-Spectro.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/dan-mbpi/MBPI-Spectro/issues"
+  },
+  "homepage": "https://github.com/dan-mbpi/MBPI-Spectro#readme",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.0.0",
+    "tailwindcss": "^4.0.0"
+  }
+}
