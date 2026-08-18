@@ -39,3 +39,8 @@
 .bg-blue {
   background-color: var(--color-blue);
 }
+
+.mode-card.selected {
+  border-color: hsl(var(--foreground));
+  background: hsl(var(--accent));
+}

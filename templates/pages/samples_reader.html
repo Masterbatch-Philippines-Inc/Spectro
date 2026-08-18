@@ -95,8 +95,8 @@
     <!-- ===================================================
           STEP 2 — INPUT STANDARD DATA
     ==================================================== -->
-    <div class="step-panel max-w-[520px] mx-auto px-5 pt-8 pb-16" id="stepPanel2">
-      <div class="step-page max-w-[520px] mx-auto px-5" id="page2">
+    <div class="step-panel max-w-[900px] mx-auto px-5 pt-2 pb-16" id="stepPanel2">
+      <div class="step-page max-w-[900px] mx-auto px-5" id="page2">
         <div id="step2Lock" class="relative">
           <div id="step2LockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
             <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm">
@@ -104,22 +104,28 @@
               Complete instrument setup first
             </div>
           </div>
-          <div id="step2LockedContent" class="opacity-40 pointer-events-none select-none transition-opacity duration-300 pt-8">
+          <div id="step2LockedContent" class="opacity-40 pointer-events-none select-none transition-opacity duration-300">
             <div id="productCodeStep" class="mt-4">
               <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
                 <p class="text-sm font-semibold m-0">Product Code</p>
-                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Start typing to match an existing code, or enter a new one.</p>
+                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Start typing to match an existing code, or add a new one and press Enter to save.</p>
 
                 <div class="field mb-3.5 relative">
                   <label for="productCodeGlobal" class="block text-xs font-semibold mb-1.5">Product Code</label>
-                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="productCodeGlobal" placeholder="e.g. WA15190E" autocomplete="off" maxlength="8">
+                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="productCodeGlobal" placeholder="e.g. XX00000E" autocomplete="off" maxlength="10">
                   <div id="productCodeSuggestions" class="absolute left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-md max-h-[180px] overflow-y-auto z-50" style="display:none;"></div>
-                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Format: 2 letters + up to 5 digits + E (e.g. <strong>WA15190E</strong>).</div>
-                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="productCodeGlobalErr">Invalid format — must be 2 letters, up to 5 digits, then "E".</div>
+                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Format: <strong>XX00000E</strong> or <strong>XX00000E-I</strong> (2 letters, up to 5 digits, then "E", with an optional "-I" suffix).</div>
+                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="productCodeGlobalErr" style="display:none;">Invalid format — must be 2 letters, up to 5 digits, then "E", with an optional "-I" suffix.</div>
                   <div class="hint text-[11px] text-[hsl(var(--success))] mt-[5px] leading-relaxed" id="productCodeGlobalMatch" style="display:none;">Matched an existing product code — its saved standards will be available below.</div>
+                  <div class="flex items-center gap-1.5 mt-[5px]" id="productCodeSavedChip" style="display:none;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--success))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="text-[11px] font-semibold text-[hsl(var(--success))]">Product code saved — <span id="productCodeSavedValue"></span></span>
+                  </div>
                 </div>
               </div>
             </div>
+            <div class="grid grid-cols-2 gap-4 items-start max-[900px]:grid-cols-1" id="modeDetailsRow">
+            <div class="flex flex-col" id="modeColumnLeft">
             <div id="modeSelect" class="relative">
               <div id="modeSelectLockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
                 <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm">
@@ -132,11 +138,11 @@
                   <p class="text-sm font-semibold m-0">What would you like to do?</p>
                   <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Pick one — the fields below open automatically.</p>
                   <div class="flex flex-col gap-2.5" id="modeCardGroup">
-                    <button type="button" class="mode-card flex items-start gap-3 border-[1.5px] border-[hsl(var(--border))] rounded-[10px] p-3.5 bg-[hsl(var(--card))] cursor-pointer text-left w-full transition hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="modeCardNew" data-mode="new">
+                    <button type="button" class="mode-card flex items-start gap-3 border-[1.5px] border-[hsl(var(--border))] rounded-[10px] p-3.5 bg-[hsl(var(--card))] cursor-pointer text-left w-full transition hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))] border-[1.5px] border-[hsl(var(--border))]" id="modeCardNew" data-mode="new">
                       <div class="mode-icon w-9 h-9 rounded-lg shrink-0 bg-[hsl(var(--accent))] border border-[hsl(var(--border))] flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg></div>
                       <div class="mode-text flex-1 min-w-0"><div class="mode-title text-[13.5px] font-semibold mb-[3px]">New Standard + Sample</div><div class="mode-desc text-[11.5px] text-[hsl(var(--muted-foreground))] leading-relaxed">Register a brand-new product code and standard.</div></div>
                     </button>
-                    <button type="button" class="mode-card flex items-start gap-3 border-[1.5px] border-[hsl(var(--border))] rounded-[10px] p-3.5 bg-[hsl(var(--card))] cursor-pointer text-left w-full transition hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="modeCardExisting" data-mode="existing">
+                    <button type="button" class="mode-card flex items-start gap-3 border-[1.5px] border-[hsl(var(--border))] rounded-[10px] p-3.5 bg-[hsl(var(--card))] cursor-pointer text-left w-full transition hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))] border-[1.5px] border-[hsl(var(--border))]" id="modeCardExisting" data-mode="existing">
                       <div class="mode-icon w-9 h-9 rounded-lg shrink-0 bg-[hsl(var(--accent))] border border-[hsl(var(--border))] flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
                       <div class="mode-text flex-1 min-w-0"><div class="mode-title text-[13.5px] font-semibold mb-[3px]">Use Existing Standard</div><div class="mode-desc text-[11.5px] text-[hsl(var(--muted-foreground))] leading-relaxed">Pick a product code and standard that already exist.</div></div>
                     </button>
@@ -144,32 +150,51 @@
                 </div>
               </div>
             </div>
-            <!-- FLOW A: NEW STANDARD -->
-            <div id="flowNewStandard" style="display:none;">
-              <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4" id="stepDetails">
+
+            <!-- FLOW B: EXISTING STANDARD -- moved directly under "What would
+                 you like to do?", locked until that option is chosen -->
+            <div id="flowExistingStandardWrap" class="relative">
+              <div id="flowExistingStandardLockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
+                <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm text-center">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  Choose "Use Existing Standard" instead
+                </div>
+              </div>
+              <div id="flowExistingStandard" class="opacity-40 pointer-events-none select-none transition-opacity duration-300">
+                <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
+                  <p class="text-sm font-semibold m-0">Use Existing Standard</p>
+                  <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Picking this option means the latest standard under this product code will be used across the samples.</p>
+
+                  <div class="field mb-3.5">
+                    <label for="existingStandardSelect" class="block text-xs font-semibold mb-1.5">Standard</label>
+                    <select class="select w-full text-[13px] py-2.5 pl-2.5 pr-[30px] rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none appearance-none bg-no-repeat bg-[right_10px_center] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="existingStandardSelect" disabled style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2714%27 height=%2714%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2371717a%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');"><option value="">Select product code first…</option></select>
+                    <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Only standards already saved for this product code appear here. Selecting one opens the sample fields below.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+            <div id="stepDetailsWrap" class="relative">
+              <div id="stepDetailsLockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
+                <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm text-center">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  Choose "New Standard + Sample" instead
+                </div>
+              </div>
+              <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4 opacity-40 pointer-events-none select-none transition-opacity duration-300" id="stepDetails">
                 <p class="text-sm font-semibold m-0">Standard Details</p>
-                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">These fields build the reference name automatically.</p>
+                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">New standard ΔE mandatory limit is <strong>1.00</strong>.</p>
 
                 <div class="seq-warning items-start gap-2 text-xs text-[hsl(var(--warn))] bg-[hsl(var(--warn-bg))] border border-[hsl(var(--warn-border))] rounded-lg py-2.5 px-3 mb-4 leading-relaxed" id="seqWarning" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" class="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="seqWarningText">Please complete the fields in order.</span></div>
 
-                <!-- <div class="field mb-3.5" id="field_productCode">
-                  <label for="productCodeNew" class="block text-xs font-semibold mb-1.5">Product Code</label>
-                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)]" id="productCodeNew" placeholder="e.g. WA15190E" autocomplete="off" maxlength="8">
-                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Format: 2 letters + up to 5 digits + E (e.g. <strong>WA15190E</strong>).</div>
-                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="productCodeErr">Invalid format — must be 2 letters, up to 5 digits, then "E".</div>
-                </div> -->
-
                 <input type="hidden" id="prefixSelect" value="STD">
-                <div class="field mb-3.5" style="max-width:180px;">
-                  <label for="stdDeInput" class="block text-xs font-semibold mb-1.5">Standard ΔE</label>
-                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="stdDeInput" placeholder="e.g. 1.00" autocomplete="off" value="1.00" inputmode="decimal" disabled>
-                </div>
+                <input type="hidden" id="stdDeInput" value="1.00">
 
                 <div class="field mb-3.5" id="field_cma">
                   <label for="cma_lot" class="block text-xs font-semibold mb-1.5">CMA/Lot Number</label>
-                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)]" id="cma_lot" placeholder="e.g. CMA-0001" autocomplete="off">
-                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">4–5 digits, then an optional 1–2 letter suffix. The <strong>CMA-</strong> prefix is optional.</div>
-                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="cmaErr">Invalid format — enter 4–5 digits (optionally starting with "CMA-"), then an optional 1–2 letters.</div>
+                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)]" id="cma_lot" placeholder="e.g. CMA-0001 or 0001A" autocomplete="off" value="CMA-">
+                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">1–5 digits, then an optional 1–2 letter suffix. The <strong>CMA-</strong> prefix is optional and can be deleted.</div>
+                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="cmaErr" style="display:none;">Invalid format — enter 4–5 digits (optionally starting with "CMA-"), then an optional 1–2 letters.</div>
                 </div>
 
                 <div class="field mb-3.5" id="field_dosage">
@@ -187,7 +212,10 @@
                 <div class="h-px bg-[hsl(var(--border))] my-4"></div>
                 <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 w-full hover:opacity-90 transition" id="continueBtn"><span id="continueLabel">Continue to Measurement</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
               </div>
-
+            </div>
+            </div>
+            <!-- FLOW A continued: measurement (full width, below the side-by-side row) -->
+            <div id="flowNewStandard" style="display:none;">
               <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4" id="stepMeasure" style="display:none;">
                 <p class="text-sm font-semibold m-0">Capture Reflectance</p>
                 <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Place the spectrometer aperture flat on the reference sample.</p>
@@ -228,29 +256,6 @@
               </div>
 
               <p class="text-center text-[11.5px] text-[hsl(var(--muted-foreground))] mt-5 leading-relaxed">Standards are stored once and reused across every sample comparison.</p>
-            </div>
-            <!-- FLOW B: EXISTING STANDARD -->
-            <div id="flowExistingStandard" style="display:none;">
-              <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
-                <p class="text-sm font-semibold m-0">Use Existing Standard</p>
-                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Picking this option means the latest standard under this product code will be used across the samples.</p>
-
-                <!-- <div class="field mb-3.5">
-                  <label for="existingProductCode" class="block text-xs font-semibold mb-1.5">Product Code</label>
-                  <select class="select w-full text-[13px] py-2.5 pl-2.5 pr-[30px] rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none appearance-none bg-no-repeat bg-[right_10px_center]" id="existingProductCode" style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2714%27 height=%2714%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2371717a%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');">
-                    <option value="">Select product code…</option>
-                    <option value="BA10821E">BA10821E</option>
-                    <option value="BA20933F">BA20933F</option>
-                    <option value="CC44120A">CC44120A</option>
-                  </select>
-                </div> -->
-
-                <div class="field mb-3.5">
-                  <label for="existingStandardSelect" class="block text-xs font-semibold mb-1.5">Standard</label>
-                  <select class="select w-full text-[13px] py-2.5 pl-2.5 pr-[30px] rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none appearance-none bg-no-repeat bg-[right_10px_center] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="existingStandardSelect" disabled style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2714%27 height=%2714%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2371717a%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');"><option value="">Select product code first…</option></select>
-                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Only standards already saved for this product code appear here. Selecting one opens the sample fields below.</div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -563,6 +568,7 @@
     function finishDisconnect() {
       instrumentConnected = false;
       calibrationData = {};
+      relockStep2();
       wizardDevice.model = null;
       wizardDevice.serial = null;
       connectBtn.classList.remove('loading');
@@ -600,6 +606,31 @@
     });
   }
 
+  const step2LockOverlay = document.getElementById('step2LockOverlay');
+  const step2LockedContent = document.getElementById('step2LockedContent');
+  const step1FooterNote = document.getElementById('step1FooterNote');
+  let step2Unlocked = false;
+
+  function unlockStep2() {
+    if (step2Unlocked) return;
+    step2Unlocked = true;
+    if (step2LockOverlay) step2LockOverlay.style.display = 'none';
+    if (step2LockedContent) step2LockedContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+    if (step1FooterNote) step1FooterNote.style.display = 'none';
+    completedSteps.add(1);
+    renderStepper();
+  }
+
+  function relockStep2() {
+    if (!step2Unlocked) return;
+    step2Unlocked = false;
+    if (step2LockOverlay) step2LockOverlay.style.display = 'flex';
+    if (step2LockedContent) step2LockedContent.classList.add('opacity-40', 'pointer-events-none', 'select-none');
+    if (step1FooterNote) step1FooterNote.style.display = 'block';
+    completedSteps.delete(1);
+    renderStepper();
+  }
+
   function markCalibrated(type) {
     calibrationData[type] = true;
     const cell = document.getElementById(type + 'Cell');
@@ -609,8 +640,7 @@
     if (label) label.textContent = 'Recalibrate';
     showToast('toastStack', (type === 'black' ? 'Black' : 'White') + ' calibration complete', 'info');
     if (calibrationData.black && calibrationData.white) {
-      completedSteps.add(1);
-      renderStepper();
+      unlockStep2();
     }
   }
 
@@ -663,5 +693,444 @@
   window.getScatterPlotPoints = function () {
     return [];
   };
+
+  /* =========================================================
+     STEP 2 — Product Code (combobox + add-new) and mode lock
+  ========================================================== */
+  (function step2ProductCodeAndMode() {
+    const productCodeGlobal = document.getElementById('productCodeGlobal');
+    const productCodeGlobalErr = document.getElementById('productCodeGlobalErr');
+    const productCodeGlobalMatch = document.getElementById('productCodeGlobalMatch');
+    const productCodeSuggestions = document.getElementById('productCodeSuggestions');
+    const productCodeSavedChip = document.getElementById('productCodeSavedChip');
+    const productCodeSavedValue = document.getElementById('productCodeSavedValue');
+
+    const modeSelectLockOverlay = document.getElementById('modeSelectLockOverlay');
+    const modeSelectContent = document.getElementById('modeSelectContent');
+    const modeCardNew = document.getElementById('modeCardNew');
+    const modeCardExisting = document.getElementById('modeCardExisting');
+    const flowNewStandard = document.getElementById('flowNewStandard');
+    const stepDetailsWrap = document.getElementById('stepDetailsWrap');
+    const stepDetailsLockOverlay = document.getElementById('stepDetailsLockOverlay');
+    const stepDetails = document.getElementById('stepDetails');
+    const flowExistingStandardLockOverlay = document.getElementById('flowExistingStandardLockOverlay');
+    const flowExistingStandard = document.getElementById('flowExistingStandard');
+
+    const PRODUCT_CODE_RE = /^[A-Z]{2}\d{1,5}E(-I)?$/;
+    let existingCodes = [];
+    try {
+      existingCodes = JSON.parse('{{ product_code_options_json|default:"[]"|escapejs }}');
+    } catch (e) { existingCodes = []; }
+
+    let savedCode = null;
+    let selectedMode = null;
+
+    function getCsrfToken() {
+      const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      return el ? el.value : '{{ csrf_token }}';
+    }
+
+    function renderSuggestions(query) {
+      const q = query.trim().toUpperCase();
+      const matches = q ? existingCodes.filter(function (c) { return c.startsWith(q); }) : existingCodes;
+      let html = '';
+      matches.forEach(function (c) {
+        html += '<div class="px-3 py-2 text-[13px] cursor-pointer hover:bg-[hsl(var(--accent))] font-mono" data-code="' + c + '">' + c + '</div>';
+      });
+      // client-side dedupe guard: never offer "+ Add" for a code that's
+      // already in the known product_codes list
+      if (q && PRODUCT_CODE_RE.test(q) && existingCodes.indexOf(q) === -1) {
+        html += '<div class="px-3 py-2 text-[13px] cursor-pointer hover:bg-[hsl(var(--accent))] font-mono text-[hsl(var(--primary))]" data-add-code="' + q + '">+ Add "' + q + '"</div>';
+      }
+      if (!html) {
+        productCodeSuggestions.style.display = 'none';
+        productCodeSuggestions.innerHTML = '';
+        return;
+      }
+      productCodeSuggestions.innerHTML = html;
+      productCodeSuggestions.style.display = 'block';
+
+      // primary action: clicking an existing code selects it immediately,
+      // no Enter/server round-trip needed
+      productCodeSuggestions.querySelectorAll('[data-code]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          productCodeGlobal.value = el.dataset.code;
+          productCodeSuggestions.style.display = 'none';
+          selectExistingCode(el.dataset.code);
+        });
+      });
+      productCodeSuggestions.querySelectorAll('[data-add-code]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          productCodeGlobal.value = el.dataset.addCode;
+          productCodeSuggestions.style.display = 'none';
+          saveProductCode();
+        });
+      });
+    }
+
+    // Selecting a code already known client-side -- no need to hit the
+    // server again. Toast only, no inline "saved" chip (that's reserved
+    // for genuinely new codes going through saveProductCode()).
+    function selectExistingCode(code) {
+      const v = code.trim().toUpperCase();
+      productCodeGlobal.value = v;
+      validateProductCode();
+      savedCode = v;
+      productCodeSavedChip.style.display = 'none';
+      showToast('toastStack', 'Using existing product code — ' + v, 'info');
+      unlockModeSelect();
+    }
+
+    function validateProductCode() {
+      const v = productCodeGlobal.value.trim().toUpperCase();
+      const isValidFormat = PRODUCT_CODE_RE.test(v);
+      const isExisting = existingCodes.indexOf(v) !== -1;
+      productCodeGlobal.classList.toggle('error', v.length > 0 && !isValidFormat);
+      productCodeGlobalErr.style.display = (v.length > 0 && !isValidFormat) ? 'block' : 'none';
+      productCodeGlobalMatch.style.display = isExisting ? 'block' : 'none';
+      return isValidFormat;
+    }
+
+    function saveProductCode() {
+      const v = productCodeGlobal.value.trim().toUpperCase();
+      if (!validateProductCode()) {
+        showToast('toastStack', 'Please enter a valid product code first.', 'danger');
+        return;
+      }
+      productCodeGlobal.value = v;
+
+      // server-side check happens first -- existence is decided by the DB,
+      // not by the client's cached existingCodes list
+      fetch('{% url "api_save_product_code" %}', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: new URLSearchParams({
+          product_code: v,
+          csrfmiddlewaretoken: getCsrfToken(),
+        }),
+      })
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (result) {
+          if (!result.ok) {
+            showToast('toastStack', result.data.message || 'Failed to save product code.', 'danger');
+            return;
+          }
+          savedCode = v;
+          if (existingCodes.indexOf(v) === -1) existingCodes.push(v);
+          // inline chip only for a code the server actually just created
+          if (result.data.created) {
+            productCodeSavedValue.textContent = v;
+            productCodeSavedChip.style.display = 'flex';
+          } else {
+            productCodeSavedChip.style.display = 'none';
+          }
+          showToast('toastStack', result.data.message, result.data.tone || 'success');
+          unlockModeSelect();
+        })
+        .catch(function () {
+          showToast('toastStack', 'Network error — please try again.', 'danger');
+        });
+    }
+
+    function unlockModeSelect() {
+      modeSelectLockOverlay.style.display = 'none';
+      modeSelectContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+    }
+
+    productCodeGlobal.addEventListener('input', function () {
+      productCodeGlobal.value = productCodeGlobal.value.toUpperCase();
+      validateProductCode();
+      renderSuggestions(productCodeGlobal.value.trim());
+      if (savedCode && productCodeGlobal.value.trim() !== savedCode) {
+        productCodeSavedChip.style.display = 'none';
+        savedCode = null;
+      }
+    });
+    productCodeGlobal.addEventListener('focus', function () { renderSuggestions(productCodeGlobal.value.trim()); });
+    productCodeGlobal.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      productCodeSuggestions.style.display = 'none';
+      const v = productCodeGlobal.value.trim().toUpperCase();
+      // Enter is optional for an existing code -- if it already matches
+      // one exactly, treat it the same as clicking it. Only genuinely
+      // new codes go through the save (server-check) path.
+      if (existingCodes.indexOf(v) !== -1) {
+        selectExistingCode(v);
+      } else {
+        saveProductCode();
+      }
+    });
+    document.addEventListener('click', function (e) {
+      if (!productCodeGlobal.contains(e.target) && !productCodeSuggestions.contains(e.target)) {
+        productCodeSuggestions.style.display = 'none';
+      }
+    });
+
+    /* Standard Details (c) unlocks only for "New Standard + Sample".
+       Use Existing Standard (d) unlocks only for "Use Existing Standard".
+       Both start locked -- neither is ever hidden, just dimmed + gated
+       behind the same lock-overlay pattern used elsewhere in the wizard. */
+    function lockStepDetails() {
+      stepDetailsLockOverlay.style.display = 'flex';
+      stepDetails.classList.add('opacity-40', 'pointer-events-none', 'select-none');
+    }
+    function unlockStepDetails() {
+      stepDetailsLockOverlay.style.display = 'none';
+      stepDetails.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+    }
+    function lockFlowExisting() {
+      flowExistingStandardLockOverlay.style.display = 'flex';
+      flowExistingStandard.classList.add('opacity-40', 'pointer-events-none', 'select-none');
+    }
+    function unlockFlowExisting() {
+      flowExistingStandardLockOverlay.style.display = 'none';
+      flowExistingStandard.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+    }
+
+    [modeCardNew, modeCardExisting].forEach(function (card) {
+      card.addEventListener('click', function () {
+        selectedMode = card.dataset.mode;
+        [modeCardNew, modeCardExisting].forEach(function (c) { c.classList.remove('selected'); });
+        card.classList.add('selected');
+
+        if (selectedMode === 'new') {
+          unlockStepDetails();
+          lockFlowExisting();
+          flowNewStandard.style.display = 'block';
+        } else {
+          lockStepDetails();
+          unlockFlowExisting();
+          flowNewStandard.style.display = 'none';
+        }
+      });
+    });
+
+    lockStepDetails();
+    lockFlowExisting();
+  })();
+
+  /* =========================================================
+     Lock "What would you like to do?" cards once CMA/Lot has a
+     value, until the standard is actually saved in Capture
+     Reflectance. Prevents switching modes mid-entry.
+  ========================================================== */
+  (function lockModeCardsWhileEditingStandard() {
+    const cma_lot = document.getElementById('cma_lot');
+    const modeCardNew = document.getElementById('modeCardNew');
+    const modeCardExisting = document.getElementById('modeCardExisting');
+    const saveStdBtn = document.getElementById('saveStdBtn');
+    if (!cma_lot || !modeCardNew || !modeCardExisting) return;
+
+    let modeCardsLocked = false;
+
+    function lockModeCards() {
+      if (modeCardsLocked) return;
+      modeCardsLocked = true;
+      modeCardNew.disabled = true;
+      modeCardExisting.disabled = true;
+    }
+
+    function unlockModeCards() {
+      if (!modeCardsLocked) return;
+      modeCardsLocked = false;
+      modeCardNew.disabled = false;
+      modeCardExisting.disabled = false;
+    }
+
+    cma_lot.addEventListener('input', function () {
+      if (cma_lot.value.trim() !== '' && cma_lot.value.trim() !== 'CMA-') {
+        lockModeCards();
+      } else {
+        unlockModeCards();
+      }
+    });
+
+    // Unlocks once the standard is actually saved (Capture Reflectance step)
+    if (saveStdBtn) {
+      saveStdBtn.addEventListener('click', function () {
+        const refChipName = document.getElementById('refChipName');
+        const refChipDe = document.getElementById('refChipDe');
+        const productCodeGlobal = document.getElementById('productCodeGlobal');
+        const csrfEl = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        const csrfToken = csrfEl ? csrfEl.value : '{{ csrf_token }}';
+
+        const standardName = refChipName ? refChipName.textContent.trim() : '';
+        const stdDe = refChipDe ? refChipDe.textContent.trim() : '1.00';
+        const productCode = productCodeGlobal ? productCodeGlobal.value.trim() : '';
+
+        if (!standardName || standardName === '—' || !productCode) {
+          showToast('toastStack', 'Missing product code or standard name — cannot save.', 'danger');
+          return;
+        }
+
+        fetch('{% url "api_save_standard" %}', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: new URLSearchParams({
+            product_code: productCode,
+            standard_name: standardName,
+            std_delta_e: stdDe,
+            csrfmiddlewaretoken: csrfToken,
+          }),
+        })
+          .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+          .then(function (result) {
+            showToast('toastStack', result.data.message, result.data.tone || (result.ok ? 'success' : 'danger'));
+            if (result.ok) {
+              unlockModeCards();
+            }
+          })
+          .catch(function () {
+            showToast('toastStack', 'Network error — please try again.', 'danger');
+          });
+      });
+    }
+
+    window.unlockModeCardsAfterStandardSave = unlockModeCards;
+  })();
+
+  /* =========================================================
+     Standard Details — Dosage field: digits only, "%" fixed
+  ========================================================== */
+  (function dosageField() {
+    const dosage = document.getElementById('dosage');
+    if (!dosage) return;
+    const dosageWarn = document.getElementById('dosageWarn');
+
+    function sanitizeDosage(raw) {
+      let digits = raw.replace(/%/g, '').replace(/[^0-9.]/g, '');
+      const dot = digits.indexOf('.');
+      if (dot !== -1) { digits = digits.slice(0, dot + 1) + digits.slice(dot + 1).replace(/\./g, ''); }
+      return digits;
+    }
+
+    function checkDosageMin() {
+      const numeric = parseFloat(sanitizeDosage(dosage.value));
+      if (dosageWarn) {
+        dosageWarn.style.display = (!isNaN(numeric) && sanitizeDosage(dosage.value).length > 0 && numeric < 1.000) ? 'block' : 'none';
+      }
+    }
+
+    // keep the caret to the left of the fixed "%" no matter where the
+    // user clicked/typed
+    function pinCaretBeforePercent() {
+      const pos = Math.max(dosage.value.length - 1, 0);
+      try { dosage.setSelectionRange(pos, pos); } catch (e) {}
+    }
+
+    if (!dosage.value) dosage.value = '%';
+
+    dosage.addEventListener('input', function () {
+      const digits = sanitizeDosage(dosage.value);
+      dosage.value = digits + '%';
+      pinCaretBeforePercent();
+      checkDosageMin();
+      if (window.updateStandardPreview) window.updateStandardPreview();
+    });
+
+    // default click behavior would happily place the caret after the "%"
+    // (or anywhere in the string) -- force it back to just before "%"
+    dosage.addEventListener('click', function () {
+      pinCaretBeforePercent();
+    });
+    dosage.addEventListener('focus', function () {
+      pinCaretBeforePercent();
+    });
+
+    dosage.addEventListener('keydown', function (e) {
+      // block Delete/ArrowRight from ever moving past the "%" character
+      const percentIndex = dosage.value.length - 1;
+      if ((e.key === 'Delete' || e.key === 'ArrowRight') && dosage.selectionStart >= percentIndex) {
+        e.preventDefault();
+      }
+    });
+
+    dosage.addEventListener('blur', function () {
+      const v = dosage.value.trim();
+      const DOSAGE_FORMAT_RE = /^\d{1,2}\.\d{1}%$/;
+      if (v !== '%' && !DOSAGE_FORMAT_RE.test(v)) {
+        showToast('toastStack', 'Dosage must follow the format 0.0% or 00.0%', 'error');
+        dosage.classList.add('error');
+      } else {
+        dosage.classList.remove('error');
+      }
+    });
+  })();
+
+  /* =========================================================
+     Standard Details — CMA/Lot field + reference name preview
+  ========================================================== */
+  (function cmaLotAndPreview() {
+    const cma_lot = document.getElementById('cma_lot');
+    const dosage = document.getElementById('dosage');
+    const prefixSelect = document.getElementById('prefixSelect');
+    const previewName = document.getElementById('previewName');
+    if (!cma_lot || !previewName) return;
+
+    // (b) accepts either plain lot format (e.g. 1234A) or CMA-prefixed lot
+    // format (e.g. CMA-1234A). (c) 1-5 digits is enough -- a single digit
+    // alone is treated as a complete whole number, not flagged as
+    // incomplete, as long as it isn't mid-decimal.
+    const CMA_LOT_RE = /^(CMA-)?\d{1,5}[A-Za-z]{0,2}$/i;
+
+    // (a) prefilled on load, user is free to delete it entirely
+    if (!cma_lot.value) cma_lot.value = 'CMA-';
+
+    function isCmaTyped() {
+      const v = cma_lot.value.trim().toUpperCase();
+      return v !== '' && v !== 'CMA-';
+    }
+
+    function isDosageTyped() {
+      if (!dosage) return true;
+      const v = dosage.value.trim();
+      return v !== '' && v !== '%';
+    }
+
+    function validateCmaFormat(silent) {
+      const v = cma_lot.value.trim();
+      if (!isCmaTyped()) return false; // nothing real typed yet -- not an error, just incomplete
+      const valid = CMA_LOT_RE.test(v);
+      if (!valid && !silent) {
+        showToast('toastStack', 'Invalid CMA/Lot format — use a lot number (e.g. 1234A) or CMA-lot format (e.g. CMA-1234A).', 'error');
+      }
+      return valid;
+    }
+
+    // (d) preview only shows once both fields are complete AND valid
+    function updatePreview() {
+      const cmaValid = isCmaTyped() && CMA_LOT_RE.test(cma_lot.value.trim());
+      const dosageValid = isDosageTyped();
+
+      if (cmaValid && dosageValid) {
+        const label = prefixSelect ? prefixSelect.value : 'STD';
+        previewName.innerHTML = [label, cma_lot.value.trim(), dosage.value.trim()].join(' ');
+      } else {
+        previewName.innerHTML = '<span class="placeholder text-[#a1a1aa] font-normal">Fill in the fields above…</span>';
+      }
+    }
+    window.updateStandardPreview = updatePreview;
+
+    cma_lot.addEventListener('input', function () {
+      // light sanitize only -- letters, digits, hyphen (no forced
+      // re-injection of "CMA-", the user can delete it freely)
+      const pos = cma_lot.selectionStart;
+      const before = cma_lot.value;
+      cma_lot.value = cma_lot.value.replace(/[^A-Za-z0-9\-]/g, '').toUpperCase();
+      if (cma_lot.value.length !== before.length) {
+        try { cma_lot.setSelectionRange(pos, pos); } catch (e) {}
+      }
+      updatePreview();
+    });
+
+    // (b) invalid format only ever flags on toast, on blur -- never inline,
+    // never on load
+    cma_lot.addEventListener('blur', function () {
+      validateCmaFormat(false);
+    });
+
+    updatePreview();
+  })();
 </script>
 {% endblock %}
