@@ -74,6 +74,15 @@ class SpectroStandard(models.Model):
     standard_name = models.CharField(max_length=255)
     date_time = models.DateTimeField(auto_now_add=True)
     is_active_standard = models.BooleanField(default=True)
+    # Raw L*a*b*C*h values captured during Step 2 "Capture Reflectance".
+    # default=0.00 exists only to satisfy the migration for existing rows --
+    # application code (save_standard) rejects missing/blank values on
+    # every new save, so 0.00 should never appear on a newly created row.
+    raw_l = models.DecimalField(max_digits=8, decimal_places=4, default=0)
+    raw_a = models.DecimalField(max_digits=8, decimal_places=4, default=0)
+    raw_b = models.DecimalField(max_digits=8, decimal_places=4, default=0)
+    raw_c = models.DecimalField(max_digits=8, decimal_places=4, default=0)
+    raw_h = models.DecimalField(max_digits=8, decimal_places=4, default=0)
     record = models.ForeignKey(
         SpectrometerRecord, on_delete=models.CASCADE,
         related_name="standards", db_column="record_id",

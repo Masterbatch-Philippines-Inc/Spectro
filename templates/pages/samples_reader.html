@@ -1,6 +1,21 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block extra_css %}
+<style>
+  .glow-border { animation: glowBorder 1.6s ease-in-out 3; border-color: hsl(var(--primary)) !important; }
+  @keyframes glowBorder {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(24,24,27,0); }
+    50% { box-shadow: 0 0 0 4px rgba(24,24,27,.12); }
+  }
+  .aperture .ring{ transform-origin:48px 48px; }
+  .aperture .pulse{ transform-origin:48px 48px;}
+  .aperture.scanning .ring{ animation:spin 1.1s linear infinite; }
+  .aperture.scanning .pulse{ animation:pulseRing 1.4s ease-out infinite; }
+  @keyframes pulseRing{ 0%{ opacity:.55; transform:scale(.7);} 100%{ opacity:0; transform:scale(1.35);} }
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="flex-1 min-h-0 flex overflow-hidden">
 
@@ -45,7 +60,7 @@
             Offline
           </span>
         </div>
-        {% include "components/shared/ui/button.html" with btn_id="connectBtn" btn_variant="primary" btn_label=" " btn_extra_class="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]" btn_icon_svg='<span class="spinner"></span><span class="btn-label" id="connectLabel">Connect BLE Dongle</span>' %}
+        {% include "components/shared/ui/button.html" with btn_id="connectBtn" btn_variant="primary" btn_label=" " btn_extra_class="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]" btn_icon_svg='<span class="spinner"></span><span class="btn-label" id="connectLabel">Connect to Instument</span>' %}
 
         <div id="deviceInfo" style="display:none;">
           <div class="h-px bg-[hsl(var(--border))] my-4"></div>
@@ -151,28 +166,6 @@
               </div>
             </div>
 
-            <!-- FLOW B: EXISTING STANDARD -- moved directly under "What would
-                 you like to do?", locked until that option is chosen -->
-            <div id="flowExistingStandardWrap" class="relative">
-              <div id="flowExistingStandardLockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
-                <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm text-center">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  Choose "Use Existing Standard" instead
-                </div>
-              </div>
-              <div id="flowExistingStandard" class="opacity-40 pointer-events-none select-none transition-opacity duration-300">
-                <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
-                  <p class="text-sm font-semibold m-0">Use Existing Standard</p>
-                  <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Picking this option means the latest standard under this product code will be used across the samples.</p>
-
-                  <div class="field mb-3.5">
-                    <label for="existingStandardSelect" class="block text-xs font-semibold mb-1.5">Standard</label>
-                    <select class="select w-full text-[13px] py-2.5 pl-2.5 pr-[30px] rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none appearance-none bg-no-repeat bg-[right_10px_center] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="existingStandardSelect" disabled style="background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2714%27 height=%2714%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2371717a%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpolyline points=%276 9 12 15 18 9%27/%3E%3C/svg%3E');"><option value="">Select product code first…</option></select>
-                    <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Only standards already saved for this product code appear here. Selecting one opens the sample fields below.</div>
-                  </div>
-                </div>
-              </div>
-            </div>
             </div>
             <div id="stepDetailsWrap" class="relative">
               <div id="stepDetailsLockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
@@ -241,13 +234,16 @@
                     <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">a*</div><div class="font-mono text-[13px] font-semibold" id="valA1">—</div></div>
                     <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">b*</div><div class="font-mono text-[13px] font-semibold" id="valB1">—</div></div>
                   </div>
-                  <div class="flex justify-center mb-[18px]"><span class="badge success inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-[3px] rounded-full border whitespace-nowrap"><span class="bdot w-1.5 h-1.5 rounded-full"></span>Capture successful</span></div>
                 </div>
 
                 <div class="flex gap-2.5">
-                  <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition" style="flex:2;" id="measureBtn1"><span class="spinner"></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span class="btn-label" id="measureLabel1">Read Reference</span></button>
-                  <button class="btn bg-[hsl(var(--card))] border border-[hsl(var(--border))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:bg-[hsl(var(--accent))] transition" style="flex:1; display:none;" id="rereadStdBtn">Re-read</button>
-                  <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition" style="flex:1; display:none;" id="saveStdBtn">Save</button>
+                  {% include "components/shared/ui/button.html" with btn_id="measureBtn1" btn_variant="primary" btn_label=" " btn_extra_class="flex-[2] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]" btn_icon_svg='<span class="spinner"></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span class="btn-label" id="measureLabel1">Read Reference</span>' %}
+                  <div id="rereadStdBtnWrap" style="display:none;" class="flex-1">
+                    {% include "components/shared/ui/button.html" with btn_id="rereadStdBtn" btn_variant="secondary" btn_label="Re-read" btn_extra_class="w-full border border-[hsl(var(--border))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:bg-[hsl(var(--accent))] transition" %}
+                  </div>
+                  <div id="saveStdBtnWrap" style="display:none;" class="flex-1">
+                    {% include "components/shared/ui/button.html" with btn_id="saveStdBtn" btn_variant="primary" btn_label="Accept Reading" btn_extra_class="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer hover:opacity-90 transition" %}
+                  </div>
                 </div>
               </div>
             </div>
@@ -265,7 +261,7 @@
           STEP 3 — INPUT SAMPLES DATA
     ==================================================== -->
     <div class="step-panel max-w-full mx-auto px-5 pb-[60px]" id="stepPanel3">
-      <div class="step-page wide max-w-full mx-auto px-5 pb-[60px]" id="page3">
+      <div class="step-page wide max-w-full mx-auto px-5" id="page3">
         <div id="step3Lock" class="relative">
           <div id="step3LockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
             <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm">
@@ -355,6 +351,32 @@
   // the final atomic save button (built in a later task), never written
   // to the DB from here.
   const wizardDevice = { model: null, serial: null };
+
+  // Task 1 — fixed dev raw values for reference capture
+  const RAW_VALUES = { L: 36.19, C: 36.36, h: 271.19, a: 0.76, b: -36.35 };
+
+  // Task 8 (3) — holds the captured standard's raw values + name/DE in
+  // session/memory until Step 3's "Finish Reading" actually persists it.
+  const wizardStandard = {
+    productCode: null,
+    standardName: null,
+    stdDe: null,
+    raw: null, // { raw_l, raw_a, raw_b, raw_c, raw_h }
+    savedToDb: false,
+  };
+
+  // Task 10 — warn before leaving the page if a standard's raw values
+  // are captured in session but not yet persisted (Finish Reading not
+  // clicked yet). Native browsers show their own generic message text;
+  // the string here is ignored by most modern browsers but kept for
+  // older engines that still respect it.
+  window.addEventListener('beforeunload', function (e) {
+    if (wizardStandard.raw && !wizardStandard.savedToDb) {
+      e.preventDefault();
+      e.returnValue = 'Standard raw values captured but not saved yet — leaving now will lose this data.';
+      return e.returnValue;
+    }
+  });
 
   function scrollToNextCard(el) {
     if (!el) return;
@@ -503,7 +525,7 @@
   function doConnect() {
     connectBtn.classList.add('loading');
     connectBtn.disabled = true;
-    connectLabel.textContent = 'Scanning for dongle…';
+    connectLabel.textContent = 'Scanning for spectrometer…';
     setBadge('connecting');
     if (connSubtitle) connSubtitle.textContent = 'Searching for BLE spectrometer…';
 
@@ -554,10 +576,10 @@
       .catch(function (err) {
         connectBtn.classList.remove('loading');
         connectBtn.disabled = false;
-        connectLabel.textContent = 'Connect BLE Dongle';
+        connectLabel.textContent = 'Connect to Instument';
         setBadge('offline');
         if (connSubtitle) connSubtitle.textContent = 'Not linked to a spectrometer yet';
-        showToast('toastStack', 'Connection failed.', 'danger');
+        showToast('toastStack', 'Instrument not found.', 'error');
         console.error(err);
       });
   }
@@ -579,7 +601,7 @@
       connectBtn.disabled = false;
       connectBtn.classList.remove('text-[hsl(var(--danger))]', 'border-[hsl(var(--danger-border))]', 'bg-[hsl(var(--danger-bg))]');
       connectBtn.classList.add('bg-[hsl(var(--primary))]', 'text-[hsl(var(--primary-foreground))]', 'border-[hsl(var(--primary))]');
-      connectLabel.textContent = 'Connect BLE Dongle';
+      connectLabel.textContent = 'Connect to Instument';
       setBadge('offline');
       if (connSubtitle) connSubtitle.textContent = 'Not linked to a spectrometer yet';
       if (deviceInfo) deviceInfo.style.display = 'none';
@@ -689,10 +711,113 @@
   if (blackBtn) blackBtn.addEventListener('click', function () { runCalibration('black'); });
   if (whiteBtn) whiteBtn.addEventListener('click', function () { runCalibration('white'); });
 
+  /* ---- Task 2: Read Reference (Capture Reflectance) ---- */
+  (function readReference() {
+    const measureBtn1 = document.getElementById('measureBtn1');
+    const measureLabel1 = document.getElementById('measureLabel1');
+    const aperture1 = document.getElementById('apertureSvg1');
+    const statusText1 = document.getElementById('statusText1');
+    const statusSub1 = document.getElementById('statusSub1');
+    const resultsBlock1 = document.getElementById('resultsBlock1');
+    const rereadStdBtn = document.getElementById('rereadStdBtn');
+    const saveStdBtn = document.getElementById('saveStdBtn');
+    if (!measureBtn1) return;
+
+    function fillResults() {
+      const raw_l = RAW_VALUES.L;
+      const raw_c = RAW_VALUES.C;
+      const raw_h = RAW_VALUES.h;
+      const raw_a = RAW_VALUES.a;
+      const raw_b = RAW_VALUES.b;
+
+      document.getElementById('valL1').textContent = raw_l.toFixed(2);
+      document.getElementById('valC1').textContent = raw_c.toFixed(2);
+      document.getElementById('valH1').textContent = raw_h.toFixed(2);
+      document.getElementById('valA1').textContent = raw_a.toFixed(2);
+      document.getElementById('valB1').textContent = raw_b.toFixed(2);
+    }
+
+    function runReadReference() {
+      measureBtn1.classList.add('loading');
+      measureBtn1.disabled = true;
+      measureLabel1.textContent = 'Scanning…';
+      if (aperture1) aperture1.classList.add('scanning');
+      if (statusText1) statusText1.textContent = 'Measuring standard…';
+      if (statusSub1) statusSub1.textContent = 'Keep the aperture still and flat against the sample.';
+
+      setTimeout(function () {
+        if (aperture1) aperture1.classList.remove('scanning');
+        measureBtn1.classList.remove('loading');
+        measureBtn1.style.display = 'none';
+        const saveStdBtnWrap = document.getElementById('saveStdBtnWrap');
+        const rereadStdBtnWrap = document.getElementById('rereadStdBtnWrap');
+        if (saveStdBtnWrap) saveStdBtnWrap.style.display = 'block';
+        if (rereadStdBtnWrap) rereadStdBtnWrap.style.display = 'block';
+
+        fillResults();
+        if (resultsBlock1) resultsBlock1.style.display = 'block';
+        if (statusText1) statusText1.textContent = 'Capture complete';
+        if (statusSub1) statusSub1.textContent = 'Review the readings, then save the standard.';
+        showToast('toastStack', 'Reference captured successfully', 'success');
+      }, 1500);
+    }
+
+    measureBtn1.addEventListener('click', runReadReference);
+
+    if (saveStdBtn) {
+      saveStdBtn.addEventListener('click', function () {
+        const productCodeGlobal = document.getElementById('productCodeGlobal');
+        const refChipName = document.getElementById('refChipName');
+        const refChipDe = document.getElementById('refChipDe');
+
+        wizardStandard.productCode = productCodeGlobal ? productCodeGlobal.value.trim() : null;
+        wizardStandard.standardName = refChipName ? refChipName.textContent.trim() : null;
+        wizardStandard.stdDe = refChipDe ? refChipDe.textContent.trim() : '1.00';
+        wizardStandard.raw = {
+          raw_l: RAW_VALUES.L,
+          raw_a: RAW_VALUES.a,
+          raw_b: RAW_VALUES.b,
+          raw_c: RAW_VALUES.C,
+          raw_h: RAW_VALUES.h,
+        };
+
+        showToast('toastStack', 'Standard raw values save into session', 'info');
+        scrollToNextCard(document.getElementById('stepPanel3'));
+      });
+    }
+
+    function clearResults() {
+      ['valL1', 'valC1', 'valH1', 'valA1', 'valB1'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '—';
+      });
+    }
+
+    if (rereadStdBtn) {
+      rereadStdBtn.addEventListener('click', function () {
+        const saveStdBtnWrap = document.getElementById('saveStdBtnWrap');
+        const rereadStdBtnWrap = document.getElementById('rereadStdBtnWrap');
+        if (rereadStdBtnWrap) rereadStdBtnWrap.style.display = 'none';
+        if (saveStdBtnWrap) saveStdBtnWrap.style.display = 'none';
+        measureBtn1.style.display = 'inline-flex';
+        measureBtn1.disabled = false;
+        measureBtn1.classList.remove('loading');
+        measureLabel1.textContent = 'Read Reference';
+        clearResults();
+        if (resultsBlock1) resultsBlock1.style.display = 'none';
+        if (statusText1) statusText1.textContent = 'Ready to scan';
+        if (statusSub1) statusSub1.textContent = 'Press the button below once the sample is in position.';
+        showToast('toastStack', 'Ready to re-read the standard', 'info');
+      });
+    }
+  })();
+
   window.addEventListener('load', function () {
     setBadge('offline');
     setCalibrateButtonsEnabled(false);
     renderStepper();
+    // Task 12 — auto-attempt connection the moment the page loads
+    doConnect();
   });
 
   window.getScatterPlotPoints = function () {
@@ -718,8 +843,6 @@
     const stepDetailsWrap = document.getElementById('stepDetailsWrap');
     const stepDetailsLockOverlay = document.getElementById('stepDetailsLockOverlay');
     const stepDetails = document.getElementById('stepDetails');
-    const flowExistingStandardLockOverlay = document.getElementById('flowExistingStandardLockOverlay');
-    const flowExistingStandard = document.getElementById('flowExistingStandard');
 
     const PRODUCT_CODE_RE = /^[A-Z]{2}\d{1,5}E(-I)?$/;
     let existingCodes = [];
@@ -842,6 +965,26 @@
       modeSelectContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
     }
 
+    // Task 10 (revised) — once Step 2 is completed, disable the specific
+    // interactive elements below and dim the whole step2LockedContent
+    // wrapper to .5 opacity, instead of the broader card-level locking.
+    function lockStep2Cards() {
+      const step2LockedContent = document.getElementById('step2LockedContent');
+      const editRefBtn = document.getElementById('editRefBtn');
+      const rereadStdBtn = document.getElementById('rereadStdBtn');
+      const saveStdBtn = document.getElementById('saveStdBtn');
+      const modeCardGroup = document.getElementById('modeCardGroup');
+
+      if (step2LockedContent) step2LockedContent.style.opacity = '.5';
+
+      if (productCodeGlobal) productCodeGlobal.disabled = true;
+      if (modeCardGroup) modeCardGroup.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+      if (editRefBtn) editRefBtn.disabled = true;
+      if (rereadStdBtn) rereadStdBtn.disabled = true;
+      if (saveStdBtn) saveStdBtn.disabled = true;
+    }
+    window.lockStep2CardsAfterStep3 = lockStep2Cards;
+
     productCodeGlobal.addEventListener('input', function () {
       productCodeGlobal.value = productCodeGlobal.value.toUpperCase();
       validateProductCode();
@@ -884,13 +1027,66 @@
       stepDetailsLockOverlay.style.display = 'none';
       stepDetails.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
     }
-    function lockFlowExisting() {
-      flowExistingStandardLockOverlay.style.display = 'flex';
-      flowExistingStandard.classList.add('opacity-40', 'pointer-events-none', 'select-none');
+    // Task 11 — "Use Existing Standard" no longer has its own panel.
+    // Clicking it directly looks up the active standard for the current
+    // product code and, if found, jumps straight into Step 3.
+    function fetchStandardsForCurrentProductCode() {
+      const v = productCodeGlobal.value.trim().toUpperCase();
+      return fetch('{% url "api_standards_for_product_code" %}?product_code=' + encodeURIComponent(v), {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      }).then(function (res) { return res.json(); });
     }
-    function unlockFlowExisting() {
-      flowExistingStandardLockOverlay.style.display = 'none';
-      flowExistingStandard.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+
+    function useExistingStandardFlow() {
+      fetchStandardsForCurrentProductCode()
+        .then(function (data) {
+          const standards = data.standards || [];
+          if (!standards.length) {
+            showToast('toastStack', 'No Standard data for this product code yet.', 'info');
+            selectedMode = 'new';
+            [modeCardNew, modeCardExisting].forEach(function (c) { c.classList.remove('selected'); });
+            modeCardNew.classList.add('selected');
+            unlockStepDetails();
+            flowNewStandard.style.display = 'block';
+            if (stepDetails) {
+              stepDetails.classList.add('glow-border');
+              setTimeout(function () { stepDetails.classList.remove('glow-border'); }, 4800);
+            }
+            return;
+          }
+
+          const active = standards[0]; // ordered -is_active_standard, -date_time
+          const sampleRefChipName = document.getElementById('sampleRefChipName');
+          const sampleRefChipDe = document.getElementById('sampleRefChipDe');
+          const sampleRefChipProductCode = document.getElementById('sampleRefChipProductCode');
+
+          if (sampleRefChipName) sampleRefChipName.textContent = active.standard_name;
+          if (sampleRefChipDe) {
+            sampleRefChipDe.textContent = (data.std_delta_e_used !== null && data.std_delta_e_used !== undefined)
+              ? '   (Standard ΔE: ' + Number(data.std_delta_e_used).toFixed(2) + ')'
+              : '';
+          }
+          if (sampleRefChipProductCode) sampleRefChipProductCode.textContent = productCodeGlobal.value.trim();
+
+          wizardStandard.productCode = productCodeGlobal.value.trim();
+          wizardStandard.standardName = active.standard_name;
+          wizardStandard.stdDe = data.std_delta_e_used;
+          wizardStandard.savedToDb = true; // already exists in DB, nothing new to persist
+
+          completedSteps.add(2);
+          renderStepper();
+          if (window.lockStep2CardsAfterStep3) window.lockStep2CardsAfterStep3();
+
+          const step3LockOverlay = document.getElementById('step3LockOverlay');
+          const step3LockedContent = document.getElementById('step3LockedContent');
+          if (step3LockOverlay) step3LockOverlay.style.display = 'none';
+          if (step3LockedContent) step3LockedContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+
+          scrollToNextCard(document.getElementById('stepPanel3'));
+        })
+        .catch(function () {
+          showToast('toastStack', 'Failed to load standards for this product code.', 'danger');
+        });
     }
 
     [modeCardNew, modeCardExisting].forEach(function (card) {
@@ -901,19 +1097,16 @@
 
         if (selectedMode === 'new') {
           unlockStepDetails();
-          lockFlowExisting();
           flowNewStandard.style.display = 'block';
         } else {
           lockStepDetails();
-          unlockFlowExisting();
           flowNewStandard.style.display = 'none';
-          scrollToNextCard(document.getElementById('stepPanel3'));
+          useExistingStandardFlow();
         }
       });
     });
 
     lockStepDetails();
-    lockFlowExisting();
 
     const continueBtn = document.getElementById('continueBtn');
     const stepMeasureCard = document.getElementById('stepMeasure');
@@ -947,13 +1140,7 @@
       });
     }
 
-    const existingStandardSelect = document.getElementById('existingStandardSelect');
-    if (existingStandardSelect) {
-      existingStandardSelect.addEventListener('change', function () {
-        if (!existingStandardSelect.value) return;
-        scrollToNextCard(document.getElementById('stepPanel3'));
-      });
-    }
+
   })();
 
   /* =========================================================
@@ -992,45 +1179,14 @@
       }
     });
 
-    // Unlocks once the standard is actually saved (Capture Reflectance step)
+    // Mode cards now unlock immediately on Save click (Task 8) -- the
+    // actual DB save is deferred to Step 3's "Finish Reading" button.
     if (saveStdBtn) {
       saveStdBtn.addEventListener('click', function () {
-        const refChipName = document.getElementById('refChipName');
-        const refChipDe = document.getElementById('refChipDe');
-        const productCodeGlobal = document.getElementById('productCodeGlobal');
-        const csrfEl = document.querySelector('input[name="csrfmiddlewaretoken"]');
-        const csrfToken = csrfEl ? csrfEl.value : '{{ csrf_token }}';
-
-        const standardName = refChipName ? refChipName.textContent.trim() : '';
-        const stdDe = refChipDe ? refChipDe.textContent.trim() : '1.00';
-        const productCode = productCodeGlobal ? productCodeGlobal.value.trim() : '';
-
-        if (!standardName || standardName === '—' || !productCode) {
-          showToast('toastStack', 'Missing product code or standard name — cannot save.', 'danger');
-          return;
-        }
-
-        fetch('{% url "api_save_standard" %}', {
-          method: 'POST',
-          headers: { 'X-Requested-With': 'XMLHttpRequest' },
-          body: new URLSearchParams({
-            product_code: productCode,
-            standard_name: standardName,
-            std_delta_e: stdDe,
-            csrfmiddlewaretoken: csrfToken,
-          }),
-        })
-          .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-          .then(function (result) {
-            showToast('toastStack', result.data.message, result.data.tone || (result.ok ? 'success' : 'danger'));
-            if (result.ok) {
-              unlockModeCards();
-              scrollToNextCard(document.getElementById('stepPanel3'));
-            }
-          })
-          .catch(function () {
-            showToast('toastStack', 'Network error — please try again.', 'danger');
-          });
+        unlockModeCards();
+        completedSteps.add(2);
+        renderStepper();
+        if (window.lockStep2CardsAfterStep3) window.lockStep2CardsAfterStep3();
       });
     }
 
@@ -1246,6 +1402,61 @@
     });
 
     updatePreview();
+  })();
+
+  /* =========================================================
+     Task 8 (2) — Step 3 "Finish Reading" actually persists the
+     standard (name, DE, raw values) that was held in wizardStandard.
+  ========================================================== */
+  (function finishReading() {
+    const finishSessionBtn = document.getElementById('finishSessionBtn');
+    if (!finishSessionBtn) return;
+
+    function getCsrfToken() {
+      const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      return el ? el.value : '{{ csrf_token }}';
+    }
+
+    finishSessionBtn.addEventListener('click', function () {
+      if (!wizardStandard.productCode || !wizardStandard.standardName || !wizardStandard.raw) {
+        showToast('toastStack', 'Missing standard data — cannot finish reading.', 'danger');
+        return;
+      }
+
+      finishSessionBtn.disabled = true;
+
+      fetch('{% url "api_save_standard" %}', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: new URLSearchParams({
+          product_code: wizardStandard.productCode,
+          standard_name: wizardStandard.standardName,
+          std_delta_e: wizardStandard.stdDe,
+          raw_l: wizardStandard.raw.raw_l,
+          raw_a: wizardStandard.raw.raw_a,
+          raw_b: wizardStandard.raw.raw_b,
+          raw_c: wizardStandard.raw.raw_c,
+          raw_h: wizardStandard.raw.raw_h,
+          csrfmiddlewaretoken: getCsrfToken(),
+        }),
+      })
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (result) {
+          showToast('toastStack', result.data.message, result.data.tone || (result.ok ? 'success' : 'danger'));
+          if (result.ok) {
+            wizardStandard.savedToDb = true;
+            completedSteps.add(1); completedSteps.add(2); completedSteps.add(3);
+            currentStep = 3;
+            renderStepper();
+          }
+        })
+        .catch(function () {
+          showToast('toastStack', 'Network error — please try again.', 'danger');
+        })
+        .finally(function () {
+          finishSessionBtn.disabled = false;
+        });
+    });
   })();
 </script>
 {% endblock %}

@@ -68,12 +68,19 @@ def render_samples_reader(request):
 def save_standard(request):
     """
     Saves a new SpectroStandard under the given product code's
-    SpectrometerRecord.
+    SpectrometerRecord. Called only at Step 3's "Finish Reading" --
+    NOT at the moment the reference is captured -- so the standard row
+    only exists once the whole session is actually complete.
 
     Rule: the newly saved standard is always is_active_standard=True.
     Any other standard already under that same record has its
     is_active_standard flipped to False -- there is only ever one
     active standard per product code at a time.
+
+    Raw L/a/b/C/h values are REQUIRED on every new save -- none of them
+    may be blank/missing. Existing rows created before these columns
+    existed default to 0.00 at the DB level, but that default is never
+    something this endpoint will itself write.
     """
     if request.method != "POST":
         return JsonResponse({"tone": "danger", "message": "Invalid request method."}, status=405)
@@ -82,10 +89,26 @@ def save_standard(request):
     standard_name = request.POST.get("standard_name", "").strip()
     std_delta_e = request.POST.get("std_delta_e", "").strip()
 
+    raw_fields = {}
+    for key in ("raw_l", "raw_a", "raw_b", "raw_c", "raw_h"):
+        raw_fields[key] = request.POST.get(key, "").strip()
+
     if not product_code:
         return JsonResponse({"tone": "danger", "message": "Product code is required."}, status=400)
     if not standard_name:
         return JsonResponse({"tone": "danger", "message": "Standard name is required."}, status=400)
+
+    missing_raw = [key for key, val in raw_fields.items() if val == ""]
+    if missing_raw:
+        return JsonResponse({
+            "tone": "danger",
+            "message": "Missing raw value(s): " + ", ".join(missing_raw),
+        }, status=400)
+
+    try:
+        raw_values = {key: float(val) for key, val in raw_fields.items()}
+    except ValueError:
+        return JsonResponse({"tone": "danger", "message": "Raw values must be valid numbers."}, status=400)
 
     record = SpectrometerRecord.objects.filter(product_code=product_code).first()
     if not record:
@@ -103,6 +126,11 @@ def save_standard(request):
         standard_name=standard_name,
         record=record,
         is_active_standard=True,
+        raw_l=raw_values["raw_l"],
+        raw_a=raw_values["raw_a"],
+        raw_b=raw_values["raw_b"],
+        raw_c=raw_values["raw_c"],
+        raw_h=raw_values["raw_h"],
     )
 
     if record.std_delta_e_used != std_delta_e_value:
