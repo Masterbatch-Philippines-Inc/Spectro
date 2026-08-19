@@ -1140,9 +1140,6 @@
   .text-foreground {
     color: var(--color-foreground);
   }
-  .text-muted {
-    color: var(--color-muted);
-  }
   .text-muted-foreground {
     color: var(--color-muted-foreground);
   }

@@ -112,7 +112,7 @@
 
                 <div class="field mb-3.5 relative">
                   <label for="productCodeGlobal" class="block text-xs font-semibold mb-1.5">Product Code</label>
-                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))]" id="productCodeGlobal" placeholder="e.g. XX00000E" autocomplete="off" maxlength="10">
+                  {% include "components/shared/ui/input.html" with input_id="productCodeGlobal" input_type="text" input_placeholder="e.g. XX00000E" input_class="w-full py-2.5 rounded-lg" input_autocomplete="off" input_maxlength="10" %}
                   <div id="productCodeSuggestions" class="absolute left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-md max-h-[180px] overflow-y-auto z-50" style="display:none;"></div>
                   <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Format: <strong>XX00000E</strong> or <strong>XX00000E-I</strong> (2 letters, up to 5 digits, then "E", with an optional "-I" suffix).</div>
                   <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="productCodeGlobalErr" style="display:none;">Invalid format — must be 2 letters, up to 5 digits, then "E", with an optional "-I" suffix.</div>
@@ -212,10 +212,6 @@
                 <div class="h-px bg-[hsl(var(--border))] my-4"></div>
                 <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 w-full hover:opacity-90 transition" id="continueBtn"><span id="continueLabel">Continue to Measurement</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
               </div>
-            </div>
-            </div>
-            <!-- FLOW A continued: measurement (full width, below the side-by-side row) -->
-            <div id="flowNewStandard" style="display:none;">
               <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4" id="stepMeasure" style="display:none;">
                 <p class="text-sm font-semibold m-0">Capture Reflectance</p>
                 <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Place the spectrometer aperture flat on the reference sample.</p>
@@ -254,7 +250,10 @@
                   <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition" style="flex:1; display:none;" id="saveStdBtn">Save</button>
                 </div>
               </div>
-
+            </div>
+            </div>
+            <!-- FLOW A continued: measurement now lives inside stepDetailsWrap (see stepMeasure below stepDetails), sharing the same reserved space -->
+            <div id="flowNewStandard" style="display:none;">
               <p class="text-center text-[11.5px] text-[hsl(var(--muted-foreground))] mt-5 leading-relaxed">Standards are stored once and reused across every sample comparison.</p>
             </div>
           </div>
@@ -356,6 +355,11 @@
   // the final atomic save button (built in a later task), never written
   // to the DB from here.
   const wizardDevice = { model: null, serial: null };
+
+  function scrollToNextCard(el) {
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   // ===========================================================
   // DEV TOGGLE — flip to false once the real agent + DB flow is
@@ -619,6 +623,7 @@
     if (step1FooterNote) step1FooterNote.style.display = 'none';
     completedSteps.add(1);
     renderStepper();
+    scrollToNextCard(document.getElementById('stepPanel2'));
   }
 
   function relockStep2() {
@@ -902,12 +907,53 @@
           lockStepDetails();
           unlockFlowExisting();
           flowNewStandard.style.display = 'none';
+          scrollToNextCard(document.getElementById('stepPanel3'));
         }
       });
     });
 
     lockStepDetails();
     lockFlowExisting();
+
+    const continueBtn = document.getElementById('continueBtn');
+    const stepMeasureCard = document.getElementById('stepMeasure');
+    const refChipName = document.getElementById('refChipName');
+    const refChipDe = document.getElementById('refChipDe');
+    const stdDeInput = document.getElementById('stdDeInput');
+
+    function syncRefChipFromStandardDetails() {
+      if (refChipName && window.getStandardPreviewText) {
+        refChipName.textContent = window.getStandardPreviewText();
+      }
+      if (refChipDe && stdDeInput) {
+        refChipDe.textContent = stdDeInput.value || '1.00';
+      }
+    }
+
+    if (continueBtn) {
+      continueBtn.addEventListener('click', function () {
+        if (window.validateStandardDetails && !window.validateStandardDetails()) return;
+        syncRefChipFromStandardDetails();
+        if (stepDetails) stepDetails.style.display = 'none';
+        if (stepMeasureCard) stepMeasureCard.style.display = 'block';
+      });
+    }
+
+    const editRefBtn = document.getElementById('editRefBtn');
+    if (editRefBtn) {
+      editRefBtn.addEventListener('click', function () {
+        if (stepMeasureCard) stepMeasureCard.style.display = 'none';
+        if (stepDetails) stepDetails.style.display = 'block';
+      });
+    }
+
+    const existingStandardSelect = document.getElementById('existingStandardSelect');
+    if (existingStandardSelect) {
+      existingStandardSelect.addEventListener('change', function () {
+        if (!existingStandardSelect.value) return;
+        scrollToNextCard(document.getElementById('stepPanel3'));
+      });
+    }
   })();
 
   /* =========================================================
@@ -979,6 +1025,7 @@
             showToast('toastStack', result.data.message, result.data.tone || (result.ok ? 'success' : 'danger'));
             if (result.ok) {
               unlockModeCards();
+              scrollToNextCard(document.getElementById('stepPanel3'));
             }
           })
           .catch(function () {
@@ -1073,6 +1120,7 @@
     // alone is treated as a complete whole number, not flagged as
     // incomplete, as long as it isn't mid-decimal.
     const CMA_LOT_RE = /^(CMA-)?\d{1,5}[A-Za-z]{0,2}$/i;
+    const DOSAGE_FORMAT_RE = /^\d{1,2}\.\d{1}%$/;
 
     // (a) prefilled on load, user is free to delete it entirely
     if (!cma_lot.value) cma_lot.value = 'CMA-';
@@ -1111,6 +1159,73 @@
       }
     }
     window.updateStandardPreview = updatePreview;
+    window.getStandardPreviewText = function () {
+      return previewName.textContent.trim();
+    };
+
+    /* ---- Sequential validation (Task: Continue to Measurement gate) ----
+       Each check is its own small function; the orchestrator below just
+       calls them in order and stops at the first failure. Keeps the
+       "what step failed" logic out of the click handler entirely. */
+    const seqWarning = document.getElementById('seqWarning');
+    const seqWarningText = document.getElementById('seqWarningText');
+
+    function showSeqWarning(message) {
+      if (seqWarningText) seqWarningText.textContent = message;
+      if (seqWarning) seqWarning.style.display = 'flex';
+    }
+
+    function hideSeqWarning() {
+      if (seqWarning) seqWarning.style.display = 'none';
+    }
+
+    function validateCmaStep() {
+      if (!isCmaTyped()) {
+        cma_lot.classList.add('error');
+        showSeqWarning('Please enter a CMA/Lot value before continuing.');
+        showToast('toastStack', 'Please enter a CMA/Lot value.', 'error');
+        cma_lot.focus();
+        return false;
+      }
+      if (!CMA_LOT_RE.test(cma_lot.value.trim())) {
+        cma_lot.classList.add('error');
+        showSeqWarning('CMA/Lot format looks invalid — fix it before continuing.');
+        showToast('toastStack', 'Invalid CMA/Lot format — use a lot number (e.g. 1234A) or CMA-lot format (e.g. CMA-1234A).', 'error');
+        cma_lot.focus();
+        return false;
+      }
+      cma_lot.classList.remove('error');
+      return true;
+    }
+
+    function validateDosageStep() {
+      if (!dosage) return true;
+      if (!isDosageTyped()) {
+        dosage.classList.add('error');
+        showSeqWarning('CMA/Lot looks good — now enter a Dosage value before continuing.');
+        showToast('toastStack', 'Please enter a Dosage value.', 'error');
+        dosage.focus();
+        return false;
+      }
+      if (!DOSAGE_FORMAT_RE.test(dosage.value.trim())) {
+        dosage.classList.add('error');
+        showSeqWarning('Dosage format looks invalid — fix it before continuing.');
+        showToast('toastStack', 'Dosage must follow the format 0.0% or 00.0%', 'error');
+        dosage.focus();
+        return false;
+      }
+      dosage.classList.remove('error');
+      return true;
+    }
+
+    function validateStandardDetails() {
+      hideSeqWarning();
+      if (!validateCmaStep()) return false;
+      if (!validateDosageStep()) return false;
+      return true;
+    }
+
+    window.validateStandardDetails = validateStandardDetails;
 
     cma_lot.addEventListener('input', function () {
       // light sanitize only -- letters, digits, hyphen (no forced

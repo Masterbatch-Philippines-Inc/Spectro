@@ -21,5 +21,7 @@ inline filter inputs, etc.
   placeholder="{{ input_placeholder|default:'' }}"
   {% if input_disabled %}disabled{% endif %}
   {% if input_readonly %}readonly{% endif %}
+  {% if input_autocomplete %}autocomplete="{{ input_autocomplete }}"{% endif %}
+  {% if input_maxlength %}maxlength="{{ input_maxlength }}"{% endif %}
   class="text-[12.5px] px-2.5 py-1.5 rounded-md border border-border bg-card outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring disabled:opacity-50 disabled:cursor-not-allowed {{ input_class }}"
   >
