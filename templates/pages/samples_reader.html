@@ -345,6 +345,7 @@
     productCode: null,
     standardName: null,
     stdDe: null,
+    standardsId: null, // Task 8 — the SpectroStandard PK, needed to save samples against it
     raw: null, // { raw_l, raw_a, raw_b, raw_c, raw_h }
     savedToDb: false,
     samplesSavedToDb: false, // Task 10 — flips true once Finish Reading actually persists sample rows
@@ -773,7 +774,30 @@
           raw_h: RAW_VALUES.h,
         };
 
+        // Task 6: carry standard name, ΔE, and product code into the
+        // Step 3 chip -- mirrors what useExistingStandardFlow() already
+        // does for the "Use Existing Standard" path.
+        const sampleRefChipName = document.getElementById('sampleRefChipName');
+        const sampleRefChipDe = document.getElementById('sampleRefChipDe');
+        const sampleRefChipProductCode = document.getElementById('sampleRefChipProductCode');
+        if (sampleRefChipName) sampleRefChipName.textContent = wizardStandard.standardName;
+        if (sampleRefChipDe) sampleRefChipDe.textContent = '   (Standard ΔE: ' + parseFloat(wizardStandard.stdDe).toFixed(2) + ')';
+        if (sampleRefChipProductCode) sampleRefChipProductCode.textContent = wizardStandard.productCode;
+
         showToast('toastStack', 'Standard raw values save into session', 'info');
+
+        completedSteps.add(2);
+        renderStepper();
+        if (window.lockStep2CardsAfterStep3) window.lockStep2CardsAfterStep3();
+        if (window.setSpecialReadButtonsDisabled) window.setSpecialReadButtonsDisabled(false);
+        if (window.setReadSampleButtonState) window.setReadSampleButtonState(true);
+        if (window.setFinishReadingMode) window.setFinishReadingMode(true);
+
+        const step3LockOverlay = document.getElementById('step3LockOverlay');
+        const step3LockedContent = document.getElementById('step3LockedContent');
+        if (step3LockOverlay) step3LockOverlay.style.display = 'none';
+        if (step3LockedContent) step3LockedContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+
         scrollToNextCard(document.getElementById('stepPanel3'));
       });
     }
@@ -1054,6 +1078,14 @@
         productCodeSavedChip.style.display = 'none';
         savedCode = null;
       }
+      if (!productCodeGlobal.value.trim()) {
+        modeSelectLockOverlay.style.display = 'flex';
+        modeSelectContent.classList.add('opacity-40', 'pointer-events-none', 'select-none');
+        lockStepDetails();
+        flowNewStandard.style.display = 'none';
+        [modeCardNew, modeCardExisting].forEach(function (c) { c.classList.remove('selected'); });
+        selectedMode = null;
+      }
     });
     productCodeGlobal.addEventListener('focus', function () { renderSuggestions(productCodeGlobal.value.trim()); });
     productCodeGlobal.addEventListener('keydown', function (e) {
@@ -1132,6 +1164,7 @@
           wizardStandard.productCode = productCodeGlobal.value.trim();
           wizardStandard.standardName = active.standard_name;
           wizardStandard.stdDe = data.std_delta_e_used;
+          wizardStandard.standardsId = active.standards_id;
           wizardStandard.savedToDb = true; // already exists in DB, nothing new to persist
 
           completedSteps.add(2);
@@ -1393,11 +1426,6 @@
     const seqWarning = document.getElementById('seqWarning');
     const seqWarningText = document.getElementById('seqWarningText');
 
-    function showSeqWarning(message) {
-      if (seqWarningText) seqWarningText.textContent = message;
-      if (seqWarning) seqWarning.style.display = 'flex';
-    }
-
     function hideSeqWarning() {
       if (seqWarning) seqWarning.style.display = 'none';
     }
@@ -1405,14 +1433,12 @@
     function validateCmaStep() {
       if (!isCmaTyped()) {
         cma_lot.classList.add('error');
-        showSeqWarning('Please enter a CMA/Lot value before continuing.');
         showToast('toastStack', 'Please enter a CMA/Lot value.', 'error');
         cma_lot.focus();
         return false;
       }
       if (!CMA_LOT_RE.test(cma_lot.value.trim())) {
         cma_lot.classList.add('error');
-        showSeqWarning('CMA/Lot format looks invalid — fix it before continuing.');
         showToast('toastStack', 'Invalid CMA/Lot format — use a lot number (e.g. 1234A) or CMA-lot format (e.g. CMA-1234A).', 'error');
         cma_lot.focus();
         return false;
@@ -1425,14 +1451,12 @@
       if (!dosage) return true;
       if (!isDosageTyped()) {
         dosage.classList.add('error');
-        showSeqWarning('CMA/Lot looks good — now enter a Dosage value before continuing.');
         showToast('toastStack', 'Please enter a Dosage value.', 'error');
         dosage.focus();
         return false;
       }
       if (!DOSAGE_FORMAT_RE.test(dosage.value.trim())) {
         dosage.classList.add('error');
-        showSeqWarning('Dosage format looks invalid — fix it before continuing.');
         showToast('toastStack', 'Dosage must follow the format 0.0% or 00.0%', 'error');
         dosage.focus();
         return false;
@@ -1527,6 +1551,18 @@
     let isReading = false;
     let rowSeq = 1;
     const rows = {}; // id -> row data object
+    let readSampleGateEnabled = false;
+
+    function hasLightAndDark() {
+      const kinds = Object.keys(rows).map(function (id) { return rows[id].kind; });
+      return kinds.indexOf('light') !== -1 && kinds.indexOf('dark') !== -1;
+    }
+
+    function refreshReadSampleGate() {
+      const gated = readSampleGateEnabled && !hasLightAndDark();
+      measureBtn2.disabled = gated;
+      measureBtn2.style.opacity = gated ? '0.5' : '';
+    }
 
     function selectRow(id) {
       selectedRowId = (selectedRowId === id) ? null : id;
@@ -1536,15 +1572,18 @@
       updateButtonLabel();
     }
 
+    // Read Sample doubles as re-read for ANY selected row (light, dark,
+    // or sample kind) -- Read Light / Read Dark are strictly one-shot.
     function updateButtonLabel() {
-      if (measureLabel2) {
-        measureLabel2.textContent = selectedRowId ? 'Re-read Sample' : 'Read Sample';
-      }
+      if (!measureLabel2) return;
+      measureLabel2.textContent = selectedRowId ? 'Re-read Sample' : 'Read Sample';
     }
 
-    window.setReadSampleButtonState = function (disabledFromNewFlow) {
-      measureBtn2.disabled = disabledFromNewFlow;
-      measureBtn2.style.opacity = disabledFromNewFlow ? '0.5' : '';
+    // true = gate this button behind "LT and DR rows both present" (new
+    // standard flow); false = no gate, always enabled (existing standard flow)
+    window.setReadSampleButtonState = function (requiresLightDarkGate) {
+      readSampleGateEnabled = requiresLightDarkGate;
+      refreshReadSampleGate();
     };
 
     // dev-only fake measurement -- replace with real agent/DB call later
@@ -1649,6 +1688,7 @@
       if (historyCount) historyCount.textContent = ids.length + ' Sample' + (ids.length === 1 ? '' : 's');
       if (window.renderScatter) window.renderScatter();
       if (window.refreshFinishReadingState) window.refreshFinishReadingState();
+      refreshReadSampleGate();
     }
 
     historyTableBody.addEventListener('click', function (e) {
@@ -1718,8 +1758,11 @@
       function commit() {
         const newVal = input.value.trim();
         if (field === 'lotNumber') {
-          if (!newVal || !window.isValidLotNumber(newVal)) {
-            showToast('toastStack', 'Invalid lot number — use 4 digits + 2 letters, optionally prefixed with "DR " or "LT ".', 'error');
+          const requiredPrefix = rowData.kind === 'light' ? 'LT ' : rowData.kind === 'dark' ? 'DR ' : null;
+          if (requiredPrefix && !newVal.toUpperCase().startsWith(requiredPrefix)) {
+            showToast('toastStack', 'The "' + requiredPrefix.trim() + '" prefix cannot be removed from this lot number.', 'error');
+          } else if (!newVal || !window.isValidLotNumber(newVal)) {
+            showToast('toastStack', 'Invalid lot number — use 4 digits + 2 letters, mandatory prefixed with "DR " or "LT ".', 'error');
           } else if (isDuplicateLotNumber(newVal, rowId)) {
             showToast('toastStack', 'This lot number already exists in the table.', 'error');
           } else {
@@ -1740,18 +1783,16 @@
 
     function captureReading() {
       if (isReading || window.isAnyReadingInProgress()) return;
+      const selectedRow = selectedRowId ? rows[selectedRowId] : null;
+      const wasReread = !!selectedRow;
+
       isReading = true;
       window.setReadingInProgress(true);
       measureBtn2.disabled = true;
-      const readLightBtn = document.getElementById('readLightBtn');
-      const readDarkBtn = document.getElementById('readDarkBtn');
-      if (readLightBtn) readLightBtn.disabled = true;
-      if (readDarkBtn) readDarkBtn.disabled = true;
-      const wasReread = !!selectedRowId;
       showToast('toastStack', wasReread ? 'Re-reading sample…' : 'Reading sample…', 'info');
 
       setTimeout(function () {
-        if (wasReread && rows[selectedRowId]) {
+        if (wasReread) {
           const kind = rows[selectedRowId].kind;
           const name = rows[selectedRowId].name;
           rows[selectedRowId] = Object.assign(makeRow(kind, name), { id: selectedRowId, remarks: rows[selectedRowId].remarks });
@@ -1766,20 +1807,20 @@
         renderAll();
         isReading = false;
         window.setReadingInProgress(false);
-        measureBtn2.disabled = false;
-        const readLightBtn = document.getElementById('readLightBtn');
-        const readDarkBtn = document.getElementById('readDarkBtn');
-        if (readLightBtn && !readLightBtn.dataset.usedOnce && !readLightBtn.dataset.lockedByFlow) readLightBtn.disabled = false;
-        if (readDarkBtn && !readDarkBtn.dataset.usedOnce && !readDarkBtn.dataset.lockedByFlow) readDarkBtn.disabled = false;
       }, 1000);
     }
 
     measureBtn2.addEventListener('click', captureReading);
 
+    // Task 3/4: Spacebar triggers the same action as clicking Read Sample
+    // (read or re-read) -- excludes Read Light / Read Dark, which remain
+    // click-only one-shot buttons. Only fires once a standard/sample chip
+    // is actually populated (sampleRefChipName has content).
     document.addEventListener('keydown', function (e) {
       if (e.code !== 'Space') return;
+      const sampleRefChipName = document.getElementById('sampleRefChipName');
+      if (!sampleRefChipName || !sampleRefChipName.textContent.trim()) return;
       if (isEditingLotNumber) return;
-      if (window.isAnyReadingInProgress()) return;
       const tag = (e.target.tagName || '').toLowerCase();
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
       e.preventDefault();
@@ -1795,16 +1836,16 @@
       setTimeout(function () {
         const newRow = makeRow(kind, name);
         rows[newRow.id] = newRow;
-        renderAll();
+        renderAll(); // re-applies the correct gated/ungated disabled state
         showToast('toastStack', name + ' captured successfully.', 'success');
         window.setReadingInProgress(false);
-        measureBtn2.disabled = false;
       }, 1000);
     };
 
     window.clearSelectedSampleRow = function () {
       selectedRowId = null;
       updateButtonLabel();
+      updateSpecialButtonLabels();
     };
 
     window.resetSampleSession = function () {
@@ -1820,6 +1861,21 @@
     window.hasInvalidLotNumbers = function () {
       return Object.keys(rows).some(function (id) {
         return !window.isValidLotNumber(rows[id].name);
+      });
+    };
+
+    // Task 8: serialize every captured row into the payload shape the
+    // save_sample_readings endpoint expects.
+    window.getSampleReadingsPayload = function () {
+      return Object.keys(rows).map(function (id) {
+        const r = rows[id];
+        return {
+          name: r.name, kind: r.kind,
+          colorSimulation: r.colorSimulation, colorOffset: r.colorOffset,
+          remarks: r.remarks,
+          de: r.de, L: r.L, C: r.C, h: r.h, a: r.a, b: r.b,
+          dL: r.dL, dC: r.dC, dH: r.dH, da: r.da, db: r.db,
+        };
       });
     };
 
@@ -1861,6 +1917,7 @@
       wizardStandard.productCode = null;
       wizardStandard.standardName = null;
       wizardStandard.stdDe = null;
+      wizardStandard.standardsId = null; // Task 8 — clear so a stale ID can't leak into a new session
       wizardStandard.raw = null;
       wizardStandard.savedToDb = false;
       wizardStandard.samplesSavedToDb = false;
@@ -1887,6 +1944,9 @@
   (function finishReading() {
     const finishSessionBtn = document.getElementById('finishSessionBtn');
     const historyTableBody = document.getElementById('historyTableBody');
+    const step3Caption = document.getElementById('step3Caption');
+    const DEFAULT_STEP3_CAPTION = step3Caption ? step3Caption.textContent : '';
+    const LIGHT_DARK_STEP3_CAPTION = 'Read light or dark samples first before proceeding to sample';
     if (!finishSessionBtn) return;
 
     // Task 4/5: default flow (i) needs >=3 samples; flow (j) instead needs
@@ -1909,8 +1969,16 @@
           else if (kind === 'sample') hasSample = true;
         });
         finishSessionBtn.disabled = !(hasLight && hasDark && hasSample);
+        if (step3Caption) {
+          step3Caption.textContent = (hasLight && hasDark) ? DEFAULT_STEP3_CAPTION : LIGHT_DARK_STEP3_CAPTION;
+        }
+        // point 3: Read Sample itself is gated the same way -- kept in
+        // sync here since finishRequiresLightDark and the Read Sample
+        // gate both only apply to the "new standard" flow.
+        if (window.refreshReadSampleGateIfExposed) window.refreshReadSampleGateIfExposed();
       } else {
         finishSessionBtn.disabled = rows.length < 3;
+        if (step3Caption) step3Caption.textContent = DEFAULT_STEP3_CAPTION;
       }
     };
 
@@ -1926,20 +1994,50 @@
       }
 
       if (window.hasInvalidLotNumbers && window.hasInvalidLotNumbers()) {
-        showToast('toastStack', 'One or more lot numbers are still using the default naming — rename them before finishing.', 'error');
+        showToast('toastStack', 'Rename lot number samples before saving.', 'error');
         return;
       }
 
       finishSessionBtn.disabled = true;
 
-      // Existing standard was already saved to the DB earlier -- nothing
-      // new to persist for it, only the sample readings from here on.
+      function saveSampleReadings(standardsId) {
+        const rows = window.getSampleReadingsPayload ? window.getSampleReadingsPayload() : [];
+        if (!rows.length) {
+          showToast('toastStack', 'No sample readings to save.', 'error');
+          finishSessionBtn.disabled = false;
+          return;
+        }
+
+        fetch('{% url "api_save_sample_readings" %}', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: new URLSearchParams({
+            standards_id: standardsId,
+            rows: JSON.stringify(rows),
+            csrfmiddlewaretoken: getCsrfToken(),
+          }),
+        })
+          .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+          .then(function (result) {
+            showToast('toastStack', result.data.message, result.data.tone || (result.ok ? 'success' : 'error'));
+            if (result.ok) {
+              wizardStandard.samplesSavedToDb = true;
+              completedSteps.add(1); completedSteps.add(2); completedSteps.add(3);
+              renderStepper();
+            }
+          })
+          .catch(function () {
+            showToast('toastStack', 'Network error — please try again.', 'error');
+          })
+          .finally(function () {
+            finishSessionBtn.disabled = false;
+          });
+      }
+
+      // Existing standard was already saved to the DB earlier -- only the
+      // sample readings need to be persisted here.
       if (wizardStandard.savedToDb) {
-        wizardStandard.samplesSavedToDb = true;
-        completedSteps.add(1); completedSteps.add(2); completedSteps.add(3);
-        renderStepper();
-        showToast('toastStack', 'Reading session finished.', 'success');
-        finishSessionBtn.disabled = false;
+        saveSampleReadings(wizardStandard.standardsId);
         return;
       }
 
@@ -1966,18 +2064,17 @@
       })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
         .then(function (result) {
-          showToast('toastStack', result.data.message, result.data.tone || (result.ok ? 'success' : 'error'));
-          if (result.ok) {
-            wizardStandard.savedToDb = true;
-            wizardStandard.samplesSavedToDb = true;
-            completedSteps.add(1); completedSteps.add(2); completedSteps.add(3);
-            renderStepper();
+          if (!result.ok) {
+            showToast('toastStack', result.data.message, result.data.tone || 'error');
+            finishSessionBtn.disabled = false;
+            return;
           }
+          wizardStandard.savedToDb = true;
+          wizardStandard.standardsId = result.data.standards_id;
+          saveSampleReadings(result.data.standards_id);
         })
         .catch(function () {
           showToast('toastStack', 'Network error — please try again.', 'error');
-        })
-        .finally(function () {
           finishSessionBtn.disabled = false;
         });
     });
