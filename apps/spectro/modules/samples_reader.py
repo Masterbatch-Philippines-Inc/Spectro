@@ -24,13 +24,13 @@ def save_product_code(request):
     Only creates a new SpectrometerRecord when the code is genuinely new.
     """
     if request.method != "POST":
-        return JsonResponse({"tone": "danger", "message": "Invalid request method."}, status=405)
+        return JsonResponse({"tone": "error", "message": "Invalid request method."}, status=405)
 
     code = request.POST.get("product_code", "").strip().upper()
     if not code:
-        return JsonResponse({"tone": "danger", "message": "Product code is required."}, status=400)
+        return JsonResponse({"tone": "error", "message": "Product code is required."}, status=400)
     if not PRODUCT_CODE_RE.match(code):
-        return JsonResponse({"tone": "danger", "message": "Invalid product code format."}, status=400)
+        return JsonResponse({"tone": "error", "message": "Invalid product code format."}, status=400)
 
     existing = SpectrometerRecord.objects.filter(product_code=code).first()
     if existing:
@@ -83,7 +83,7 @@ def save_standard(request):
     something this endpoint will itself write.
     """
     if request.method != "POST":
-        return JsonResponse({"tone": "danger", "message": "Invalid request method."}, status=405)
+        return JsonResponse({"tone": "error", "message": "Invalid request method."}, status=405)
 
     product_code = request.POST.get("product_code", "").strip().upper()
     standard_name = request.POST.get("standard_name", "").strip()
@@ -94,25 +94,25 @@ def save_standard(request):
         raw_fields[key] = request.POST.get(key, "").strip()
 
     if not product_code:
-        return JsonResponse({"tone": "danger", "message": "Product code is required."}, status=400)
+        return JsonResponse({"tone": "error", "message": "Product code is required."}, status=400)
     if not standard_name:
-        return JsonResponse({"tone": "danger", "message": "Standard name is required."}, status=400)
+        return JsonResponse({"tone": "error", "message": "Standard name is required."}, status=400)
 
     missing_raw = [key for key, val in raw_fields.items() if val == ""]
     if missing_raw:
         return JsonResponse({
-            "tone": "danger",
+            "tone": "error",
             "message": "Missing raw value(s): " + ", ".join(missing_raw),
         }, status=400)
 
     try:
         raw_values = {key: float(val) for key, val in raw_fields.items()}
     except ValueError:
-        return JsonResponse({"tone": "danger", "message": "Raw values must be valid numbers."}, status=400)
+        return JsonResponse({"tone": "error", "message": "Raw values must be valid numbers."}, status=400)
 
     record = SpectrometerRecord.objects.filter(product_code=product_code).first()
     if not record:
-        return JsonResponse({"tone": "danger", "message": "Product code not found. Save it first."}, status=404)
+        return JsonResponse({"tone": "error", "message": "Product code not found. Save it first."}, status=404)
 
     try:
         std_delta_e_value = float(std_delta_e) if std_delta_e else 1.00
