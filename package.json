@@ -4,7 +4,8 @@
   "description": "A web-based color measurement system built for Masterbatch Philippines Inc., replacing manual, spreadsheet-based color quality checks with a digital workflow connected directly to spectrophotometer hardware. Lab technicians connect a spectrometer, calibrate it, and read color measurements from production samples straight from their browser — each sample is automatically compared against its approved color standard to determine a pass/fail result, with every reading, standard, and judgement stored centrally for the QC team to review.",
   "main": "index.js",
   "scripts": {
-    "dev:css": "npx @tailwindcss/cli -i ./static/css/input.css -o ./static/css/output.css --watch"
+    "dev:css": "npx @tailwindcss/cli -i ./static/css/input.css -o ./static/css/output.css --watch",
+    "build:css": "npx @tailwindcss/cli -i ./static/css/input.css -o ./static/css/output.css"
   },
   "repository": {
     "type": "git",
