@@ -33,12 +33,26 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Install Dependencies
+          
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          
+      - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Tests
+      - name: Install Node Dependencies
+        run: |
+          npm ci
+
+      - name: Build Tailwind CSS
+        run: |
+          npm run build:css
+
+      - name: Run Django Tests
         run: |
           python manage.py test
