@@ -143,7 +143,7 @@ def get_lot_samples_for_standard(request):
     lot_samples = (
         LotSample.objects
         .filter(standard_id=standards_id)
-        .order_by("-date_time")
+        .order_by("-date_time", "-lot_samples_id")
     )
 
     rows = [_serialize_lot_sample_row(ls, standards_id) for ls in lot_samples]
@@ -368,7 +368,7 @@ def export_samples_report(request):
     product_code = record.product_code
     std_de_used = float(record.std_delta_e_used) if record.std_delta_e_used is not None else None
 
-    lot_samples = LotSample.objects.filter(standard_id=standards_id).order_by("date_time")
+    lot_samples = LotSample.objects.filter(standard_id=standards_id).order_by("-date_time", "-lot_samples_id")
     rows = [_serialize_lot_sample_row(ls, standards_id) for ls in lot_samples]
     # export needs real datetime objects (not the UI's display string) so Excel can sort/filter dates.
     # Excel/openpyxl can't hold timezone-aware datetimes, so convert to local time and strip tzinfo.
@@ -404,7 +404,18 @@ def export_samples_report(request):
             if key == "colorSimulation" and isinstance(value, str) and value.startswith("#") and len(value) in (7, 9):
                 hexval = value.lstrip("#")
                 if len(hexval) == 6:
+                    # plain RGB, no alpha in the source string
                     hexval = "FF" + hexval
+                elif len(hexval) == 8:
+                    # source string is stored/rendered by the browser as
+                    # #RRGGBBAA (CSS Color 4 8-digit hex order), NOT
+                    # #AARRGGBB. openpyxl's fgColor expects true ARGB, so
+                    # reorder here rather than passing the raw channels
+                    # straight through -- otherwise Excel's fill color
+                    # doesn't match what's shown in the Samples Record
+                    # table (e.g. pink on screen, blue in the export).
+                    rr, gg, bb, aa = hexval[0:2], hexval[2:4], hexval[4:6], hexval[6:8]
+                    hexval = aa + rr + gg + bb
                 try:
                     cell.fill = PatternFill(fill_type="solid", fgColor=hexval)
                 except ValueError:
@@ -459,7 +470,7 @@ def get_standards_for_product_code(request):
         SpectroStandard.objects
         .filter(record=record)
         .order_by("-is_active_standard", "-date_time")
-        .values("standards_id", "standard_name")
+        .values("standards_id", "standard_name", "raw_l", "raw_a", "raw_b")
     )
 
     return JsonResponse({

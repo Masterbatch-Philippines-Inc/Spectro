@@ -336,8 +336,39 @@
   // to the DB from here.
   const wizardDevice = { model: null, serial: null };
 
-  // Task 1 — fixed dev raw values for reference capture
-  const RAW_VALUES = { L: 36.19, C: 36.36, h: 271.19, a: 0.76, b: -36.35 };
+  // ===========================================================
+  // Instrument session persistence — Step 1 (connect + calibrate) is
+  // treated as independent from the rest of the wizard. Once connected
+  // and calibrated, that state survives navigating away from this page
+  // (e.g. to Samples Record and back) via sessionStorage, so the user
+  // isn't forced to re-plug/re-calibrate every time they return.
+  // Session only clears on (a) a detected disconnect (agent /status
+  // reports not connected) or (b) the user manually clicking Disconnect.
+  // ===========================================================
+  const INSTRUMENT_SESSION_KEY = 'spectroInstrumentSession';
+
+  function saveInstrumentSession() {
+    try {
+      sessionStorage.setItem(INSTRUMENT_SESSION_KEY, JSON.stringify({
+        connected: instrumentConnected,
+        calibration: calibrationData,
+        device: wizardDevice,
+      }));
+    } catch (e) { /* sessionStorage unavailable -- fail silently, session simply won't persist */ }
+  }
+
+  function loadInstrumentSession() {
+    try {
+      const raw = sessionStorage.getItem(INSTRUMENT_SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearInstrumentSession() {
+    try { sessionStorage.removeItem(INSTRUMENT_SESSION_KEY); } catch (e) {}
+  }
 
   // Task 8 (3) — holds the captured standard's raw values + name/DE in
   // session/memory until Step 3's "Finish Reading" actually persists it.
@@ -347,6 +378,8 @@
     stdDe: null,
     standardsId: null, // Task 8 — the SpectroStandard PK, needed to save samples against it
     raw: null, // { raw_l, raw_a, raw_b, raw_c, raw_h }
+    standardA: null, // standard's raw a* -- feeds getColorOffset() (color_offset.js) hue-family logic
+    standardB: null, // standard's raw b* -- feeds getColorOffset() (color_offset.js) hue-family logic
     savedToDb: false,
     samplesSavedToDb: false, // Task 10 — flips true once Finish Reading actually persists sample rows
   };
@@ -375,14 +408,6 @@
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-
-  // ===========================================================
-  // DEV TOGGLE — flip to false once the real agent + DB flow is
-  // ready to test end-to-end. While true, clicking Connect just
-  // fakes a successful connection (no agent call, no DB check) so
-  // UI/flow can be checked without the local agent running.
-  // ===========================================================
-  const DEV_SKIP_CONNECT = true;
 
   /* ---- Stepper (Task 10) — follows ts-step/ts-circle/ts-line pattern ---- */
   const checkSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
@@ -522,27 +547,6 @@
     setBadge('connecting');
     if (connSubtitle) connSubtitle.textContent = 'Searching for BLE spectrometer…';
 
-    if (DEV_SKIP_CONNECT) {
-      setTimeout(function () {
-        wizardDevice.model = '(Dev) NH-YS3010';
-        wizardDevice.serial = '(Dev) SN-48213X';
-        instrumentConnected = true;
-        connectBtn.classList.remove('loading');
-        connectBtn.disabled = false;
-        connectBtn.classList.remove('bg-[hsl(var(--primary))]', 'text-[hsl(var(--primary-foreground))]', 'border-[hsl(var(--primary))]');
-        connectBtn.classList.add('text-[hsl(var(--danger))]', 'border', 'border-[hsl(var(--danger-border))]', 'bg-[hsl(var(--danger-bg))]');
-        connectLabel.textContent = 'Disconnect';
-        setBadge('online');
-        if (connSubtitle) connSubtitle.textContent = '(Dev) Linked over Bluetooth LE';
-        if (devModel) devModel.textContent = wizardDevice.model;
-        if (devSerial) devSerial.textContent = wizardDevice.serial;
-        if (deviceInfo) deviceInfo.style.display = 'block';
-        setCalibrateButtonsEnabled(true);
-        showToast('toastStack', '(Dev) Instrument connected', 'success');
-      }, 600);
-      return;
-    }
-
     fetch('http://localhost:5151/connect', { method: 'POST' })
       .then(function (res) { return res.json(); })
       .then(function (agentData) {
@@ -564,6 +568,7 @@
         if (devSerial) devSerial.textContent = wizardDevice.serial || '—';
         if (deviceInfo) deviceInfo.style.display = 'block';
         setCalibrateButtonsEnabled(true);
+        saveInstrumentSession();
         showToast('toastStack', 'Instrument connected', 'success');
       })
       .catch(function (err) {
@@ -587,6 +592,7 @@
     function finishDisconnect() {
       instrumentConnected = false;
       calibrationData = {};
+      clearInstrumentSession();
       relockStep2();
       wizardDevice.model = null;
       wizardDevice.serial = null;
@@ -606,11 +612,6 @@
         if (label) label.textContent = 'Calibrate';
       });
       showToast('toastStack', 'Instrument disconnected', 'info');
-    }
-
-    if (DEV_SKIP_CONNECT) {
-      setTimeout(finishDisconnect, 600);
-      return;
     }
 
     fetch('http://localhost:5151/disconnect', { method: 'POST' })
@@ -659,6 +660,7 @@
     const label = btn ? btn.querySelector('.btn-label') : null;
     if (label) label.textContent = 'Recalibrate';
     showToast('toastStack', (type === 'black' ? 'Black' : 'White') + ' calibration complete', 'info');
+    saveInstrumentSession();
     if (calibrationData.black && calibrationData.white) {
       unlockStep2();
     }
@@ -671,14 +673,6 @@
     const isRecalibration = !!calibrationData[type];
     if (btn) { btn.classList.add('loading'); btn.disabled = true; }
     if (label) label.textContent = isRecalibration ? 'Recalibrating…' : 'Calibrating…';
-
-    if (DEV_SKIP_CONNECT) {
-      setTimeout(function () {
-        markCalibrated(type);
-        if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
-      }, 600);
-      return;
-    }
 
     fetch('http://localhost:5151/calibrate/' + type, { method: 'POST' })
       .then(function (res) { return res.json(); })
@@ -716,18 +710,18 @@
     const saveStdBtn = document.getElementById('saveStdBtn');
     if (!measureBtn1) return;
 
-    function fillResults() {
-      const raw_l = RAW_VALUES.L;
-      const raw_c = RAW_VALUES.C;
-      const raw_h = RAW_VALUES.h;
-      const raw_a = RAW_VALUES.a;
-      const raw_b = RAW_VALUES.b;
+    // holds the real reading from the agent's /measure/standard response
+    // -- { L, a, b, C, h } -- until saveStdBtn commits it into
+    // wizardStandard. Scoped to this IIFE; saveStdBtn/rereadStdBtn below
+    // are declared in the same closure so they can read/clear it.
+    let capturedStandardRaw = null;
 
-      document.getElementById('valL1').textContent = raw_l.toFixed(2);
-      document.getElementById('valC1').textContent = raw_c.toFixed(2);
-      document.getElementById('valH1').textContent = raw_h.toFixed(2);
-      document.getElementById('valA1').textContent = raw_a.toFixed(2);
-      document.getElementById('valB1').textContent = raw_b.toFixed(2);
+    function fillResults(raw) {
+      document.getElementById('valL1').textContent = raw.L.toFixed(2);
+      document.getElementById('valC1').textContent = raw.C.toFixed(2);
+      document.getElementById('valH1').textContent = raw.h.toFixed(2);
+      document.getElementById('valA1').textContent = raw.a.toFixed(2);
+      document.getElementById('valB1').textContent = raw.b.toFixed(2);
     }
 
     function runReadReference() {
@@ -738,21 +732,38 @@
       if (statusText1) statusText1.textContent = 'Measuring standard…';
       if (statusSub1) statusSub1.textContent = 'Keep the aperture still and flat against the sample.';
 
-      setTimeout(function () {
-        if (aperture1) aperture1.classList.remove('scanning');
-        measureBtn1.classList.remove('loading');
-        measureBtn1.style.display = 'none';
-        const saveStdBtnWrap = document.getElementById('saveStdBtnWrap');
-        const rereadStdBtnWrap = document.getElementById('rereadStdBtnWrap');
-        if (saveStdBtnWrap) saveStdBtnWrap.style.display = 'block';
-        if (rereadStdBtnWrap) rereadStdBtnWrap.style.display = 'block';
+      fetch('http://localhost:5151/measure/standard', { method: 'POST' })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (!data.ok || !data.sci) {
+            throw new Error(data.error || 'No measurement returned');
+          }
+          capturedStandardRaw = data.sci; // { L, a, b, C, h }
 
-        fillResults();
-        if (resultsBlock1) resultsBlock1.style.display = 'block';
-        if (statusText1) statusText1.textContent = 'Capture complete';
-        if (statusSub1) statusSub1.textContent = 'Review the readings, then save the standard.';
-        showToast('toastStack', 'Reference captured successfully', 'success');
-      }, 1500);
+          if (aperture1) aperture1.classList.remove('scanning');
+          measureBtn1.classList.remove('loading');
+          measureBtn1.style.display = 'none';
+          const saveStdBtnWrap = document.getElementById('saveStdBtnWrap');
+          const rereadStdBtnWrap = document.getElementById('rereadStdBtnWrap');
+          if (saveStdBtnWrap) saveStdBtnWrap.style.display = 'block';
+          if (rereadStdBtnWrap) rereadStdBtnWrap.style.display = 'block';
+
+          fillResults(capturedStandardRaw);
+          if (resultsBlock1) resultsBlock1.style.display = 'block';
+          if (statusText1) statusText1.textContent = 'Capture complete';
+          if (statusSub1) statusSub1.textContent = 'Review the readings, then save the standard.';
+          showToast('toastStack', 'Reference captured successfully', 'success');
+        })
+        .catch(function (err) {
+          if (aperture1) aperture1.classList.remove('scanning');
+          measureBtn1.classList.remove('loading');
+          measureBtn1.disabled = false;
+          measureLabel1.textContent = 'Read Reference';
+          if (statusText1) statusText1.textContent = 'Ready to scan';
+          if (statusSub1) statusSub1.textContent = 'Press the button below once the sample is in position.';
+          showToast('toastStack', 'Measurement failed — is the agent running?', 'error');
+          console.error(err);
+        });
     }
 
     measureBtn1.addEventListener('click', runReadReference);
@@ -766,13 +777,22 @@
         wizardStandard.productCode = productCodeGlobal ? productCodeGlobal.value.trim() : null;
         wizardStandard.standardName = refChipName ? refChipName.textContent.trim() : null;
         wizardStandard.stdDe = refChipDe ? refChipDe.textContent.trim() : '1.00';
+        if (!capturedStandardRaw) {
+          showToast('toastStack', 'No captured reading found — read the reference first.', 'error');
+          return;
+        }
         wizardStandard.raw = {
-          raw_l: RAW_VALUES.L,
-          raw_a: RAW_VALUES.a,
-          raw_b: RAW_VALUES.b,
-          raw_c: RAW_VALUES.C,
-          raw_h: RAW_VALUES.h,
+          raw_l: capturedStandardRaw.L,
+          raw_a: capturedStandardRaw.a,
+          raw_b: capturedStandardRaw.b,
+          raw_c: capturedStandardRaw.C,
+          raw_h: capturedStandardRaw.h,
         };
+        // same shape as the "Use Existing Standard" flow -- so
+        // getColorOffset() call sites don't need to branch on which
+        // flow was used to know where the standard's raw a*/b* live
+        wizardStandard.standardA = capturedStandardRaw.a;
+        wizardStandard.standardB = capturedStandardRaw.b;
 
         // Task 6: carry standard name, ΔE, and product code into the
         // Step 3 chip -- mirrors what useExistingStandardFlow() already
@@ -811,6 +831,7 @@
 
     if (rereadStdBtn) {
       rereadStdBtn.addEventListener('click', function () {
+        capturedStandardRaw = null;
         const saveStdBtnWrap = document.getElementById('saveStdBtnWrap');
         const rereadStdBtnWrap = document.getElementById('rereadStdBtnWrap');
         if (rereadStdBtnWrap) rereadStdBtnWrap.style.display = 'none';
@@ -828,12 +849,74 @@
     }
   })();
 
+  // Restores UI to "already connected + calibrated" state without
+  // re-running the connect/calibrate animations -- used only when a
+  // stored session is confirmed still valid against the agent.
+  function restoreInstrumentSession(session) {
+    instrumentConnected = true;
+    calibrationData = session.calibration || {};
+    wizardDevice.model = session.device ? session.device.model : null;
+    wizardDevice.serial = session.device ? session.device.serial : null;
+
+    connectBtn.classList.remove('bg-[hsl(var(--primary))]', 'text-[hsl(var(--primary-foreground))]', 'border-[hsl(var(--primary))]');
+    connectBtn.classList.add('text-[hsl(var(--danger))]', 'border-[hsl(var(--danger-border))]', 'bg-[hsl(var(--danger-bg))]');
+    connectLabel.textContent = 'Disconnect';
+    setBadge('online');
+    if (connSubtitle) connSubtitle.textContent = 'Linked over Bluetooth LE';
+    if (devModel) devModel.textContent = wizardDevice.model || '—';
+    if (devSerial) devSerial.textContent = wizardDevice.serial || '—';
+    if (deviceInfo) deviceInfo.style.display = 'block';
+    setCalibrateButtonsEnabled(true);
+
+    ['black', 'white'].forEach(function (type) {
+      if (!calibrationData[type]) return;
+      const cell = document.getElementById(type + 'Cell');
+      if (cell) cell.classList.add('done');
+      const btn = type === 'black' ? blackBtn : whiteBtn;
+      const label = btn ? btn.querySelector('.btn-label') : null;
+      if (label) label.textContent = 'Recalibrate';
+    });
+
+    if (calibrationData.black && calibrationData.white) {
+      // Step 1 fully satisfied by the restored session -- skip straight
+      // to Step 2 instead of re-showing the connect/calibrate screen.
+      unlockStep2();
+      showToast('toastStack', 'Instrument already connected and calibrated — resuming session.', 'info');
+    } else {
+      showToast('toastStack', 'Instrument already connected — finish calibration to continue.', 'info');
+    }
+  }
+
   window.addEventListener('load', function () {
     setBadge('offline');
     setCalibrateButtonsEnabled(false);
     renderStepper();
-    // Task 12 — auto-attempt connection the moment the page loads
-    doConnect();
+
+    const session = loadInstrumentSession();
+    if (!session || !session.connected) {
+      doConnect();
+      return;
+    }
+
+    // A stored session exists -- but don't blindly trust it, since the
+    // dongle could have disconnected unexpectedly since the last page
+    // view. Confirm against the agent's actual /status before restoring.
+    fetch('http://localhost:5151/status')
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.ok && data.connected) {
+          restoreInstrumentSession(session);
+        } else {
+          clearInstrumentSession();
+          doConnect();
+        }
+      })
+      .catch(function () {
+        // agent unreachable -- can't confirm, so don't trust the stale
+        // session; fall back to the normal connect flow/error state
+        clearInstrumentSession();
+        doConnect();
+      });
   });
 
   window.getScatterPlotPoints = function () {
@@ -1165,6 +1248,20 @@
           wizardStandard.standardName = active.standard_name;
           wizardStandard.stdDe = data.std_delta_e_used;
           wizardStandard.standardsId = active.standards_id;
+          // needed by getColorOffset() (color_offset.js) to determine
+          // which hue family (Red/Green, Yellow/Blue) each sample's
+          // Δa*/Δb* belongs to -- comes straight from the standard row,
+          // not derived/guessed client-side
+          wizardStandard.standardA = (active.raw_a !== null && active.raw_a !== undefined) ? Number(active.raw_a) : null;
+          wizardStandard.standardB = (active.raw_b !== null && active.raw_b !== undefined) ? Number(active.raw_b) : null;
+          // full raw Lab, same shape as the New Standard flow's
+          // wizardStandard.raw -- needed as the "standard" param sent to
+          // the agent's /measure/sample endpoint
+          wizardStandard.raw = {
+            raw_l: (active.raw_l !== null && active.raw_l !== undefined) ? Number(active.raw_l) : null,
+            raw_a: wizardStandard.standardA,
+            raw_b: wizardStandard.standardB,
+          };
           wizardStandard.savedToDb = true; // already exists in DB, nothing new to persist
 
           completedSteps.add(2);
@@ -1586,37 +1683,43 @@
       refreshReadSampleGate();
     };
 
-    // dev-only fake measurement -- replace with real agent/DB call later
-    function fakeMeasurement(threshold) {
-      const de = parseFloat((Math.random() * 2.2).toFixed(2));
-      const L = 60 + Math.random() * 30, a = Math.random() * 10 - 5, b = Math.random() * 20 - 5;
-      const C = Math.sqrt(a * a + b * b), h = (Math.atan2(b, a) * 180 / Math.PI + 360) % 360;
-      const dL = parseFloat((Math.random() * 0.6 - 0.3).toFixed(2));
-      const dC = parseFloat((Math.random() * 0.3 - 0.15).toFixed(2));
-      const dH = parseFloat((Math.random() * 0.2 - 0.1).toFixed(2));
-      const da = parseFloat((Math.random() * 0.2 - 0.1).toFixed(2));
-      const db = parseFloat((Math.random() * 0.3 - 0.15).toFixed(2));
-      return { de: de, L: L, C: C, h: h, a: a, b: b, dL: dL, dC: dC, dH: dH, da: da, db: db, passed: de <= threshold };
-    }
-
     function currentThreshold() {
       return wizardStandard.stdDe ? parseFloat(wizardStandard.stdDe) : 1.00;
     }
 
-    const COLOR_OFFSET_OPTIONS = ['None', 'Light+', 'Dark+'];
-    function randomColorOffset() {
-      return COLOR_OFFSET_OPTIONS[Math.floor(Math.random() * COLOR_OFFSET_OPTIONS.length)];
+    // real agent call -- POSTs the session's standard Lab to
+    // /measure/sample, agent measures the physical sample under the
+    // aperture and returns its own Lab (sci) plus CIEDE2000 deltas
+    // computed server-side in local_agent.py's delta_e_2000().
+    function measureSampleFromAgent() {
+      if (!wizardStandard.raw || wizardStandard.raw.raw_l === null || wizardStandard.standardA === null || wizardStandard.standardB === null) {
+        return Promise.reject(new Error('Missing standard Lab values — cannot measure sample.'));
+      }
+      const standard = { L: wizardStandard.raw.raw_l, a: wizardStandard.standardA, b: wizardStandard.standardB };
+
+      return fetch('http://localhost:5151/measure/sample', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ standard: standard }),
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (!data.ok) throw new Error(data.error || 'Measurement failed');
+          return data; // { ok, sci: {L,a,b,C,h}, deltas: {dL,da,db,dC,dH,de00}, sce? }
+        });
     }
 
-    // near-blue-white hex, 8 hex chars (alpha + RGB), e.g. #FFFAFBF7
-    function randomColorSimulation() {
-      const hex2 = function (min, max) {
-        return Math.floor(min + Math.random() * (max - min)).toString(16).toUpperCase().padStart(2, '0');
-      };
-      const r = hex2(200, 251);
-      const g = hex2(230, 251);
-      const b = hex2(245, 256);
-      return '#FF' + r + g + b;
+    // Our stored/exported color convention is #AARRGGBB (alpha first) --
+    // matches openpyxl's ARGB expectation and the excel export fix in
+    // samples_record.py. CSS, however, parses 8-digit hex as #RRGGBBAA
+    // (alpha LAST, per CSS Color 4 spec), so passing our string straight
+    // into an inline "background:" style reads completely wrong channels
+    // (our alpha byte gets misread as R, everything shifts). Since our
+    // alpha is always fully opaque ("FF"), the safe fix is to strip it
+    // and hand the browser a plain 6-digit #RRGGBB -- no ambiguity, no
+    // channel-order mismatch possible.
+    function toCssBackgroundColor(hex8) {
+      return '#' + (hex8 || '').replace('#', '').slice(2, 8);
     }
 
     // picks white text on dark backgrounds, dark text on light backgrounds
@@ -1638,20 +1741,32 @@
       return mm + '/' + dd + '/' + yy + ' - ' + hh + ':' + min;
     }
 
+    // returns a Promise<row> -- the caller (captureReading /
+    // captureSpecialReading) awaits it, since the actual measurement now
+    // requires a real round-trip to the agent instead of an instant mock.
     function makeRow(kind, name) {
-      const r = fakeMeasurement(currentThreshold());
-      return {
-        id: 'row' + (rowSeq++),
-        kind: kind, // 'light' | 'dark' | 'sample'
-        name: name,
-        colorOffset: randomColorOffset(),
-        colorSimulation: randomColorSimulation(),
-        dateTime: formatDateTime(new Date()), // captured when reading stops
-        remarks: '',
-        de: r.de, L: r.L, C: r.C, h: r.h, a: r.a, b: r.b,
-        dL: r.dL, dC: r.dC, dH: r.dH, da: r.da, db: r.db,
-        passed: r.passed,
-      };
+      return measureSampleFromAgent().then(function (data) {
+        const sci = data.sci;     // { L, a, b, C, h } -- sample's own absolute reading
+        const d = data.deltas;    // { dL, da, db, dC, dH, de00 }
+        const passed = d.de00 <= currentThreshold();
+
+        return {
+          id: 'row' + (rowSeq++),
+          kind: kind, // 'light' | 'dark' | 'sample'
+          name: name,
+          colorOffset: (typeof getColorOffset === 'function')
+            ? getColorOffset(d.dL, d.da, d.db, wizardStandard.standardA, wizardStandard.standardB)
+            : 'None',
+          colorSimulation: (typeof getColorSimulation === 'function')
+            ? getColorSimulation(sci.L, sci.a, sci.b)
+            : '#FFFFFFFF',
+          dateTime: formatDateTime(new Date()),
+          remarks: '',
+          de: d.de00, L: sci.L, C: sci.C, h: sci.h, a: sci.a, b: sci.b,
+          dL: d.dL, dC: d.dC, dH: d.dH, da: d.da, db: d.db,
+          passed: passed,
+        };
+      });
     }
 
     function renderRow(row) {
@@ -1660,7 +1775,7 @@
       return '<tr data-row-id="' + row.id + '" data-kind="' + row.kind + '" data-sample-name="' + row.name + '"'
         + ' data-da="' + row.da + '" data-db="' + row.db + '" data-judgement="' + (row.passed ? 'pass' : 'fail') + '"'
         + ' class="cursor-pointer hover:bg-accent border-b border-border' + selectedCls + '">'
-        + '<td class="py-[7px] px-2.5 whitespace-nowrap" style="background:' + row.colorSimulation + '; color:' + textColorForHex(row.colorSimulation) + ';"><span class="font-mono text-sm font-semibold">' + row.colorSimulation + '</span></td>'
+        + '<td class="py-[7px] px-2.5 whitespace-nowrap" style="background:' + toCssBackgroundColor(row.colorSimulation) + '; color:' + textColorForHex(row.colorSimulation) + ';"><span class="font-mono text-sm font-semibold">' + row.colorSimulation + '</span></td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm whitespace-nowrap">' + row.dateTime + '</td>'
         + '<td class="py-[7px] px-2.5" data-action="lotNumber"><span class="lot-number-display font-mono text-sm font-semibold cursor-text underline decoration-dotted">' + row.name + '</span></td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.de.toFixed(2) + '</td>'
@@ -1762,7 +1877,7 @@
           if (requiredPrefix && !newVal.toUpperCase().startsWith(requiredPrefix)) {
             showToast('toastStack', 'The "' + requiredPrefix.trim() + '" prefix cannot be removed from this lot number.', 'error');
           } else if (!newVal || !window.isValidLotNumber(newVal)) {
-            showToast('toastStack', 'Invalid lot number — use 4 digits + 2 letters, mandatory prefixed with "DR " or "LT ".', 'error');
+            showToast('toastStack', 'Invalid lot number format.', 'error');
           } else if (isDuplicateLotNumber(newVal, rowId)) {
             showToast('toastStack', 'This lot number already exists in the table.', 'error');
           } else {
@@ -1785,29 +1900,36 @@
       if (isReading || window.isAnyReadingInProgress()) return;
       const selectedRow = selectedRowId ? rows[selectedRowId] : null;
       const wasReread = !!selectedRow;
+      const kind = wasReread ? rows[selectedRowId].kind : 'sample';
+      const name = wasReread ? rows[selectedRowId].name : window.nextDefaultSampleName();
 
       isReading = true;
       window.setReadingInProgress(true);
       measureBtn2.disabled = true;
       showToast('toastStack', wasReread ? 'Re-reading sample…' : 'Reading sample…', 'info');
 
-      setTimeout(function () {
-        if (wasReread) {
-          const kind = rows[selectedRowId].kind;
-          const name = rows[selectedRowId].name;
-          rows[selectedRowId] = Object.assign(makeRow(kind, name), { id: selectedRowId, remarks: rows[selectedRowId].remarks });
-          showToast('toastStack', name + ' re-read successfully.', 'success');
-          selectedRowId = null;
-          updateButtonLabel();
-        } else {
-          const newRow = makeRow('sample', window.nextDefaultSampleName());
-          rows[newRow.id] = newRow;
-          showToast('toastStack', newRow.name + ' captured successfully.', 'success');
-        }
-        renderAll();
-        isReading = false;
-        window.setReadingInProgress(false);
-      }, 1000);
+      makeRow(kind, name)
+        .then(function (newRowData) {
+          if (wasReread) {
+            rows[selectedRowId] = Object.assign(newRowData, { id: selectedRowId, remarks: rows[selectedRowId].remarks });
+            showToast('toastStack', name + ' re-read successfully.', 'success');
+            selectedRowId = null;
+            updateButtonLabel();
+          } else {
+            rows[newRowData.id] = newRowData;
+            showToast('toastStack', newRowData.name + ' captured successfully.', 'success');
+          }
+          renderAll();
+        })
+        .catch(function (err) {
+          showToast('toastStack', 'Measurement failed — is the agent running?', 'error');
+          console.error(err);
+        })
+        .finally(function () {
+          isReading = false;
+          window.setReadingInProgress(false);
+          measureBtn2.disabled = false;
+        });
     }
 
     measureBtn2.addEventListener('click', captureReading);
@@ -1833,13 +1955,20 @@
       const prefix = kind === 'light' ? 'LT ' : 'DR ';
       const name = prefix + window.nextDefaultSampleName();
       showToast('toastStack', 'Reading ' + kind + '…', 'info');
-      setTimeout(function () {
-        const newRow = makeRow(kind, name);
-        rows[newRow.id] = newRow;
-        renderAll(); // re-applies the correct gated/ungated disabled state
-        showToast('toastStack', name + ' captured successfully.', 'success');
-        window.setReadingInProgress(false);
-      }, 1000);
+
+      makeRow(kind, name)
+        .then(function (newRow) {
+          rows[newRow.id] = newRow;
+          renderAll(); // re-applies the correct gated/ungated disabled state
+          showToast('toastStack', name + ' captured successfully.', 'success');
+        })
+        .catch(function (err) {
+          showToast('toastStack', 'Measurement failed — is the agent running?', 'error');
+          console.error(err);
+        })
+        .finally(function () {
+          window.setReadingInProgress(false);
+        });
     };
 
     window.clearSelectedSampleRow = function () {
@@ -1919,6 +2048,8 @@
       wizardStandard.stdDe = null;
       wizardStandard.standardsId = null; // Task 8 — clear so a stale ID can't leak into a new session
       wizardStandard.raw = null;
+      wizardStandard.standardA = null;
+      wizardStandard.standardB = null;
       wizardStandard.savedToDb = false;
       wizardStandard.samplesSavedToDb = false;
 

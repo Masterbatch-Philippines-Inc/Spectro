@@ -20,7 +20,7 @@
 
     {% include "components/shared/ui/input.html" with input_id="searchInput" input_type="text" input_placeholder="Search anything in the table..." input_class="flex-1 min-w-[180px] max-w-[340px]" input_disabled=True %}
 
-    {% include "components/shared/ui/button.html" with btn_id="generateReportBtn" btn_label="Generate Report for this Product Code" btn_variant="primary" btn_extra_class="ml-auto" btn_disabled=True %}
+    {% include "components/shared/ui/button.html" with btn_id="generateReportBtn" btn_label="Generate Report for this Product Code" btn_variant="primary" btn_extra_class="ml-auto btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] hover:opacity-90 transition" btn_disabled=True %}
 
   </div>
 
@@ -35,7 +35,15 @@
       key: 'colorSimulation', label: 'Color Simulation', type: 'string',
       render: function (row) {
         if (!row.colorSimulation || row.colorSimulation === '-') return '<span class="text-muted-foreground">-</span>';
-        return '<div class="flex items-center gap-1.5"><span class="w-5 h-5 rounded border border-border shrink-0" style="background:' + row.colorSimulation + ';" title="' + row.colorSimulation + '"></span><span>' + row.colorSimulation + '</span></div>';
+        // Stored/displayed value is #AARRGGBB (alpha first, matches the
+        // Excel export's ARGB convention). CSS parses 8-digit hex as
+        // #RRGGBBAA (alpha LAST), so passing the raw string into
+        // "background:" misreads the alpha byte as red and shifts every
+        // channel -- same bug fixed in samples_reader.html's swatch
+        // rendering. Alpha here is always opaque ("FF"), so strip it and
+        // hand CSS a plain 6-digit #RRGGBB instead.
+        const cssColor = '#' + row.colorSimulation.replace('#', '').slice(2, 8);
+        return '<div class="flex items-center gap-1.5"><span class="w-5 h-5 rounded border border-border shrink-0" style="background:' + cssColor + ';" title="' + row.colorSimulation + '"></span><span>' + row.colorSimulation + '</span></div>';
       }
     },
     { key: 'dateTime',    label: 'Date and Time',      type: 'string' },
@@ -101,7 +109,7 @@
       key: 'specialPassBy', label: 'Special Pass BY', type: 'select',
       render: function (row) {
         const disabled = !row.specialPass;
-        const options = ['Ana S.', 'Jinky V.', 'Ernie P.', 'Elton A.'];
+        const options = ['Ana Solomon', 'Jinky Villacampa', 'Ernie Pio', 'Elton Ang'];
         return '<select class="special-pass-by-select text-[11.5px] px-2 py-1 pr-6 rounded-md border border-border bg-card min-w-[110px] cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed disabled:bg-muted" data-row-id="' + row.id + '"' + (disabled ? ' disabled' : '') + '>'
           + '<option value=""' + (row.specialPassBy ? '' : ' selected') + '>Select…</option>'
           + options.map(function (name) { return '<option' + (row.specialPassBy === name ? ' selected' : '') + '>' + name + '</option>'; }).join('')

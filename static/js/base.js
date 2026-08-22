@@ -20,6 +20,8 @@
 
     // Every UI functionality
     'js/shared/ui/button.js',
+    'js/shared/ui/color_offset.js',
+    'js/shared/ui/color_simulation.js',
     'js/shared/ui/dropdown.js',
     'js/shared/ui/forms.js',
     'js/shared/ui/scatter_graph.js',
