@@ -347,19 +347,24 @@
   // ===========================================================
   const INSTRUMENT_SESSION_KEY = 'spectroInstrumentSession';
 
+  // localStorage (not sessionStorage) deliberately -- the instrument
+  // connection is a property of this PC's agent/hardware, not of any
+  // one browser tab or login session. Any tab open on this machine
+  // should see the same real connection state, confirmed live against
+  // /status before ever being trusted (see restoreInstrumentSession()).
   function saveInstrumentSession() {
     try {
-      sessionStorage.setItem(INSTRUMENT_SESSION_KEY, JSON.stringify({
+      localStorage.setItem(INSTRUMENT_SESSION_KEY, JSON.stringify({
         connected: instrumentConnected,
         calibration: calibrationData,
         device: wizardDevice,
       }));
-    } catch (e) { /* sessionStorage unavailable -- fail silently, session simply won't persist */ }
+    } catch (e) { /* localStorage unavailable -- fail silently, session simply won't persist */ }
   }
 
   function loadInstrumentSession() {
     try {
-      const raw = sessionStorage.getItem(INSTRUMENT_SESSION_KEY);
+      const raw = localStorage.getItem(INSTRUMENT_SESSION_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch (e) {
       return null;
@@ -367,7 +372,7 @@
   }
 
   function clearInstrumentSession() {
-    try { sessionStorage.removeItem(INSTRUMENT_SESSION_KEY); } catch (e) {}
+    try { localStorage.removeItem(INSTRUMENT_SESSION_KEY); } catch (e) {}
   }
 
   // Task 8 (3) — holds the captured standard's raw values + name/DE in
@@ -547,12 +552,14 @@
     setBadge('connecting');
     if (connSubtitle) connSubtitle.textContent = 'Searching for BLE spectrometer…';
 
+    let lastAgentData = null;
     fetch('http://localhost:5151/connect', { method: 'POST' })
       .then(function (res) { return res.json(); })
       .then(function (agentData) {
         if (!agentData.ok) {
           throw new Error(agentData.error || 'Connection failed');
         }
+        lastAgentData = agentData;
         return resolveDeviceInfo(agentData);
       })
       .then(function () {
@@ -568,8 +575,11 @@
         if (devSerial) devSerial.textContent = wizardDevice.serial || '—';
         if (deviceInfo) deviceInfo.style.display = 'block';
         setCalibrateButtonsEnabled(true);
+        const wasCalibrationRestored = restoreCalibrationState(lastAgentData);
         saveInstrumentSession();
-        showToast('toastStack', 'Instrument connected', 'success');
+        if (!wasCalibrationRestored) {
+          showToast('toastStack', 'Instrument connected', 'success');
+        }
       })
       .catch(function (err) {
         connectBtn.classList.remove('loading');
@@ -580,6 +590,36 @@
         showToast('toastStack', 'Instrument not found.', 'error');
         console.error(err);
       });
+  }
+
+  // Reads black_calibrated/white_calibrated straight off the /connect
+  // response (sourced from the instrument's own NH_DeviceInfo flags) and,
+  // if the hardware already reports itself calibrated, marks the matching
+  // button/cell as done instead of forcing the user to re-press Calibrate.
+  function restoreCalibrationState(agentData) {
+    if (!agentData) return false;
+    let restoredAny = false;
+
+    ['black', 'white'].forEach(function (type) {
+      if (!agentData[type + '_calibrated']) return;
+      calibrationData[type] = true;
+      const cell = document.getElementById(type + 'Cell');
+      if (cell) cell.classList.add('done');
+      const btn = type === 'black' ? blackBtn : whiteBtn;
+      const label = btn ? btn.querySelector('.btn-label') : null;
+      if (label) label.textContent = 'Recalibrate';
+      restoredAny = true;
+    });
+
+    if (calibrationData.black && calibrationData.white) {
+      unlockStep2();
+    }
+    if (restoredAny) {
+      showToast('toastStack', 'Instrument connected and already calibrated.', 'success');
+    } else {
+      showToast('toastStack', 'Please recalibrate before continuing', 'info');
+    }
+    return restoredAny;
   }
 
   function doDisconnect() {
@@ -611,7 +651,7 @@
         const label = b.querySelector('.btn-label');
         if (label) label.textContent = 'Calibrate';
       });
-      showToast('toastStack', 'Instrument disconnected', 'info');
+      showToast('toastStack', 'Instrument disconnected', 'success');
     }
 
     fetch('http://localhost:5151/disconnect', { method: 'POST' })
@@ -678,7 +718,7 @@
       .then(function (res) { return res.json(); })
       .then(function (data) {
         if (!data.ok) {
-          showToast('toastStack', 'Calibration failed.', 'error');
+          showToast('toastStack', 'Calibration failed, check instrument for details.', 'error');
           console.error(data.error);
           if (label) label.textContent = isRecalibration ? 'Recalibrate' : 'Calibrate';
           return;
@@ -686,7 +726,7 @@
         markCalibrated(type);
       })
       .catch(function (err) {
-        showToast('toastStack', 'Calibration failed.', 'error');
+        showToast('toastStack', 'Calibration failed, check instrument for details.', 'error');
         console.error(err);
         if (label) label.textContent = isRecalibration ? 'Recalibrate' : 'Calibrate';
       })
@@ -881,9 +921,9 @@
       // Step 1 fully satisfied by the restored session -- skip straight
       // to Step 2 instead of re-showing the connect/calibrate screen.
       unlockStep2();
-      showToast('toastStack', 'Instrument already connected and calibrated — resuming session.', 'info');
+      showToast('toastStack', 'Instrument already calibrated.', 'info');
     } else {
-      showToast('toastStack', 'Instrument already connected — finish calibration to continue.', 'info');
+      showToast('toastStack', 'Finish calibration to continue.', 'info');
     }
   }
 
@@ -894,7 +934,9 @@
 
     const session = loadInstrumentSession();
     if (!session || !session.connected) {
-      doConnect();
+      // No stored session -- stay idle at "Offline" and let the user
+      // press Connect themselves. Auto-connect on load removed; only
+      // an existing, agent-confirmed session restores automatically.
       return;
     }
 
@@ -908,14 +950,13 @@
           restoreInstrumentSession(session);
         } else {
           clearInstrumentSession();
-          doConnect();
         }
       })
       .catch(function () {
         // agent unreachable -- can't confirm, so don't trust the stale
-        // session; fall back to the normal connect flow/error state
+        // session; clear it and leave the user at the normal Offline
+        // state to press Connect manually
         clearInstrumentSession();
-        doConnect();
       });
   });
 
