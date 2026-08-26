@@ -1,9 +1,9 @@
 
-import { showToast } from "../shared/global/toast.js";
-import { getColorOffset } from "../shared/ui/color_offset.js";
-import { getColorSimulation } from "../shared/ui/color_simulation.js";
-import { renderScatter } from "../shared/ui/scatter_graph.js";
-import { getCsrfToken } from "../shared/utils/csrf.js";
+import { showToast } from "../global/toast.js";
+import { getColorOffset } from "../ui/color_offset.js";
+import { getColorSimulation } from "../ui/color_simulation.js";
+import { renderScatter } from "../ui/scatter_graph.js";
+import { getCsrfToken } from "../utils/csrf.js";
 
 export function initSamplesReaderPage(urls, productCodeOptions) {
   let instrumentConnected = false;

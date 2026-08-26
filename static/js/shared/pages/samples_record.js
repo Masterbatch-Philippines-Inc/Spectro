@@ -3,11 +3,11 @@
  *  static/js/pages/samples_record.js
  */
 
-import { createDataTable } from "../shared/ui/table.js";
-import { showToast } from "../shared/global/toast.js";
-import { openModal, closeModal } from "../shared/global/modal.js";
-import { renderScatter } from "../shared/ui/scatter_graph.js";
-import { getCsrfToken } from "../shared/utils/csrf.js";
+import { createDataTable } from "../ui/table.js";
+import { showToast } from "../global/toast.js";
+import { openModal, closeModal } from "../global/modal.js";
+import { renderScatter } from "../ui/scatter_graph.js";
+import { getCsrfToken } from "../utils/csrf.js";
 
 export function initSamplesRecordPage(urls) {
   const COLUMNS = [
