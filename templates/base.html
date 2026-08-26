@@ -31,7 +31,8 @@
 </div>
 {% include "components/shared/global/modals.html" %}
 
-<script src="{% static 'js/base.js' %}" data-static-base="{% static '' %}"></script>
+<script type="module" src="{% static 'js/base.js' %}"></script>
+{% comment %} <script src="{% static 'js/base.js' %}" data-static-base="{% static '' %}"></script> {% endcomment %}
 {% block extra_js %}{% endblock %}
 </body>
 </html>

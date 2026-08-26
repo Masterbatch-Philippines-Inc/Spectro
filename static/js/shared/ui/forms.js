@@ -14,7 +14,7 @@
  *  matching field (data-field-error="
  */
 
-function initAjaxForms() {
+export function initAjaxForms() {
   document.querySelectorAll('form[data-ajax-form]').forEach(function (form) {
     if (form.dataset.ajaxBound) return; // avoid double-binding on re-init
     form.dataset.ajaxBound = 'true';

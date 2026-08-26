@@ -29,7 +29,12 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script type="module">
+  import { createDataTable } from "{% static 'js/shared/ui/table.js' %}";
+  import { showToast } from "{% static 'js/shared/global/toast.js' %}";
+  import { openModal, closeModal } from "{% static 'js/shared/global/modal.js' %}";
+  import { renderScatter } from "{% static 'js/shared/ui/scatter_graph.js' %}";
+
   const COLUMNS = [
     {
       key: 'colorSimulation', label: 'Color Simulation', type: 'string',
@@ -134,6 +139,7 @@
       row.spectroJudgement = judgementFor(row.de00);
     });
   }
+
   const leadingColumns = [
     {
       renderHeader: function () {
@@ -154,7 +160,6 @@
       width: 'w-9',
     },
   ];
-
 
   window.addEventListener('load', function () {
     const productCodeFilter = document.getElementById('productCodeFilterValue');
@@ -308,7 +313,7 @@
             selectedRows.clear();
           }
           dataTable.renderBody();
-          if (window.renderScatter) window.renderScatter();
+          renderScatter();
         });
       },
       onBodyRendered: function () {
@@ -328,7 +333,7 @@
               allCheckbox.checked = dataset.length > 0 && dataset.every(function (r) { return selectedRows.has(String(r.id)); });
             }
 
-            if (window.renderScatter) window.renderScatter();
+            renderScatter();
           });
         });
 
@@ -476,7 +481,7 @@
               setStdDeEditable(true);
             }
             if (generateReportBtn) generateReportBtn.disabled = dataset.length === 0;
-            if (window.renderScatter) window.renderScatter();
+            renderScatter();
           })
           .catch(function () {
             showToast('toastStack', 'Failed to load samples for this standard.', 'danger');
@@ -665,7 +670,7 @@
               // (b) recompute every row's Spectro Judgement against the new threshold
               recalcSpectroJudgements();
               dataTable.renderBody();
-              if (window.renderScatter) window.renderScatter();
+              renderScatter();
             } else {
               stdDeUsedBox.value = currentStdDeUsed !== null ? currentStdDeUsed.toFixed(2) : '';
             }
@@ -720,14 +725,5 @@
     tryLoadTable();
   });
   
-</script>
-
-<script>
-  window.getScatterPlotPoints = function () {
-    return dataset
-      .filter(r => r.da !== null && r.db !== null)
-      .filter(r => selectedRows.size === 0 || selectedRows.has(r.id))
-      .map(r => ({ id: r.id, name: r.stickerLot, da: r.da, db: r.db, passed: r.spectroJudgement === 'PASSED' }));
-  };
 </script>
 {% endblock %}

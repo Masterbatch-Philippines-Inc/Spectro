@@ -11,7 +11,7 @@
  *  can react without modal.js knowing about them.
  */
 
-function openModal(modalId) {
+export function openModal(modalId) {
   const modal = document.querySelector('[data-modal="' + modalId + '"]');
   if (!modal) return;
   modal.classList.remove('hidden');
@@ -19,7 +19,7 @@ function openModal(modalId) {
   document.dispatchEvent(new CustomEvent('modal:opened', { detail: { modalId: modalId } }));
 }
 
-function closeModal(modalId) {
+export function closeModal(modalId) {
   const modal = document.querySelector('[data-modal="' + modalId + '"]');
   if (!modal) return;
   modal.classList.add('hidden');
@@ -27,7 +27,7 @@ function closeModal(modalId) {
   document.dispatchEvent(new CustomEvent('modal:closed', { detail: { modalId: modalId } }));
 }
 
-function initModals() {
+export function initModals() {
   document.querySelectorAll('[data-modal-target]').forEach(function (trigger) {
     if (trigger.dataset.modalBound) return;
     trigger.dataset.modalBound = 'true';

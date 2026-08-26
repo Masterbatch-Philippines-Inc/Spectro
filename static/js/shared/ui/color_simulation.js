@@ -38,7 +38,7 @@
  *   // deep, muted teal-green -> something like "#FF5CA6A0"
  *   // (exact bytes depend on the sRGB gamut clamp for this Lab point)
  */
-function getColorSimulation(L, a, b) {
+export function getColorSimulation(L, a, b) {
   // ---- 1. CIELAB -> XYZ (D65 reference white) ----
   const refX = 95.047, refY = 100.0, refZ = 108.883;
 

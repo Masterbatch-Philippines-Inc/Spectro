@@ -8,7 +8,7 @@
  *  whatever's inside the panel).
  */
 
-function initCombobox() {
+export function initCombobox() {
   document.querySelectorAll('[data-combobox]').forEach(function (wrapper) {
     if (wrapper.dataset.comboboxBound) return;
     wrapper.dataset.comboboxBound = 'true';
@@ -117,7 +117,7 @@ function initCombobox() {
   });
 }
 
-function initDropdowns() {
+export function initDropdowns() {
   document.querySelectorAll('[data-dropdown-menu]').forEach(function (wrapper) {
     if (wrapper.dataset.dropdownBound) return;
     wrapper.dataset.dropdownBound = 'true';

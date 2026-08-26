@@ -6,7 +6,7 @@ const TOAST_TONE_CLASSES = {
   error:    'bg-danger text-white',
 };
 
-function showToast(stackId, msg, tone) {
+export function showToast(stackId, msg, tone) {
   const stack = document.getElementById(stackId || 'toastStack');
   if (!stack) return;
   const toneClass = TOAST_TONE_CLASSES[tone] || TOAST_TONE_CLASSES.info;

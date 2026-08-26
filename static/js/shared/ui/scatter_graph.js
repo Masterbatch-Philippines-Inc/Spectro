@@ -59,12 +59,12 @@ function hideScatterTooltip() {
   if (tooltip) tooltip.classList.add('hidden');
 }
 
-function renderScatter() {
+export function renderScatter() {
   paintScatterGroup(document.getElementById('scatterPoints'));
   paintScatterGroup(document.getElementById('scatterPointsModal'));
 }
 
-function initScatterGraph() {
+export function initScatterGraph() {
   renderScatter();
 
   // repaint the modal copy every time its modal opens, so it reflects

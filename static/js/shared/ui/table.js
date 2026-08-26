@@ -26,7 +26,7 @@
  *    table.applySearch('query');
  */
 
-function createDataTable(opts) {
+export function createDataTable(opts) {
   const headerRow = document.getElementById(opts.headerRowId);
   const tableBody = document.getElementById(opts.tableBodyId);
   const tableEl = document.getElementById(opts.tableId);

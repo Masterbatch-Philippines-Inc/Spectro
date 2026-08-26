@@ -1,5 +1,5 @@
 
-function initSidebarToggle() {
+export function initSidebarToggle() {
   const hamburger = document.getElementById('hamburgerBtn');
   const sidebar = document.getElementById('sidebar');
   if (!hamburger || !sidebar) return;

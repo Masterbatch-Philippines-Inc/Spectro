@@ -1,5 +1,5 @@
 
-function initFooterClock() {
+export function initFooterClock() {
   const el = document.getElementById('footerDate');
   if (!el) return;
   function tick() {
@@ -12,7 +12,7 @@ function initFooterClock() {
   setInterval(tick, 1000);
 }
 
-function initDarkModeToggle() {
+export function initDarkModeToggle() {
   const toggle = document.getElementById('darkModeToggle');
   if (!toggle) return;
 

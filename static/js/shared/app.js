@@ -1,9 +1,13 @@
 
-/* 
- *  Dependent functions will be listed here.
- */
+import { initSidebarToggle } from './global/sidebar.js';
+import { initFooterClock, initDarkModeToggle } from './global/footer.js';
+import { initModals } from './global/modal.js';
 
-function initApp() {
+import { initDropdowns, initCombobox } from './ui/dropdown.js';
+import { initAjaxForms } from './ui/forms.js';
+import { initScatterGraph } from './ui/scatter_graph.js';
+
+export function initApp() {
   initFooterClock();
   initDarkModeToggle();
   initSidebarToggle();

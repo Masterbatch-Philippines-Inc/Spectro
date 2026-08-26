@@ -77,7 +77,7 @@
  *   // Δb*=0.70, standard b*>=0 (Yellow family), Δb* positive -> "Yellow+"
  *   // => "Red-, Yellow+"
  */
-function getColorOffset(dL, da, db, standardA, standardB, tolerance) {
+export function getColorOffset(dL, da, db, standardA, standardB, tolerance) {
   if (tolerance === undefined || tolerance === null) tolerance = 0.50;
 
   const labels = [];

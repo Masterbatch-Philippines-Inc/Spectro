@@ -325,7 +325,12 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+<script type="module">
+  import { showToast } from "{% static 'js/shared/global/toast.js' %}";
+  import { getColorOffset } from "{% static 'js/shared/ui/color_offset.js' %}";
+  import { getColorSimulation } from "{% static 'js/shared/ui/color_simulation.js' %}";
+  import { renderScatter } from "{% static 'js/shared/ui/scatter_graph.js' %}";
+
   let instrumentConnected = false;
   let calibrationData = {};   // cached so user isn't asked to re-calibrate (Task 11c2)
   let currentStep = 1;
@@ -1795,12 +1800,8 @@
           id: 'row' + (rowSeq++),
           kind: kind, // 'light' | 'dark' | 'sample'
           name: name,
-          colorOffset: (typeof getColorOffset === 'function')
-            ? getColorOffset(d.dL, d.da, d.db, wizardStandard.standardA, wizardStandard.standardB)
-            : 'None',
-          colorSimulation: (typeof getColorSimulation === 'function')
-            ? getColorSimulation(sci.L, sci.a, sci.b)
-            : '#FFFFFFFF',
+          colorOffset: getColorOffset(d.dL, d.da, d.db, wizardStandard.standardA, wizardStandard.standardB),
+          colorSimulation: getColorSimulation(sci.L, sci.a, sci.b),
           dateTime: formatDateTime(new Date()),
           remarks: '',
           de: d.de00, L: sci.L, C: sci.C, h: sci.h, a: sci.a, b: sci.b,
@@ -1842,7 +1843,7 @@
       historyTableBody.innerHTML = ids.map(function (id) { return renderRow(rows[id]); }).join('');
       if (historyEmpty) historyEmpty.style.display = ids.length ? 'none' : 'flex';
       if (historyCount) historyCount.textContent = ids.length + ' Sample' + (ids.length === 1 ? '' : 's');
-      if (window.renderScatter) window.renderScatter();
+      renderScatter();
       if (window.refreshFinishReadingState) window.refreshFinishReadingState();
       refreshReadSampleGate();
     }
