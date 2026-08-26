@@ -1,38 +1,29 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Spectro - Masterbatch Phillippines Inc.</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-<link rel="icon" href="{% static 'img/spectro.svg' %}" type="image/svg+xml" media="(prefers-color-scheme: dark)">
-<link rel="stylesheet" href="{% static 'css/output.css' %}">
-{% block extra_css %}{% endblock %}
-<script>
-  (function () {
-    if (localStorage.getItem('theme') === 'dark') {
-      document.documentElement.classList.add('dark');
-    }
-  })();
-</script>
-</head>
-<body class="bg-background text-foreground font-sans">
-<div class="flex flex-col h-screen app bg-accent">
-<div class="flex-1 min-h-0 flex">
-{% include "components/shared/global/sidebar.html" %}
-<main class="flex-1 min-w-0 flex flex-col overflow-hidden rounded-xl m-4 bg-card shadow-md">
-{% include "components/shared/global/header.html" %}
-{% block content %}{% endblock %}
-{% include "components/shared/global/footer.html" %}
-{% include "components/shared/ui/toast.html" %}
-</main>
-</div>
-</div>
-{% include "components/shared/global/modals.html" %}
-
-<script type="module" src="{% static 'js/base.js' %}"></script>
-{% comment %} <script src="{% static 'js/base.js' %}" data-static-base="{% static '' %}"></script> {% endcomment %}
-{% block extra_js %}{% endblock %}
-</body>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spectro - Masterbatch Phillippines Inc.</title>
+    <link rel="icon" href="{% static 'img/spectro.svg' %}" type="image/svg+xml" media="(prefers-color-scheme: dark)">
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    <script src="{% static 'js/shared/global/theme_boot.js' %}"></script>
+    </script>
+  </head>
+  <body class="bg-background text-foreground font-sans">
+    <div class="flex flex-col h-screen app bg-accent">
+      <div class="flex-1 min-h-0 flex">
+        {% include "components/shared/global/sidebar.html" %}
+        <main class="flex-1 min-w-0 flex flex-col overflow-hidden rounded-xl m-4 bg-card shadow-md">
+        {% include "components/shared/global/header.html" %}
+        {% block content %}{% endblock %}
+        {% include "components/shared/global/footer.html" %}
+        {% include "components/shared/ui/toast.html" %}
+        </main>
+      </div>
+    </div>
+    {% include "components/shared/global/modals.html" %}
+    <script type="module" src="{% static 'js/base.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+  </body>
 </html>

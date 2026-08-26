@@ -154,7 +154,7 @@ def get_lot_samples_for_standard(request):
 @login_required
 def save_visual_judgement(request):
     if request.method != "POST":
-        return JsonResponse({"tone": "danger", "message": "Invalid request method."}, status=405)
+        return JsonResponse({"tone": "danger", "message": "That's a bad way to check a program, brotha."}, status=405)
 
     lot_sample_id = request.POST.get("lot_sample_id", "").strip()
     value = request.POST.get("value", "").strip()  # "Pass" | "Fail" | ""
@@ -182,7 +182,7 @@ def save_visual_judgement(request):
 @login_required
 def save_visual_fail_reason(request):
     if request.method != "POST":
-        return JsonResponse({"tone": "danger", "message": "Invalid request method."}, status=405)
+        return JsonResponse({"tone": "danger", "message": "That's a bad way to check a program, brotha."}, status=405)
 
     lot_sample_id = request.POST.get("lot_sample_id", "").strip()
     reason = request.POST.get("reason", "").strip()
@@ -204,7 +204,7 @@ def save_visual_fail_reason(request):
 @login_required
 def save_spectro_remarks(request):
     if request.method != "POST":
-        return JsonResponse({"tone": "danger", "message": "Invalid request method."}, status=405)
+        return JsonResponse({"tone": "danger", "message": "That's a bad way to check a program, brotha."}, status=405)
 
     lot_sample_id = request.POST.get("lot_sample_id", "").strip()
     standards_id = request.POST.get("standards_id", "").strip()
@@ -228,7 +228,7 @@ def save_spectro_remarks(request):
 @login_required
 def save_special_pass_by(request):
     if request.method != "POST":
-        return JsonResponse({"tone": "danger", "message": "Invalid request method."}, status=405)
+        return JsonResponse({"tone": "danger", "message": "That's a bad way to check a program, brotha."}, status=405)
 
     lot_sample_id = request.POST.get("lot_sample_id", "").strip()
     value = request.POST.get("value", "").strip()
@@ -269,7 +269,7 @@ def save_special_pass_by(request):
 @login_required
 def save_std_delta_e_used(request):
     if request.method != "POST":
-        return JsonResponse({"tone": "danger", "message": "Invalid request method."}, status=405)
+        return JsonResponse({"tone": "danger", "message": "That's a bad way to check a program, brotha."}, status=405)
 
     product_code = request.POST.get("product_code", "").strip()
     new_value_raw = request.POST.get("new_value", "").strip()

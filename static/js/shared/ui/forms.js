@@ -14,6 +14,8 @@
  *  matching field (data-field-error="
  */
 
+import { getCsrfToken } from './../utils/csrf.js';
+
 export function initAjaxForms() {
   document.querySelectorAll('form[data-ajax-form]').forEach(function (form) {
     if (form.dataset.ajaxBound) return; // avoid double-binding on re-init
@@ -30,7 +32,10 @@ export function initAjaxForms() {
       fetch(form.action, {
         method: form.method || 'POST',
         body: new FormData(form),
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCsrfToken(),
+        },
       })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
         .then(function (result) {

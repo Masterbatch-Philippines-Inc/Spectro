@@ -67,7 +67,7 @@ def render_samples_reader(request):
         .distinct()
     )
     context = {
-        "product_code_options_json": json.dumps(list(product_codes)),
+        "product_code_options": list(product_codes),
     }
     return render(request, "pages/samples_reader.html", context)
 
