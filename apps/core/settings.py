@@ -62,21 +62,23 @@ ASGI_APPLICATION = "apps.core.asgi.application"
 DATABASES = {
     'default': {
         'ENGINE':   'django.db.backends.postgresql',
-        'NAME':     config('DB_NAME'),
-        'USER':     config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST':     config('DB_HOST'),
-        'PORT':     config('DB_PORT'),
+        'NAME':     config('DB_NAME', default=''),
+        'USER':     config('DB_USER', default=''),
+        'PASSWORD': config('DB_PASSWORD', default=''),
+        'HOST':     config('DB_HOST', default=''),
+        'PORT':     config('DB_PORT', default=''),
     },
-    # 'server': {
-    #     'ENGINE':   'django.db.backends.postgresql',
-    #     'NAME':     config('SERVER_DB_NAME', default=''),
-    #     'USER':     config('SERVER_DB_USER', default=''),
-    #     'PASSWORD': config('SERVER_DB_PASSWORD', default=''),
-    #     'HOST':     config('SERVER_DB_HOST', default=''),
-    #     'PORT':     config('SERVER_DB_PORT', default=''),
-    # }
+    'server': {
+        'ENGINE':   'django.db.backends.postgresql',
+        'NAME':     config('SERVER_DB_NAME', default=''),
+        'USER':     config('SERVER_DB_USER', default=''),
+        'PASSWORD': config('SERVER_DB_PASSWORD', default=''),
+        'HOST':     config('SERVER_DB_HOST', default=''),
+        'PORT':     config('SERVER_DB_PORT', default=''),
+    }
 }
+
+DATABASE_ROUTERS = ["apps.core.db_router.QcProgramRouter"]
 
 # Custom user model lives in apps/spectro/models/auth_models.py
 AUTH_USER_MODEL = "spectro.User"

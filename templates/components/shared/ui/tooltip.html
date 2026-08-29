@@ -1,0 +1,16 @@
+{% comment %}
+============================================================
+Shared hover-tooltip SHELL. One instance lives in base.html and is
+reused by every element on the page carrying data-tooltip="...".
+tooltip.js handles show/hide/position generically via event
+delegation on document -- it doesn't matter if the tagged element
+existed at page load or was rendered later by table.js/etc, since
+delegation catches it either way with zero re-binding needed.
+
+Usage on any element:
+  <div data-tooltip="Some message">...</div>
+
+============================================================
+{% endcomment %}
+
+<div id="uiTooltip" class="hidden fixed z-[200] pointer-events-none bg-foreground text-background text-[12.5px] font-medium rounded-md px-3 py-2 shadow-lg leading-relaxed max-w-[240px]"></div>

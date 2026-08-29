@@ -4,6 +4,14 @@ import { getColorOffset } from "../ui/color_offset.js";
 import { getColorSimulation } from "../ui/color_simulation.js";
 import { renderScatter } from "../ui/scatter_graph.js";
 import { getCsrfToken } from "../utils/csrf.js";
+import {
+  connectInstrument,
+  disconnectInstrument,
+  calibrateInstrument,
+  measureStandard,
+  measureSample,
+  getInstrumentStatus,
+} from "../utils/instrument_dev.js";
 
 export function initSamplesReaderPage(urls, productCodeOptions) {
   let instrumentConnected = false;
@@ -222,6 +230,37 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           wizardDevice.model = agentInfo.model;
           wizardDevice.serial = agentInfo.serial_number;
         }
+      })
+      .then(persistSpectrometerInfo);
+  }
+
+  // (b) get_or_create validation round-trip -- (10.1) status "OK" means
+  // this device_sn/device_model pair didn't exist yet and was just
+  // created, so toast about it. (10.2) status "EXISTS" means it was
+  // already on record -- proceed silently, no extra toast, since
+  // resolveDeviceInfo() already sourced the same values from the DB.
+  function persistSpectrometerInfo() {
+    if (!wizardDevice.serial || !wizardDevice.model) return;
+
+    return fetch(urls.saveSpectrometerInfo, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: new URLSearchParams({
+        device_sn: wizardDevice.serial,
+        device_model: wizardDevice.model,
+        csrfmiddlewaretoken: getCsrfToken(),
+      }),
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (result) {
+        if (result.status === 'OK') {
+          showToast('toastStack', result.message, result.tone || 'success');
+        }
+        // status === 'EXISTS' -- proceed to next step, no toast here
+      })
+      .catch(function () {
+        // non-fatal -- connection flow shouldn't break if this
+        // persistence step fails; device info still works for display
       });
   }
 
@@ -233,8 +272,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     if (connSubtitle) connSubtitle.textContent = 'Searching for BLE spectrometer…';
 
     let lastAgentData = null;
-    fetch('http://localhost:5151/connect', { method: 'POST' })
-      .then(function (res) { return res.json(); })
+    connectInstrument()
       .then(function (agentData) {
         if (!agentData.ok) {
           throw new Error(agentData.error || 'Connection failed');
@@ -255,11 +293,8 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         if (devSerial) devSerial.textContent = wizardDevice.serial || '—';
         if (deviceInfo) deviceInfo.style.display = 'block';
         setCalibrateButtonsEnabled(true);
-        const wasCalibrationRestored = restoreCalibrationState(lastAgentData);
+        restoreCalibrationState(lastAgentData);
         saveInstrumentSession();
-        if (!wasCalibrationRestored) {
-          showToast('toastStack', 'Instrument connected', 'success');
-        }
       })
       .catch(function (err) {
         connectBtn.classList.remove('loading');
@@ -334,8 +369,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       showToast('toastStack', 'Instrument disconnected', 'success');
     }
 
-    fetch('http://localhost:5151/disconnect', { method: 'POST' })
-      .then(function (res) { return res.json(); })
+    disconnectInstrument()
       .catch(function () {})
       .finally(finishDisconnect);
   }
@@ -394,8 +428,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     if (btn) { btn.classList.add('loading'); btn.disabled = true; }
     if (label) label.textContent = isRecalibration ? 'Recalibrating…' : 'Calibrating…';
 
-    fetch('http://localhost:5151/calibrate/' + type, { method: 'POST' })
-      .then(function (res) { return res.json(); })
+    calibrateInstrument(type)
       .then(function (data) {
         if (!data.ok) {
           showToast('toastStack', 'Calibration failed, check instrument for details.', 'error');
@@ -452,8 +485,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       if (statusText1) statusText1.textContent = 'Measuring standard…';
       if (statusSub1) statusSub1.textContent = 'Keep the aperture still and flat against the sample.';
 
-      fetch('http://localhost:5151/measure/standard', { method: 'POST' })
-        .then(function (res) { return res.json(); })
+      measureStandard()
         .then(function (data) {
           if (!data.ok || !data.sci) {
             throw new Error(data.error || 'No measurement returned');
@@ -623,8 +655,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // A stored session exists -- but don't blindly trust it, since the
     // dongle could have disconnected unexpectedly since the last page
     // view. Confirm against the agent's actual /status before restoring.
-    fetch('http://localhost:5151/status')
-      .then(function (res) { return res.json(); })
+    getInstrumentStatus()
       .then(function (data) {
         if (data.ok && data.connected) {
           restoreInstrumentSession(session);
@@ -679,7 +710,11 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     const stepDetailsLockOverlay = document.getElementById('stepDetailsLockOverlay');
     const stepDetails = document.getElementById('stepDetails');
 
-    const PRODUCT_CODE_RE = /^[A-Z]{2}\d{1,5}E(-I)?$/;
+    // Accepts both the original XX00000E(-I)? shape and the newer
+    // XX-X00000E(-I)? shape (e.g. "DV-I16110E") -- the "-X" segment
+    // is an optional single-letter sub-prefix inserted right after the
+    // initial 2 letters.
+    const PRODUCT_CODE_RE = /^[A-Z]{2}(-[A-Z])?\d{1,5}E(-I)?$/;
     let existingCodes = Array.isArray(productCodeOptions) ? productCodeOptions.slice() : [];
 
     let savedCode = null;
@@ -1114,7 +1149,13 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     function sanitizeDosage(raw) {
       let digits = raw.replace(/%/g, '').replace(/[^0-9.]/g, '');
       const dot = digits.indexOf('.');
-      if (dot !== -1) { digits = digits.slice(0, dot + 1) + digits.slice(dot + 1).replace(/\./g, ''); }
+      if (dot !== -1) {
+        digits = digits.slice(0, dot + 1) + digits.slice(dot + 1).replace(/\./g, '');
+        // cap to 2 decimal places, e.g. "12.345" -> "12.34"
+        const parts = digits.split('.');
+        if (parts[1]) parts[1] = parts[1].slice(0, 2);
+        digits = parts.join('.');
+      }
       return digits;
     }
 
@@ -1161,9 +1202,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
     dosage.addEventListener('blur', function () {
       const v = dosage.value.trim();
-      const DOSAGE_FORMAT_RE = /^\d{1,2}\.\d{1}%$/;
+      const DOSAGE_FORMAT_RE = /^\d{1,2}\.\d{1,2}%$/;
       if (v !== '%' && !DOSAGE_FORMAT_RE.test(v)) {
-        showToast('toastStack', 'Dosage must follow the format 0.0% or 00.0%', 'error');
+        showToast('toastStack', 'Dosage must be a number with 1-2 decimal places, e.g. 1.5% or 12.34%', 'error');
         dosage.classList.add('error');
       } else {
         dosage.classList.remove('error');
@@ -1186,7 +1227,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // alone is treated as a complete whole number, not flagged as
     // incomplete, as long as it isn't mid-decimal.
     const CMA_LOT_RE = /^(CMA-)?\d{1,5}[A-Za-z]{0,2}$/i;
-    const DOSAGE_FORMAT_RE = /^\d{1,2}\.\d{1}%$/;
+    const DOSAGE_FORMAT_RE = /^\d{1,2}\.\d{1,2}%$/;
 
     // (a) prefilled on load, user is free to delete it entirely
     if (!cma_lot.value) cma_lot.value = 'CMA-';
@@ -1267,7 +1308,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       }
       if (!DOSAGE_FORMAT_RE.test(dosage.value.trim())) {
         dosage.classList.add('error');
-        showToast('toastStack', 'Dosage must follow the format 0.0% or 00.0%', 'error');
+        showToast('toastStack', 'Dosage must be a number with 1-2 decimal places, e.g. 1.5% or 12.34%', 'error');
         dosage.focus();
         return false;
       }
@@ -1410,12 +1451,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       }
       const standard = { L: wizardStandard.raw.raw_l, a: wizardStandard.standardA, b: wizardStandard.standardB };
 
-      return fetch('http://localhost:5151/measure/sample', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ standard: standard }),
-      })
-        .then(function (res) { return res.json(); })
+      return measureSample(standard)
         .then(function (data) {
           if (!data.ok) throw new Error(data.error || 'Measurement failed');
           return data; // { ok, sci: {L,a,b,C,h}, deltas: {dL,da,db,dC,dH,de00}, sce? }
@@ -1607,6 +1643,10 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
     function captureReading() {
       if (isReading || window.isAnyReadingInProgress()) return;
+      if (readSampleGateEnabled && !hasLightAndDark()) {
+        showToast('toastStack', 'Please click Read Light and Read Dark button to capture both samples first.', 'error');
+        return;
+      }
       const selectedRow = selectedRowId ? rows[selectedRowId] : null;
       const wasReread = !!selectedRow;
       const kind = wasReread ? rows[selectedRowId].kind : 'sample';
@@ -1722,8 +1762,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
   /* ---- Task 5: lot number format rules + default naming ---- */
   (function lotNumberFormat() {
-    // Valid formats: 4 digits + 2 letters, or "DR "/"LT " prefix + same
-    const LOT_NUMBER_RE = /^(DR |LT )?\d{4}[A-Za-z]{2}$/;
+    // Valid formats: 4 digits + 1 or 2 letters (e.g. "1062Y" or "7382AO"),
+    // or "DR "/"LT " prefix + same
+    const LOT_NUMBER_RE = /^(DR |LT )?\d{4}[A-Za-z]{1,2}$/;
 
     window.isValidLotNumber = function (name) {
       return LOT_NUMBER_RE.test((name || '').trim());
@@ -1823,17 +1864,22 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     };
 
     finishSessionBtn.addEventListener('click', function () {
+      // Immediate disable, before any validation/network even runs --
+      // the very first line of defense against a double-click firing
+      // two save requests back to back.
+      finishSessionBtn.disabled = true;
+
       if (!wizardStandard.productCode || !wizardStandard.standardName) {
         showToast('toastStack', 'Missing standard data — cannot finish reading.', 'error');
+        finishSessionBtn.disabled = false;
         return;
       }
 
       if (window.hasInvalidLotNumbers && window.hasInvalidLotNumbers()) {
         showToast('toastStack', 'Rename lot number samples before saving.', 'error');
+        finishSessionBtn.disabled = false;
         return;
       }
-
-      finishSessionBtn.disabled = true;
 
       function saveSampleReadings(standardsId) {
         const rows = window.getSampleReadingsPayload ? window.getSampleReadingsPayload() : [];
@@ -1859,12 +1905,21 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
               wizardStandard.samplesSavedToDb = true;
               completedSteps.add(1); completedSteps.add(2); completedSteps.add(3);
               renderStepper();
+              // Keep the button disabled through the reload -- prevents
+              // any further click from resubmitting already-saved data
+              // during the 3s window, and a full reload clears every
+              // bit of in-memory wizard state so there's nothing stale
+              // left to accidentally resave afterward either.
+              showToast('toastStack', 'Reloading in a few seconds…', 'info');
+              setTimeout(function () {
+                window.location.reload();
+              }, 3000);
+              return;
             }
+            finishSessionBtn.disabled = false;
           })
           .catch(function () {
             showToast('toastStack', 'Network error — please try again.', 'error');
-          })
-          .finally(function () {
             finishSessionBtn.disabled = false;
           });
       }
@@ -1906,12 +1961,16 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           }
           wizardStandard.savedToDb = true;
           wizardStandard.standardsId = result.data.standards_id;
+          // finishSessionBtn stays disabled here -- saveSampleReadings()
+          // below handles the button's disabled state for the rest of
+          // this flow (either re-enabling on failure or keeping it
+          // locked through the reload on success).
           saveSampleReadings(result.data.standards_id);
         })
         .catch(function () {
           showToast('toastStack', 'Network error — please try again.', 'error');
           finishSessionBtn.disabled = false;
-          });
+        });
     });
   })();
 }

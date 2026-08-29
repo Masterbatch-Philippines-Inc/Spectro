@@ -3,8 +3,7 @@ apps/spectro/modules/samples_record.py
 
 Module for the "Samples Record".
 """
-import io
-import json
+import io, json, re
 
 import openpyxl
 from openpyxl.formatting.rule import CellIsRule
@@ -25,6 +24,7 @@ from apps.spectro.models import (
     VisualJudgement,
     SpecialCase,
     SpecialCaseChangelog,
+    QcProgramRecord,
 )
 
 def format_datetime_no_leading_zeros(dt):
@@ -32,7 +32,298 @@ def format_datetime_no_leading_zeros(dt):
         return "-"
     return "{}/{}/{} {}:{:02d}".format(dt.month, dt.day, dt.year, dt.hour, dt.minute)
 
-def _serialize_lot_sample_row(lot_sample, standards_id):
+# ---------------------------------------------------------------------
+# QC lot-format parsing (Task 6.2)
+#
+# QC's sticker_lot / internal_lot columns are free text, not a fixed
+# single-lot format like this project's own LotSample.sample_name.
+# The SAME column can encode any of:
+#   (a)/(b)  a start-end RANGE of lot codes    "7382AO-7385AO"
+#   (c)/(d)  a lot code + embedded BAG number   "7329AL(16)" / "7400AL(1-21)"
+#   (e)      a lot code + embedded INTERNAL LOT alias  "5853AL(5873AL)"
+#   (f)/(g)  a lot code + space-separated BAG   "7400AL 12" / "7400AL 12-13"
+#   plain    just the lot code on its own       "7383AO"
+# ---------------------------------------------------------------------
+
+LOT_CODE_RE = re.compile(r'^(\d{1,6})([A-Za-z]{1,3})$')
+
+QC_RANGE_RE = re.compile(r'^(\d{1,6}[A-Za-z]{1,3})\s*-\s*(\d{1,6}[A-Za-z]{1,3})$')
+QC_PAREN_RE = re.compile(r'^(\d{1,6}[A-Za-z]{1,3})\s*\(\s*([^)]+?)\s*\)$')
+QC_SPACE_RE = re.compile(r'^(\d{1,6}[A-Za-z]{1,3})\s+(\d+(?:-\d+)?)$')
+QC_PLAIN_RE = re.compile(r'^(\d{1,6}[A-Za-z]{1,3})$')
+# a paren's inner content counts as "another lot code" (format e) only
+# if it has letters in it -- a pure digit/digit-range inner value is a
+# bag number (formats c/d) instead
+QC_LOT_LIKE_RE = re.compile(r'^\d{1,6}[A-Za-z]{1,3}$')
+
+
+def _split_lot_code(code):
+    """'7382AO' -> (7382, 'AO'). None if it doesn't match the expected shape."""
+    m = LOT_CODE_RE.match(code.strip().upper())
+    if not m:
+        return None
+    return int(m.group(1)), m.group(2)
+
+
+def _classify_qc_lot_text(text):
+    """
+    Classifies a single QC sticker_lot/internal_lot text value into one
+    of the known (a)-(g) shapes, WITHOUT yet comparing it against any
+    particular (h) lot. Kept separate from matching so callers can
+    distinguish "this text is a genuinely recognized shape that just
+    doesn't include our lot" from "this text doesn't match any known
+    QC lot-format convention at all" -- the latter is a QC data-quality
+    signal, not a plain not-found.
+
+    Returns None for a blank/empty field, otherwise a dict shaped:
+        {"kind": "range", "start": (num, suffix)|None, "end": (num, suffix)|None, "raw": text}
+        {"kind": "paren", "base": (num, suffix)|None, "inner": <str>, "raw": text}
+        {"kind": "space", "base": (num, suffix)|None, "bag": <str>, "raw": text}
+        {"kind": "plain", "base": (num, suffix)|None, "raw": text}
+        {"kind": "unrecognized", "raw": text}
+    """
+    if not text:
+        return None
+    raw = text.strip()
+    if not raw:
+        return None
+
+    m = QC_RANGE_RE.match(raw)
+    if m:
+        return {
+            "kind": "range",
+            "start": _split_lot_code(m.group(1)),
+            "end": _split_lot_code(m.group(2)),
+            "raw": raw,
+        }
+
+    m = QC_PAREN_RE.match(raw)
+    if m:
+        return {
+            "kind": "paren",
+            "base": _split_lot_code(m.group(1)),
+            "inner": m.group(2).strip().upper(),
+            "raw": raw,
+        }
+
+    m = QC_SPACE_RE.match(raw)
+    if m:
+        return {
+            "kind": "space",
+            "base": _split_lot_code(m.group(1)),
+            "bag": m.group(2).strip(),
+            "raw": raw,
+        }
+
+    m = QC_PLAIN_RE.match(raw)
+    if m:
+        return {"kind": "plain", "base": _split_lot_code(m.group(1)), "raw": raw}
+
+    return {"kind": "unrecognized", "raw": raw}
+
+
+def _match_qc_classification(h_split, classification):
+    """
+    Given a parsed QC text shape (see _classify_qc_lot_text) and (h)
+    split into (number, suffix), attempts an actual match.
+
+    Returns a (outcome, detail) tuple:
+        ("match", {"bag": <str>|None, "internal_lot": <str>|None})
+        ("suffix_anomaly", <raw text>)  -- range's own start/end suffix
+                                            letters disagree with each
+                                            other (QC data-quality issue,
+                                            not a normal no-match)
+        ("no_match", None)
+    """
+    kind = classification["kind"]
+
+    if kind == "range":
+        start, end = classification["start"], classification["end"]
+        if not start or not end:
+            return ("no_match", None)
+        if start[1] != end[1]:
+            return ("suffix_anomaly", classification["raw"])
+        if not h_split or h_split[1] != start[1]:
+            return ("no_match", None)
+        lo, hi = sorted((start[0], end[0]))
+        if lo <= h_split[0] <= hi:
+            return ("match", {"bag": None, "internal_lot": None})
+        return ("no_match", None)
+
+    if kind == "paren":
+        base = classification["base"]
+        if not base or not h_split or base != h_split:
+            return ("no_match", None)
+        inner = classification["inner"]
+        if QC_LOT_LIKE_RE.match(inner):
+            return ("match", {"bag": None, "internal_lot": inner})   # (e)
+        return ("match", {"bag": inner, "internal_lot": None})        # (c)/(d)
+
+    if kind == "space":
+        base = classification["base"]
+        if not base or not h_split or base != h_split:
+            return ("no_match", None)
+        return ("match", {"bag": classification["bag"], "internal_lot": None})  # (f)/(g)
+
+    if kind == "plain":
+        base = classification["base"]
+        if base and h_split and base == h_split:
+            return ("match", {"bag": None, "internal_lot": None})
+        return ("no_match", None)
+
+    # "unrecognized" -- caller tracks this as its own anomaly bucket
+    return ("no_match", None)
+
+
+def _qc_lookup_for_row(product_code, sample_name):
+    """
+    Task 6: cross-checks a LotSample's product code + lot number
+    (sample_name) against QcProgramRecord -- the read-only view_spectro
+    view on the 'server' database (see apps/core/db_router.py).
+
+    Step order matches the spec exactly:
+      1. product_code present in QC?  no -> warning, stop here.
+      2. sample_name matches sticker_lot OR internal_lot for that
+         product code?  no -> warning, stop here.
+         ("only allow to return one true" -- first match wins; a lot
+         number legitimately appearing in QC should only match one of
+         the two fields for a given product code.)
+      3/4. both true -> pull bag_number and status off that QC row,
+         "N/A" each if blank.
+
+    Returns:
+        {
+            "match": "ok" | "warning",
+            "message": <user-facing string>,
+            "bag": <str>,            # bag_number or "N/A"
+            "status_value": <str>|None,  # QC's own "status" column, only set when match == "ok"
+        }
+    """
+    if not product_code:
+        return {
+            "match": "warning",
+            "message": "Selected product code has no record in QC.",
+            "bag": "N/A",
+            "internal_lot": "-",
+            "status_value": None,
+        }
+
+    # (1) product codes are always uppercase by this project's own
+    # PRODUCT_CODE_RE convention -- but QC's own data isn't guaranteed
+    # to be, so filter case-insensitively rather than assume QC's
+    # casing matches. Display values are separately normalized to caps
+    # further down.
+    qc_rows_for_product = list(
+        QcProgramRecord.objects.filter(product_code__iexact=product_code).order_by("qc_id")
+    )
+    if not qc_rows_for_product:
+        return {
+            "match": "warning",
+            "message": "Selected product code has no record in QC.",
+            "bag": "N/A",
+            "internal_lot": "-",
+            "status_value": None,
+        }
+
+    name = (sample_name or "").strip().upper()
+    h_split = _split_lot_code(name)
+
+    matched_row = None
+    matched_result = None
+    suffix_anomaly_raw = None   # (2) range whose own start/end suffix letters disagree
+    unrecognized_seen = False   # (3) QC text that doesn't fit any known (a)-(g) shape
+
+    for qc_row in qc_rows_for_product:
+        for field_text in (qc_row.sticker_lot, qc_row.internal_lot):
+            classification = _classify_qc_lot_text(field_text)
+            if classification is None:
+                continue
+
+            if classification["kind"] == "unrecognized":
+                unrecognized_seen = True
+                continue
+
+            outcome, detail = _match_qc_classification(h_split, classification)
+
+            if outcome == "suffix_anomaly":
+                if suffix_anomaly_raw is None:
+                    suffix_anomaly_raw = detail
+                continue
+
+            if outcome == "match":
+                matched_row = qc_row
+                matched_result = detail
+                break
+
+        if matched_row is not None:
+            break  # (4) "only allow to return one true" -- first match wins, stop scanning
+
+    if matched_row is not None:
+        # (1) bag_number DB column wins if populated; fall back to
+        # whatever was parsed out of the sticker/internal lot TEXT
+        # (formats c/d/f/g) when that column is empty. Always shown
+        # in caps regardless of how QC actually stored it.
+        if matched_row.bag_number:
+            bag = matched_row.bag_number.strip().upper()
+        elif matched_result["bag"]:
+            bag = matched_result["bag"].strip().upper()
+        else:
+            bag = "N/A"
+
+        # (5) format (e) is currently the ONLY source for Internal Lot.
+        internal_lot = (
+            matched_result["internal_lot"].strip().upper()
+            if matched_result["internal_lot"] else "-"
+        )
+
+        return {
+            "match": "ok",
+            "message": "This record is found in QC.",
+            "bag": bag,
+            "internal_lot": internal_lot,
+            "status_value": matched_row.status if matched_row.status else "N/A",
+        }
+
+    # (2) QC's own range data is internally inconsistent -- flag as a
+    # QC data-quality anomaly, distinct from a plain not-found.
+    if suffix_anomaly_raw:
+        return {
+            "match": "anomaly",
+            "message": (
+                'QC has a lot range for this product code with mismatched '
+                'suffix letters ("' + suffix_anomaly_raw + '") -- flagging '
+                'for manual review, could not confirm a match.'
+            ),
+            "bag": "N/A",
+            "internal_lot": "-",
+            "status_value": None,
+        }
+
+    # (3) QC has data for this product code, and at least one lot field
+    # exists, but it doesn't fit any recognized (a)-(g) shape -- tell
+    # the user data exists but is unreadable, not that it's empty.
+    if unrecognized_seen:
+        return {
+            "match": "anomaly",
+            "message": (
+                "QC has a record for this product code, but its lot "
+                "format could not be read — please verify manually."
+            ),
+            "bag": "N/A",
+            "internal_lot": "-",
+            "status_value": None,
+        }
+
+    return {
+        "match": "warning",
+        "message": "This lot is not found in QC.",
+        "bag": "N/A",
+        "internal_lot": "-",
+        "status_value": None,
+    }
+
+
+def _serialize_lot_sample_row(lot_sample, standards_id, product_code=None):
     raw = lot_sample.raw_values.order_by("-date_time").first()
     delta = raw.delta_values.order_by("-date_time").first() if raw else None
     spectro_j = (
@@ -59,6 +350,8 @@ def _serialize_lot_sample_row(lot_sample, standards_id):
     else:
         visual_judgement = "Pass" if visual_j.is_pass else "Fail"
 
+    qc_info = _qc_lookup_for_row(product_code, lot_sample.sample_name)
+
     return {
         "id": lot_sample.lot_samples_id,
         "lotSampleId": lot_sample.lot_samples_id,
@@ -67,8 +360,8 @@ def _serialize_lot_sample_row(lot_sample, standards_id):
         "colorSimulation": lot_sample.color_simulation or "-",
         "dateTime": format_datetime_no_leading_zeros(lot_sample.date_time),
         "stickerLot": lot_sample.sample_name,
-        "bag": "-",           # future use — from external QC program DB
-        "internalLot": "-",   # future use — from external QC program DB
+        "bag": qc_info["bag"],
+        "internalLot": qc_info["internal_lot"],
         "de00": num(delta.delta_e) if delta else None,
         "L": num(raw.raw_l) if raw else None,
         "C": num(raw.raw_c) if raw else None,
@@ -83,7 +376,9 @@ def _serialize_lot_sample_row(lot_sample, standards_id):
         "colorOffset": spectro_j.color_offset if spectro_j and spectro_j.color_offset else "-",
         "spectroJudgement": spectro_judgement,
         "visualJudgement": visual_judgement,
-        "finalQcEval": "-",  # no dedicated table yet — placeholder
+        "finalQcEval": qc_info["status_value"] if qc_info["match"] == "ok" else "-",
+        "qcMatch": qc_info["match"],      # "ok" | "warning" -- drives column 2's icon
+        "qcMessage": qc_info["message"],  # tooltip text for column 2
         "reasonIfFail": visual_j.visual_fail_reason if visual_j and visual_j.visual_fail_reason else "",
         "spectroRemarks": spectro_j.spectro_remarks if spectro_j and spectro_j.spectro_remarks else "",
         "specialPass": bool(special.is_pass) if special else False,
@@ -140,13 +435,18 @@ def get_lot_samples_for_standard(request):
     if not standards_id:
         return JsonResponse({"tone": "danger", "message": "standards_id is required."}, status=400)
 
+    standard = SpectroStandard.objects.filter(pk=standards_id).select_related("record").first()
+    if not standard:
+        return JsonResponse({"tone": "danger", "message": "Standard not found."}, status=404)
+
     lot_samples = (
         LotSample.objects
         .filter(standard_id=standards_id)
         .order_by("-date_time", "-lot_samples_id")
     )
 
-    rows = [_serialize_lot_sample_row(ls, standards_id) for ls in lot_samples]
+    product_code = standard.record.product_code if standard.record else None
+    rows = [_serialize_lot_sample_row(ls, standards_id, product_code) for ls in lot_samples]
 
     return JsonResponse({"tone": "success", "message": "Samples loaded.", "rows": rows})
 
@@ -369,7 +669,7 @@ def export_samples_report(request):
     std_de_used = float(record.std_delta_e_used) if record.std_delta_e_used is not None else None
 
     lot_samples = LotSample.objects.filter(standard_id=standards_id).order_by("-date_time", "-lot_samples_id")
-    rows = [_serialize_lot_sample_row(ls, standards_id) for ls in lot_samples]
+    rows = [_serialize_lot_sample_row(ls, standards_id, product_code) for ls in lot_samples]
     # export needs real datetime objects (not the UI's display string) so Excel can sort/filter dates.
     # Excel/openpyxl can't hold timezone-aware datetimes, so convert to local time and strip tzinfo.
     for lot_sample, row in zip(lot_samples, rows):

@@ -9,16 +9,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dan-mbpi/MBPI-Spectro.git"
+    "url": "git+https://github.com/Masterbatch-Philippines-Inc/MBPI-Spectro.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/dan-mbpi/MBPI-Spectro/issues"
+    "url": "https://github.com/Masterbatch-Philippines-Inc/MBPI-Spectro/issues"
   },
-  "homepage": "https://github.com/dan-mbpi/MBPI-Spectro#readme",
+  "homepage": "https://github.com/Masterbatch-Philippines-Inc/Spectro#readme",
   "devDependencies": {
     "@tailwindcss/cli": "^4.0.0",
     "tailwindcss": "^4.0.0"

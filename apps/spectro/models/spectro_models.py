@@ -12,16 +12,25 @@ from django.db import models
 
 class QcProgramRecord(models.Model):
     """
-    Maps to the blue "from qc program db" table.
+    Maps to the "from qc program db" data. This is NOT a table owned by
+    this project -- it's a VIEW (`view_spectro`), living under a
+    separate schema in a physically different Postgres instance (the
+    'server' entry in settings.DATABASES, see apps/core/settings.py and
+    apps/core/db_router.py). Two things make this different from a
+    normal Django model:
 
-    RECOMMENDATION: this table is owned by a separate/external QC
-    program's database, not by this Django project. Marking it
-    `managed = False` so Django never creates/alters/drops it via
-    migrations -- it only reads/writes rows that already exist.
-    If it genuinely lives in a physically different database (not just a
-    different table in the same DB), you'll additionally need a second
-    entry in DATABASES plus a database router pointed at this model's
-    app_label, since managed=False alone does not do cross-DB routing.
+      1. `managed = False` -- Django never creates/alters/drops this via
+         migrations regardless of database, since it's a view, not a
+         table this project owns.
+      2. Routing to the 'server' database alias happens via
+         QcProgramRouter (apps/core/db_router.py), registered in
+         DATABASE_ROUTERS -- managed=False alone only stops migrations,
+         it does NOT send queries to a different DB connection.
+
+    Being a view, this should be treated as READ-ONLY from this project
+    -- .save()/.delete() will very likely fail against Postgres unless
+    the view happens to be updatable, and that's not something to rely
+    on. Task 6 (views.py adjustments) picks up from here.
     """
 
     qc_id = models.AutoField(primary_key=True)
@@ -34,7 +43,7 @@ class QcProgramRecord(models.Model):
 
     class Meta:
         managed = False
-        db_table = "qc_program_records"
+        db_table = "view_spectro"
 
     def __str__(self):
         return f"QC#{self.qc_id} {self.product_code}"

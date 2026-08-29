@@ -57,7 +57,20 @@ export function initSamplesRecordPage(urls) {
           + '</select>';
       }
     },
-    { key: 'finalQcEval', label: 'Final QC Evaluation', type: 'string' },
+    {
+      key: 'finalQcEval', label: 'Final QC Evaluation', type: 'string',
+      render: function (row) {
+        if (!row.finalQcEval || row.finalQcEval === '-') return '<span class="text-muted-foreground">-</span>';
+        const val = String(row.finalQcEval).toUpperCase();
+        if (val === 'PASSED') {
+          return '<span class="font-bold text-[11px] px-2 py-0.5 rounded-full bg-success-bg text-success border border-success-border">' + row.finalQcEval + '</span>';
+        }
+        if (val === 'FAILED') {
+          return '<span class="font-bold text-[11px] px-2 py-0.5 rounded-full bg-danger-bg text-danger border border-danger-border">' + row.finalQcEval + '</span>';
+        }
+        return '<span>' + row.finalQcEval + '</span>';
+      }
+    },
     {
       key: 'reasonIfFail', label: 'Reason for Fail (if not color)', type: 'editable',
       render: function (row) {
@@ -119,8 +132,16 @@ export function initSamplesRecordPage(urls) {
     },
     {
       renderHeader: function () { return ''; },
-      renderCell: function () {
-        return '<div class="flex items-center justify-center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--success))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>';
+      renderCell: function (row) {
+        let icon;
+        if (row.qcMatch === 'ok') {
+          icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--success))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        } else if (row.qcMatch === 'anomaly') {
+          icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--warn))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>';
+        } else {
+          icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--danger))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        }
+        return '<div class="flex items-center justify-center" data-tooltip="' + (row.qcMessage || '') + '">' + icon + '</div>';
       },
       width: 'w-9',
     },
@@ -399,6 +420,10 @@ export function initSamplesRecordPage(urls) {
         if (emptyStateTitle) emptyStateTitle.textContent = 'Select one Standard';
         if (emptyStateSubtitle) emptyStateSubtitle.textContent = 'Choose a standard sample to load its readings.';
         if (emptyStateActionLabel) emptyStateActionLabel.textContent = 'Select one standard';
+      } else if (mode === 'no-samples') {
+        if (emptyStateTitle) emptyStateTitle.textContent = 'This standard has no samples yet.';
+        if (emptyStateSubtitle) emptyStateSubtitle.textContent = 'Choose a standard with sample to load its readings.';
+        if (emptyStateActionLabel) emptyStateActionLabel.textContent = 'Try different standard';
       } else {
         if (emptyStateTitle) emptyStateTitle.textContent = DEFAULT_EMPTY_TITLE;
         if (emptyStateSubtitle) emptyStateSubtitle.textContent = DEFAULT_EMPTY_SUBTITLE;
@@ -432,7 +457,7 @@ export function initSamplesRecordPage(urls) {
 
             if (dataset.length === 0) {
               dataTable.hideTable();
-              showEmptyState('need-standard');
+              showEmptyState('no-samples');
               setStdDeEditable(false);
             } else {
               dataTable.showTable();
@@ -645,7 +670,7 @@ export function initSamplesRecordPage(urls) {
           window.location.href = urls.samplesReader;
           return;
         }
-        const target = emptyStateMode === 'need-standard' ? standardFilter : document.getElementById('productCodeFilter');
+        const target = (emptyStateMode === 'need-standard' || emptyStateMode === 'no-samples') ? standardFilter : document.getElementById('productCodeFilter');
         if (!target) return;
         target.focus();
         target.classList.add('ring-2', 'ring-ring/40', 'border-ring');

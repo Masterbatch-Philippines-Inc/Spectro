@@ -8,6 +8,7 @@ urlpatterns = [
     # Samples Reader
     path("samples-reader/",                 views.samples_reader_view,                  name="samples_reader"                   ),
     path("spectrometer-info/",              views.spectrometer_info_view,               name="api_spectrometer_info"            ),
+    path("spectrometer-info/save/",         views.save_spectrometer_info_view,          name="api_save_spectrometer_info"       ),
     path("product-code/save/",              views.save_product_code_view,               name="api_save_product_code"            ),
     path("standard/save/",                  views.save_standard_view,                   name="api_save_standard"                ),
     path("samples/save/",                   views.save_sample_readings_view,            name="api_save_sample_readings"         ),

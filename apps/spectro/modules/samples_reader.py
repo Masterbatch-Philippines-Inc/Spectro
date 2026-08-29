@@ -21,8 +21,13 @@ from apps.spectro.models import (
     SpectroJudgement,
 )
 
-PRODUCT_CODE_RE = re.compile(r'^[A-Z]{2}\d{1,5}E(-I)?$')
-LOT_NUMBER_RE   = re.compile(r'^(DR |LT )?\d{4}[A-Za-z]{2}$')
+# Accepts both the original XX00000E(-I)? shape and the newer
+# XX-X00000E(-I)? shape (e.g. "DV-I16110E") -- the "-X" segment is an
+# optional single-letter sub-prefix inserted right after the initial
+# 2 letters. Must stay in sync with PRODUCT_CODE_RE in
+# static/js/shared/pages/samples_reader.js.
+PRODUCT_CODE_RE = re.compile(r'^[A-Z]{2}(-[A-Z])?\d{1,5}E(-I)?$')
+LOT_NUMBER_RE   = re.compile(r'^(DR |LT )?\d{4}[A-Za-z]{1,2}$')
 
 @login_required
 def save_product_code(request):
@@ -150,6 +155,58 @@ def save_standard(request):
         "message": "Standard saved.",
         "standards_id": new_standard.standards_id,
         "standard_name": new_standard.standard_name,
+    })
+
+
+@login_required
+def save_spectrometer_info(request):
+    """
+    Step 1 connect flow (b): client sends whatever serial/model it
+    resolved (from an existing DB row, or the agent's own /connect
+    response if none existed). get_or_create() is the validation step --
+    if a Spectrometer with this device_sn doesn't exist yet, it's
+    created here and "OK" is returned so the client can toast
+    "serial and model saved". If it already exists, "EXISTS" is
+    returned so the client just proceeds without an extra toast.
+    """
+    if request.method != "POST":
+        return JsonResponse({"tone": "danger", "message": "Invalid request method."}, status=405)
+
+    device_sn = request.POST.get("device_sn", "").strip()
+    device_model = request.POST.get("device_model", "").strip()
+
+    if not device_sn or not device_model:
+        return JsonResponse({"tone": "danger", "message": "Serial number and model are required.", "status": "ERROR"}, status=400)
+
+    record, created = Spectrometer.objects.get_or_create(
+        device_sn=device_sn,
+        defaults={"device_model": device_model},
+    )
+
+    if created:
+        return JsonResponse({
+            "tone": "success",
+            "message": "Serial and model saved.",
+            "status": "OK",
+        })
+
+    if record.device_model != device_model:
+        record.device_model = device_model
+        record.save(update_fields=["device_model"])
+        return JsonResponse({
+            "tone": "info",
+            "message": "Spectrometer already on record — model updated.",
+            "status": "UPDATED",
+            "device_model": record.device_model,
+            "device_sn": record.device_sn,
+        })
+
+    return JsonResponse({
+        "tone": "info",
+        "message": "Spectrometer already on record.",
+        "status": "EXISTS",
+        "device_model": record.device_model,
+        "device_sn": record.device_sn,
     })
 
 

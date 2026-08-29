@@ -5,6 +5,7 @@ import { initModals } from './global/modal.js';
 import { initDropdowns, initCombobox } from './ui/dropdown.js';
 import { initAjaxForms } from './ui/forms.js';
 import { initScatterGraph } from './ui/scatter_graph.js';
+import { initTooltips } from './ui/tooltip.js';
 import { initSamplesRecordPage } from './pages/samples_record.js';
 import { initSamplesReaderPage } from './pages/samples_reader.js';
 
@@ -17,6 +18,7 @@ export function initApp() {
   initCombobox();
   initModals();
   initScatterGraph();
+  initTooltips();
  
   if (document.getElementById('dataTable') && window.SAMPLES_RECORD_URLS) {
     initSamplesRecordPage(window.SAMPLES_RECORD_URLS);
