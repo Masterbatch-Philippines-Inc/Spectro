@@ -126,6 +126,7 @@ class LotSample(models.Model):
     lot_samples_id = models.AutoField(primary_key=True)
     date_time = models.DateTimeField(auto_now_add=True)
     sample_name = models.CharField(max_length=100)  # default = "sample" + n
+    bag = models.CharField(max_length=50, blank=True, null=True)
     is_light = models.BooleanField(default=False)
     is_dark = models.BooleanField(default=False)
     color_simulation = models.CharField(max_length=20, blank=True, null=True)

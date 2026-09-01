@@ -53,9 +53,9 @@ const DEV_DEVICE = {
 // DEV-mode-only instrument state, kept here so calibrate/connect/status
 // mock calls stay internally consistent within a session.
 const devState = {
-  connected: false,
-  black_calibrated: false,
-  white_calibrated: false,
+  connected: true,
+  black_calibrated: true,
+  white_calibrated: true,
 };
 
 /* ---------------------------------------------------------------------

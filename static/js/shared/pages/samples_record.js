@@ -15,7 +15,7 @@ export function initSamplesRecordPage(urls) {
       key: 'colorSimulation', label: 'Color Simulation', type: 'string',
       render: function (row) {
         if (!row.colorSimulation || row.colorSimulation === '-') return '<span class="text-muted-foreground">-</span>';
-        const cssColor = '#' + row.colorSimulation.replace('#', '').slice(2, 8);
+        const cssColor = '#' + row.colorSimulation.replace('#', '');
         return '<div class="flex items-center gap-1.5"><span class="w-5 h-5 rounded border border-border shrink-0" style="background:' + cssColor + ';" title="' + row.colorSimulation + '"></span><span>' + row.colorSimulation + '</span></div>';
       }
     },

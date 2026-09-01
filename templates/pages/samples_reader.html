@@ -114,8 +114,8 @@
                   <label for="productCodeGlobal" class="block text-xs font-semibold mb-1.5">Product Code</label>
                   {% include "components/shared/ui/input.html" with input_id="productCodeGlobal" input_type="text" input_placeholder="e.g. XX00000E" input_class="w-full py-2.5 rounded-lg" input_autocomplete="off" input_maxlength="10" %}
                   <div id="productCodeSuggestions" class="absolute left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-md max-h-[180px] overflow-y-auto z-50" style="display:none;"></div>
-                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Format: <strong>XX00000E</strong>, <strong>XX00000E-I</strong>, <strong>XX-X00000E</strong>, or <strong>XX-X00000E-I</strong> (2 letters, optional "-" + 1 letter, up to 5 digits, then "E", with an optional "-I" suffix).</div>
-                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="productCodeGlobalErr" style="display:none;">Invalid format — must be 2 letters, optional "-" + 1 letter, up to 5 digits, then "E", with an optional "-I" suffix.</div>
+                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Format: <strong>XX00000E</strong>, <strong>XX00000E-I</strong>, <strong>XX-X00000E</strong>, or <strong>XX-X00000E-I</strong> (2 letters, optional "-" + 1 letter, 4 to 5 digits, then "E", with an optional "-I" suffix).</div>
+                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="productCodeGlobalErr" style="display:none;">Invalid format — must be 2 letters, optional "-" + 1 letter, 4 to 5 digits, then "E", with an optional "-I" suffix.</div>
                   <div class="hint text-[11px] text-[hsl(var(--success))] mt-[5px] leading-relaxed" id="productCodeGlobalMatch" style="display:none;">Matched an existing product code — its saved standards will be available below.</div>
                   <div class="flex items-center gap-1.5 mt-[5px]" id="productCodeSavedChip" style="display:none;">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--success))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -273,9 +273,9 @@
 
               <div class="flex-1 min-h-0 flex gap-3">
                 <div class="w-[130px] shrink-0 flex flex-col gap-2">
-                  {% include "components/shared/ui/button.html" with btn_id="measureBtn2"      btn_variant="primary" btn_label=" "              btn_extra_class="w-full border bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label" id="measureLabel2">Read Sample</span>' %}
                   {% include "components/shared/ui/button.html" with btn_id="readLightBtn"     btn_variant="primary" btn_label=" "              btn_extra_class="w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label">Read Light</span>' %}
                   {% include "components/shared/ui/button.html" with btn_id="readDarkBtn"      btn_variant="primary" btn_label=" "              btn_extra_class="w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label">Read Dark</span>' %}
+                  {% include "components/shared/ui/button.html" with btn_id="measureBtn2"      btn_variant="primary" btn_label=" "              btn_extra_class="w-full border bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label" id="measureLabel2">Read Sample</span>' %}
                   {% include "components/shared/ui/button.html" with btn_id="finishSessionBtn" btn_variant="primary" btn_label="Save all reading" btn_extra_class="w-full border bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))] hover:opacity-90 transition" btn_disabled=True %}
                 </div>
 
@@ -283,9 +283,11 @@
                   <table class="w-full text-[11.5px] border-collapse" id="samplesTable">
                     <thead>
                       <tr>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-center py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap w-9"></th>
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">Color Simulation</th>
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">Date Time</th>
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">Lot Number</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">Bag</th>
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap">ΔE*00</th>
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap">L*</th>
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap">C*</th>
@@ -300,7 +302,6 @@
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">Color Offset</th>
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap">Judgement</th>
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] whitespace-nowrap min-w-[160px]">Spectro Remarks</th>
-                      <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-center py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap w-9"></th>
                     </tr>
                     </thead>
                     <tbody id="historyTableBody"></tbody>
@@ -333,7 +334,8 @@
     saveProductCode: "{% url 'api_save_product_code' %}",
     standardsForProductCode: "{% url 'api_standards_for_product_code' %}",
     saveStandard: "{% url 'api_save_standard' %}",
-    saveSampleReadings: "{% url 'api_save_sample_readings' %}"
+    saveSampleReadings: "{% url 'api_save_sample_readings' %}",
+    checkLotExists: "{% url 'api_check_lot_exists' %}"
   };
 </script>
 {% endblock %}

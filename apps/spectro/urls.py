@@ -12,6 +12,7 @@ urlpatterns = [
     path("product-code/save/",              views.save_product_code_view,               name="api_save_product_code"            ),
     path("standard/save/",                  views.save_standard_view,                   name="api_save_standard"                ),
     path("samples/save/",                   views.save_sample_readings_view,            name="api_save_sample_readings"         ),
+    path("samples/check-lot/",              views.check_lot_exists_view,                name="api_check_lot_exists"             ),
  
     # Samples Record
     path("samples-record/",                 views.samples_record_view,                  name="samples_record"                   ),

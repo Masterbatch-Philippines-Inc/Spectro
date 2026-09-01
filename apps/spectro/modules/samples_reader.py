@@ -9,6 +9,7 @@ import re, math, json
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.db.models import Q
 from django.http import JsonResponse
 
 from apps.spectro.models import (
@@ -26,8 +27,13 @@ from apps.spectro.models import (
 # optional single-letter sub-prefix inserted right after the initial
 # 2 letters. Must stay in sync with PRODUCT_CODE_RE in
 # static/js/shared/pages/samples_reader.js.
-PRODUCT_CODE_RE = re.compile(r'^[A-Z]{2}(-[A-Z])?\d{1,5}E(-I)?$')
+PRODUCT_CODE_RE = re.compile(r'^[A-Z]{2}(-[A-Z])?\d{4,5}E(-I)?$')
 LOT_NUMBER_RE   = re.compile(r'^(DR |LT )?\d{4}[A-Za-z]{1,2}$')
+
+# Bag Number is restricted to a fixed set of shapes: 0, 00, 000, 0-0,
+# 0-00, 00-00, 00-000, 000-000 -- anything else is rejected. Must stay
+# in sync with BAG_NUMBER_RE in static/js/shared/pages/samples_reader.js.
+BAG_NUMBER_RE = re.compile(r'^(\d{1,3}|\d{1}-\d{1}|\d{1}-\d{2}|\d{2}-\d{2}|\d{2}-\d{3}|\d{3}-\d{3})$')
 
 @login_required
 def save_product_code(request):
@@ -262,7 +268,39 @@ def _validate_sample_payload_row(index, row):
     if not color_simulation:
         return f'Row {index + 1} ("{name}"): missing color simulation value.'
 
+    bag = (row.get("bag") or "").strip()
+    if bag and not BAG_NUMBER_RE.match(bag):
+        return f'Row {index + 1} ("{name}"): invalid bag number format — "{bag}".'
+
     return None
+
+
+@login_required
+def check_lot_exists(request):
+    """
+    Task 1.3: live check while the user is typing a lot number / bag in
+    the Step 3 table -- confirms whether this lot (+ bag, if given)
+    already exists in the DB under the given standard. Mirrors the same
+    lot+bag matching rule used at final save time in save_sample_readings,
+    just queried earlier/interactively instead of only at submit.
+    """
+    standards_id = request.GET.get("standards_id", "").strip()
+    name = request.GET.get("name", "").strip()
+    bag = request.GET.get("bag", "").strip()
+
+    if not standards_id or not name:
+        return JsonResponse({"exists": False})
+
+    if not SpectroStandard.objects.filter(pk=standards_id).exists():
+        return JsonResponse({"exists": False})
+
+    bag_filter = Q(bag=bag) if bag else (Q(bag__isnull=True) | Q(bag=""))
+    exists = LotSample.objects.filter(Q(standard_id=standards_id, sample_name=name) & bag_filter).exists()
+
+    return JsonResponse({
+        "exists": exists,
+        "message": f'Lot number "{name}" is already saved under this standard.' if exists else "",
+    })
 
 
 @login_required
@@ -321,23 +359,43 @@ def save_sample_readings(request):
             return JsonResponse({"tone": "danger", "message": error}, status=400)
 
     # ---- duplicate checks ----
-    incoming_names = [row["name"].strip() for row in rows]
-    seen = set()
-    for name in incoming_names:
-        key = name.upper()
-        if key in seen:
+    # Uniqueness is lot + bag, not lot alone -- a repeated lot number is
+    # only a problem when it ALSO shares the same bag (or both are
+    # blank). A bag is only REQUIRED once its lot number repeats within
+    # this session.
+    name_counts = {}
+    for row in rows:
+        key = row["name"].strip().upper()
+        name_counts[key] = name_counts.get(key, 0) + 1
+
+    seen_pairs = set()
+    for row in rows:
+        name = row["name"].strip()
+        bag = (row.get("bag") or "").strip()
+        name_key = name.upper()
+
+        if name_counts[name_key] > 1 and not bag:
             return JsonResponse({
                 "tone": "danger",
-                "message": f'Duplicate lot number "{name}" found within this session\'s readings.',
+                "message": f'Lot number "{name}" appears more than once — a Bag Number is required to distinguish each one.',
             }, status=400)
-        seen.add(key)
 
-    existing_conflict = (
-        LotSample.objects
-        .filter(standard=standard, sample_name__in=incoming_names)
-        .values_list("sample_name", flat=True)
-        .first()
-    )
+        pair_key = (name_key, bag.upper())
+        if pair_key in seen_pairs:
+            return JsonResponse({
+                "tone": "danger",
+                "message": f'Duplicate lot number "{name}"' + (f' with bag "{bag}"' if bag else '') + ' found within this session\'s readings.',
+            }, status=400)
+        seen_pairs.add(pair_key)
+
+    existing_conflict = None
+    for row in rows:
+        name = row["name"].strip()
+        bag = (row.get("bag") or "").strip()
+        bag_filter = Q(bag=bag) if bag else (Q(bag__isnull=True) | Q(bag=""))
+        if LotSample.objects.filter(Q(standard=standard, sample_name=name) & bag_filter).exists():
+            existing_conflict = name
+            break
     if existing_conflict:
         return JsonResponse({
             "tone": "danger",
@@ -356,6 +414,7 @@ def save_sample_readings(request):
 
                 lot_sample = LotSample.objects.create(
                     sample_name=name,
+                    bag=(row.get("bag") or "").strip() or None,
                     is_light=(kind == "light"),
                     is_dark=(kind == "dark"),
                     color_simulation=row.get("colorSimulation", "").strip(),

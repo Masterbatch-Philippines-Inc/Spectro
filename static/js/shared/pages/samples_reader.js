@@ -469,6 +469,12 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // are declared in the same closure so they can read/clear it.
     let capturedStandardRaw = null;
 
+    // Exposed so other closures (product-code clear guard, Task 8) can
+    // check/clear this without reaching into readReference()'s private
+    // state directly.
+    window.hasCapturedStandardReading = function () { return capturedStandardRaw !== null; };
+    window.clearCapturedStandardRaw = function () { capturedStandardRaw = null; };
+
     function fillResults(raw) {
       document.getElementById('valL1').textContent = raw.L.toFixed(2);
       document.getElementById('valC1').textContent = raw.C.toFixed(2);
@@ -519,6 +525,21 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     }
 
     measureBtn1.addEventListener('click', runReadReference);
+
+    // F5 keybind for "Read Reference" (New Standard flow) -- same
+    // guard pattern as the Step 3 keybinds: ignored while a reading is
+    // already in flight, with a toast instead of silently doing nothing.
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'F5') return;
+      if (measureBtn1.style.display === 'none') return; // already captured -- button swapped out
+      e.preventDefault();
+
+      if (measureBtn1.disabled) {
+        showToast('toastStack', 'Please wait until the current reading finishes.', 'info');
+        return;
+      }
+      runReadReference();
+    });
 
     if (saveStdBtn) {
       saveStdBtn.addEventListener('click', function () {
@@ -719,6 +740,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
     let savedCode = null;
     let selectedMode = null;
+    // Task 8: tracks the last non-empty value the field held, so a
+    // cancelled "clear the code" confirmation can restore it exactly.
+    let lastNonEmptyProductCode = '';
 
     function renderSuggestions(query) {
       const q = query.trim().toUpperCase();
@@ -764,6 +788,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     function selectExistingCode(code) {
       const v = code.trim().toUpperCase();
       productCodeGlobal.value = v;
+      lastNonEmptyProductCode = v;
       validateProductCode();
       savedCode = v;
       productCodeSavedChip.style.display = 'none';
@@ -788,6 +813,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         return;
       }
       productCodeGlobal.value = v;
+      lastNonEmptyProductCode = v;
 
       // server-side check happens first -- existence is decided by the DB,
       // not by the client's cached existingCodes list
@@ -897,12 +923,34 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       if (statusSub1) statusSub1.textContent = 'Press the button below once the sample is in position.';
       if (rereadStdBtnWrap) rereadStdBtnWrap.style.display = 'none';
       if (saveStdBtnWrap) saveStdBtnWrap.style.display = 'none';
+      if (window.clearCapturedStandardRaw) window.clearCapturedStandardRaw();
 
       completedSteps.delete(2);
     };
 
+    // Task 8: tracks the last non-empty value typed, so a cancelled
+    // "clear the code" confirmation can restore exactly what was there.
     productCodeGlobal.addEventListener('input', function () {
-      productCodeGlobal.value = productCodeGlobal.value.toUpperCase();
+      const typedVal = productCodeGlobal.value.toUpperCase();
+      const clearingWithCapturedReading = !typedVal.trim() && lastNonEmptyProductCode
+        && window.hasCapturedStandardReading && window.hasCapturedStandardReading();
+
+      if (clearingWithCapturedReading) {
+        const proceed = window.confirm('Clearing the product code will discard the standard reading you\'ve captured for it. Continue?');
+        if (!proceed) {
+          productCodeGlobal.value = lastNonEmptyProductCode;
+          validateProductCode();
+          return;
+        }
+        // confirmed -- full reset back to the empty, locked "Standard
+        // Details" state; resetStep2ToDefault() also clears productCodeGlobal.value.
+        if (window.resetStep2ToDefault) window.resetStep2ToDefault();
+        lastNonEmptyProductCode = '';
+        return;
+      }
+
+      productCodeGlobal.value = typedVal;
+      if (typedVal.trim()) lastNonEmptyProductCode = typedVal.trim();
       validateProductCode();
       renderSuggestions(productCodeGlobal.value.trim());
       if (savedCode && productCodeGlobal.value.trim() !== savedCode) {
@@ -1387,6 +1435,36 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         if (window.captureSpecialReading) window.captureSpecialReading('dark');
       });
     }
+
+    // F5 keybind — triggers whichever of Read Light / Read Dark is
+    // still enabled (Light takes priority if both are available).
+    // Guarded the same way as a click: ignored while a reading is
+    // already in flight, with a toast so repeated F5 presses don't
+    // queue up multiple captures. Also yields if Step 2's own F5
+    // handler (Read Reference) already consumed this keypress -- both
+    // listeners fire on the same document-level keydown, so without
+    // this check F5 could trigger a standard capture AND a sample
+    // capture at once before the standard was ever committed.
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'F5') return;
+      if (e.defaultPrevented) return;
+      e.preventDefault();
+
+      if (window.isAnyReadingInProgress()) {
+        showToast('toastStack', 'Please wait until the current reading finishes.', 'info');
+        return;
+      }
+
+      if (readLightBtn && !readLightBtn.disabled) {
+        readLightBtn.disabled = true;
+        readLightBtn.dataset.usedOnce = 'true';
+        if (window.captureSpecialReading) window.captureSpecialReading('light');
+      } else if (readDarkBtn && !readDarkBtn.disabled) {
+        readDarkBtn.disabled = true;
+        readDarkBtn.dataset.usedOnce = 'true';
+        if (window.captureSpecialReading) window.captureSpecialReading('dark');
+      }
+    });
   })();
 
   /* ---- Task 3/6: row select, read/re-read, and full row rendering ---- */
@@ -1458,25 +1536,20 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         });
     }
 
-    // Our stored/exported color convention is #AARRGGBB (alpha first) --
-    // matches openpyxl's ARGB expectation and the excel export fix in
-    // samples_record.py. CSS, however, parses 8-digit hex as #RRGGBBAA
-    // (alpha LAST, per CSS Color 4 spec), so passing our string straight
-    // into an inline "background:" style reads completely wrong channels
-    // (our alpha byte gets misread as R, everything shifts). Since our
-    // alpha is always fully opaque ("FF"), the safe fix is to strip it
-    // and hand the browser a plain 6-digit #RRGGBB -- no ambiguity, no
-    // channel-order mismatch possible.
-    function toCssBackgroundColor(hex8) {
-      return '#' + (hex8 || '').replace('#', '').slice(2, 8);
+    // Our stored/exported color convention is a plain 6-digit #RRGGBB --
+    // no alpha channel (previously #AARRGGBB, but alpha was always fully
+    // opaque so it carried no information). Same string works directly
+    // for CSS and for openpyxl (see samples_record.py's export fill).
+    function toCssBackgroundColor(hex6) {
+      return '#' + (hex6 || '').replace('#', '');
     }
 
     // picks white text on dark backgrounds, dark text on light backgrounds
-    // -- hex is #AARRGGBB, so RGB starts at index 3
-    function textColorForHex(hex8) {
-      const r = parseInt(hex8.slice(3, 5), 16);
-      const g = parseInt(hex8.slice(5, 7), 16);
-      const b = parseInt(hex8.slice(7, 9), 16);
+    function textColorForHex(hex6) {
+      const v = (hex6 || '').replace('#', '');
+      const r = parseInt(v.slice(0, 2), 16);
+      const g = parseInt(v.slice(2, 4), 16);
+      const b = parseInt(v.slice(4, 6), 16);
       const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
       return luminance > 0.6 ? '#18181b' : '#ffffff';
     }
@@ -1503,6 +1576,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           id: 'row' + (rowSeq++),
           kind: kind, // 'light' | 'dark' | 'sample'
           name: name,
+                  bag: '',
           colorOffset: getColorOffset(d.dL, d.da, d.db, wizardStandard.standardA, wizardStandard.standardB),
           colorSimulation: getColorSimulation(sci.L, sci.a, sci.b),
           dateTime: formatDateTime(new Date()),
@@ -1520,9 +1594,11 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       return '<tr data-row-id="' + row.id + '" data-kind="' + row.kind + '" data-sample-name="' + row.name + '"'
         + ' data-da="' + row.da + '" data-db="' + row.db + '" data-judgement="' + (row.passed ? 'pass' : 'fail') + '"'
         + ' class="cursor-pointer hover:bg-accent border-b border-border' + selectedCls + '">'
+        + '<td class="py-[7px] px-2.5 text-center"><button type="button" data-action="delete" title="Delete this reading" class="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:bg-danger-bg hover:text-danger cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg></button></td>'
         + '<td class="py-[7px] px-2.5 whitespace-nowrap" style="background:' + toCssBackgroundColor(row.colorSimulation) + '; color:' + textColorForHex(row.colorSimulation) + ';"><span class="font-mono text-sm font-semibold">' + row.colorSimulation + '</span></td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm whitespace-nowrap">' + row.dateTime + '</td>'
-        + '<td class="py-[7px] px-2.5" data-action="lotNumber"><span class="lot-number-display font-mono text-sm font-semibold cursor-text underline decoration-dotted">' + row.name + '</span></td>'
+        + '<td class="py-[7px] px-2.5" data-action="lotNumber" tabindex="0"><span class="lot-number-display font-mono text-sm font-semibold cursor-text underline decoration-dotted">' + row.name + '</span></td>'
+        + '<td class="py-[7px] px-2.5" data-action="bag" tabindex="0"><span class="bag-display font-mono text-sm cursor-text underline decoration-dotted">' + (row.bag ? row.bag : '<span class="text-muted-foreground italic">Click to add…</span>') + '</span></td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.de.toFixed(2) + '</td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.L.toFixed(2) + '</td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.C.toFixed(2) + '</td>'
@@ -1536,8 +1612,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.db.toFixed(2) + '</td>'
         + '<td class="py-[7px] px-2.5 text-sm">' + row.colorOffset + '</td>'
         + '<td class="py-[7px] px-2.5 text-sm font-bold ' + jClass + '">' + (row.passed ? 'Pass' : 'Fail') + '</td>'
-        + '<td class="py-[7px] px-2.5" data-action="remarks">' + (row.remarks ? row.remarks : '<span class="text-muted-foreground italic">Click to add…</span>') + '</td>'
-        + '<td class="py-[7px] px-2.5 text-center"><button type="button" data-action="delete" title="Delete this reading" class="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:bg-danger-bg hover:text-danger cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg></button></td>'
+        + '<td class="py-[7px] px-2.5" data-action="remarks" tabindex="0">' + (row.remarks ? row.remarks : '<span class="text-muted-foreground italic">Click to add…</span>') + '</td>'
         + '</tr>';
     }
 
@@ -1572,6 +1647,13 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         return;
       }
 
+      const bagCell = e.target.closest('[data-action="bag"]');
+      if (bagCell && !bagCell.querySelector('input')) {
+        e.stopPropagation();
+        makeCellEditable(bagCell, bagCell.closest('tr[data-row-id]').dataset.rowId, 'bag');
+        return;
+      }
+
       const remarksCell = e.target.closest('[data-action="remarks"]');
       if (remarksCell && !remarksCell.querySelector('input')) {
         e.stopPropagation();
@@ -1594,10 +1676,62 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
     let isEditingLotNumber = false;
 
+    // ---- Tab-cycling between editable cells: Lot -> Bag -> Remarks ->
+    // bin icon (of the NEXT row) -> Lot (next row)... Shift+Tab reverses.
+    // Scoped entirely to elements inside this table -- Tab elsewhere on
+    // the page is completely unaffected. ----
+    const FIELD_ORDER = ['lotNumber', 'bag', 'remarks'];
+
+    function focusAdjacentField(rowId, field, reverse) {
+      const tr = historyTableBody.querySelector('tr[data-row-id="' + rowId + '"]');
+      if (!tr) return;
+      const idx = FIELD_ORDER.indexOf(field);
+
+      if (!reverse) {
+        if (idx < FIELD_ORDER.length - 1) {
+          const nextField = FIELD_ORDER[idx + 1];
+          const nextCell = tr.querySelector('[data-action="' + nextField + '"]');
+          if (nextCell) makeCellEditable(nextCell, rowId, nextField);
+          return;
+        }
+        // last field (remarks) -> bin icon of the NEXT row
+        const allRows = Array.from(historyTableBody.querySelectorAll('tr[data-row-id]'));
+        const pos = allRows.findIndex(function (r) { return r.dataset.rowId === rowId; });
+        const nextRow = allRows[pos + 1];
+        if (nextRow) {
+          const delBtn = nextRow.querySelector('[data-action="delete"]');
+          if (delBtn) delBtn.focus();
+        }
+      } else {
+        if (idx > 0) {
+          const prevField = FIELD_ORDER[idx - 1];
+          const prevCell = tr.querySelector('[data-action="' + prevField + '"]');
+          if (prevCell) makeCellEditable(prevCell, rowId, prevField);
+          return;
+        }
+        // first field (lotNumber) -> bin icon of this same row (bin
+        // sits before Lot in the row's column order)
+        const delBtn = tr.querySelector('[data-action="delete"]');
+        if (delBtn) delBtn.focus();
+      }
+    }
+
+    // Landing on a lot/bag/remarks cell via native Tab (e.g. forward
+    // from the bin icon, or backward via Shift+Tab) drops straight into
+    // edit mode, same as a click would.
+    historyTableBody.addEventListener('focusin', function (e) {
+      const cell = e.target.closest('[data-action="lotNumber"], [data-action="bag"], [data-action="remarks"]');
+      if (!cell || cell !== e.target) return; // only react when the td itself was focused, not an input inside it
+      if (cell.querySelector('input')) return;
+      const tr = cell.closest('tr[data-row-id]');
+      if (!tr) return;
+      makeCellEditable(cell, tr.dataset.rowId, cell.dataset.action);
+    });
+
     function makeCellEditable(cell, rowId, field) {
       const rowData = rows[rowId];
       if (!rowData) return;
-      const currentVal = field === 'lotNumber' ? rowData.name : rowData.remarks;
+      const currentVal = field === 'lotNumber' ? rowData.name : (field === 'bag' ? rowData.bag : rowData.remarks);
       const input = document.createElement('input');
       input.type = 'text';
       input.value = currentVal;
@@ -1609,13 +1743,23 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
       if (field === 'lotNumber') isEditingLotNumber = true;
 
-      function isDuplicateLotNumber(newVal, excludeRowId) {
-        return Object.keys(rows).some(function (id) {
-          return id !== excludeRowId && rows[id].name.toLowerCase() === newVal.toLowerCase();
-        });
-      }
+    // Bag Number format is restricted to a fixed set of shapes:
+    // 0, 00, 000, 0-0, 0-00, 00-00, 00-000, 000-000 -- anything else
+    // (letters, extra hyphens, other digit-length pairings) is invalid.
+    const BAG_NUMBER_RE = /^(\d{1,3}|\d{1}-\d{1}|\d{1}-\d{2}|\d{2}-\d{2}|\d{2}-\d{3}|\d{3}-\d{3})$/;
+
+      // Task 1.1: duplicate lot/lot+bag checking no longer happens here
+      // (per-keystroke/per-cell). A duplicate lot with no bag yet is
+      // allowed temporarily while the user is still filling the row in
+      // -- it only gets flagged once, at Finish Reading, by the single
+      // validateLotBagUniqueness() function below. commit() here only
+      // enforces FORMAT (prefix, lot shape, bag shape), not uniqueness.
+      let hasCommitted = false;
 
       function commit() {
+        if (hasCommitted) return;
+        hasCommitted = true;
+
         const newVal = input.value.trim();
         if (field === 'lotNumber') {
           const requiredPrefix = rowData.kind === 'light' ? 'LT ' : rowData.kind === 'dark' ? 'DR ' : null;
@@ -1623,26 +1767,40 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
             showToast('toastStack', 'The "' + requiredPrefix.trim() + '" prefix cannot be removed from this lot number.', 'error');
           } else if (!newVal || !window.isValidLotNumber(newVal)) {
             showToast('toastStack', 'Invalid lot number format.', 'error');
-          } else if (isDuplicateLotNumber(newVal, rowId)) {
-            showToast('toastStack', 'This lot number already exists in the table.', 'error');
           } else {
             rowData.name = newVal;
           }
           isEditingLotNumber = false;
+        } else if (field === 'bag') {
+          if (newVal && !BAG_NUMBER_RE.test(newVal)) {
+            showToast('toastStack', 'Invalid Bag Number format — use e.g. 0, 00, 000, 0-0, 0-00, 00-00, 00-000, or 000-000.', 'error');
+          } else {
+            rowData.bag = newVal;
+          }
         } else {
           rowData.remarks = newVal;
         }
         renderAll();
       }
+
       input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') input.blur();
-        if (e.key === 'Escape') { input.value = currentVal; if (field === 'lotNumber') isEditingLotNumber = false; input.blur(); }
+        if (e.key === 'Enter') { input.blur(); return; }
+        if (e.key === 'Escape') { input.value = currentVal; if (field === 'lotNumber') isEditingLotNumber = false; hasCommitted = true; input.blur(); return; }
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const reverse = e.shiftKey;
+          commit();
+          focusAdjacentField(rowId, field, reverse);
+        }
       });
       input.addEventListener('blur', commit);
     }
 
     function captureReading() {
-      if (isReading || window.isAnyReadingInProgress()) return;
+      if (isReading || window.isAnyReadingInProgress()) {
+        showToast('toastStack', 'Please wait until the current reading finishes.', 'info');
+        return;
+      }
       if (readSampleGateEnabled && !hasLightAndDark()) {
         showToast('toastStack', 'Please click Read Light and Read Dark button to capture both samples first.', 'error');
         return;
@@ -1660,7 +1818,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       makeRow(kind, name)
         .then(function (newRowData) {
           if (wasReread) {
-            rows[selectedRowId] = Object.assign(newRowData, { id: selectedRowId, remarks: rows[selectedRowId].remarks });
+            rows[selectedRowId] = Object.assign(newRowData, { id: selectedRowId, remarks: rows[selectedRowId].remarks, bag: rows[selectedRowId].bag });
             showToast('toastStack', name + ' re-read successfully.', 'success');
             selectedRowId = null;
             updateButtonLabel();
@@ -1748,13 +1906,78 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       return Object.keys(rows).map(function (id) {
         const r = rows[id];
         return {
-          name: r.name, kind: r.kind,
+          name: r.name, bag: r.bag, kind: r.kind,
           colorSimulation: r.colorSimulation, colorOffset: r.colorOffset,
           remarks: r.remarks,
           de: r.de, L: r.L, C: r.C, h: r.h, a: r.a, b: r.b,
           dL: r.dL, dC: r.dC, dH: r.dH, da: r.da, db: r.db,
         };
       });
+    };
+
+    // Task 1.4: batch server-side existence check, run once at Finish
+    // Reading time (not per-keystroke). Checks every captured row's
+    // lot+bag against the DB under the current standard in one pass.
+    // Resolves to an array of conflict messages (empty = all clear).
+    window.checkAllLotsExistOnServer = function () {
+      if (!wizardStandard.standardsId) return Promise.resolve([]);
+      const ids = Object.keys(rows);
+      if (!ids.length) return Promise.resolve([]);
+
+      return Promise.all(ids.map(function (id) {
+        const r = rows[id];
+        const params = new URLSearchParams({
+          standards_id: wizardStandard.standardsId,
+          name: r.name,
+          bag: r.bag || '',
+        });
+        return fetch(urls.checkLotExists + '?' + params.toString(), {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            return data.exists ? (data.message || ('Lot "' + r.name + '" is already saved under this standard.')) : null;
+          })
+          .catch(function () {
+            // non-fatal per-row -- surfaced as a general network warning
+            // by the caller if ALL checks fail; individual fetch errors
+            // here don't block save on their own
+            return null;
+          });
+      })).then(function (results) {
+        return results.filter(Boolean);
+      });
+    };
+
+    // Task 1.1: single source of truth for lot/bag uniqueness, run only
+    // at Finish Reading (not per-keystroke). Duplicate lots without a
+    // bag are allowed while editing; this is where they finally get
+    // flagged. Returns an array of error messages (empty = all clear).
+    window.validateLotBagUniqueness = function () {
+      const errors = [];
+      const nameCounts = {};
+      const pairCounts = {};
+
+      Object.keys(rows).forEach(function (id) {
+        const nameKey = rows[id].name.trim().toLowerCase();
+        const pairKey = nameKey + '||' + (rows[id].bag || '').trim().toLowerCase();
+        nameCounts[nameKey] = (nameCounts[nameKey] || 0) + 1;
+        pairCounts[pairKey] = (pairCounts[pairKey] || 0) + 1;
+      });
+
+      Object.keys(rows).forEach(function (id) {
+        const row = rows[id];
+        const nameKey = row.name.trim().toLowerCase();
+        const pairKey = nameKey + '||' + (row.bag || '').trim().toLowerCase();
+
+        if (nameCounts[nameKey] > 1 && !row.bag) {
+          errors.push('Lot "' + row.name + '" repeats — add a Bag Number to distinguish it.');
+        } else if (pairCounts[pairKey] > 1) {
+          errors.push('Lot "' + row.name + '"' + (row.bag ? ' + Bag "' + row.bag + '"' : '') + ' combination is duplicated in the table.');
+        }
+      });
+
+      return errors;
     };
 
     renderAll();
@@ -1881,6 +2104,34 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         return;
       }
 
+      if (window.validateLotBagUniqueness) {
+        const uniquenessErrors = window.validateLotBagUniqueness();
+        if (uniquenessErrors.length) {
+          showToast('toastStack', uniquenessErrors[0], 'error');
+          finishSessionBtn.disabled = false;
+          return;
+        }
+      }
+
+      showToast('toastStack', 'Verifying lot numbers against existing records…', 'info');
+
+      Promise.resolve(window.checkAllLotsExistOnServer ? window.checkAllLotsExistOnServer() : [])
+        .then(function (conflicts) {
+          if (conflicts.length) {
+            showToast('toastStack', conflicts[0], 'error');
+            finishSessionBtn.disabled = false;
+            return;
+          }
+          proceedWithSave();
+        })
+        .catch(function () {
+          showToast('toastStack', 'Could not verify lot numbers, please try again.', 'error');
+          finishSessionBtn.disabled = false;
+        });
+      return;
+
+      function proceedWithSave() {
+
       function saveSampleReadings(standardsId) {
         const rows = window.getSampleReadingsPayload ? window.getSampleReadingsPayload() : [];
         if (!rows.length) {
@@ -1952,25 +2203,27 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           csrfmiddlewaretoken: getCsrfToken(),
         }),
       })
-        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-        .then(function (result) {
-          if (!result.ok) {
-            showToast('toastStack', result.data.message, result.data.tone || 'error');
-            finishSessionBtn.disabled = false;
-            return;
-          }
-          wizardStandard.savedToDb = true;
-          wizardStandard.standardsId = result.data.standards_id;
-          // finishSessionBtn stays disabled here -- saveSampleReadings()
-          // below handles the button's disabled state for the rest of
-          // this flow (either re-enabling on failure or keeping it
-          // locked through the reload on success).
-          saveSampleReadings(result.data.standards_id);
-        })
-        .catch(function () {
-          showToast('toastStack', 'Network error — please try again.', 'error');
+      .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (result) {
+        if (!result.ok) {
+          showToast('toastStack', result.data.message, result.data.tone || 'error');
           finishSessionBtn.disabled = false;
-        });
+          return;
+        }
+        wizardStandard.savedToDb = true;
+        wizardStandard.standardsId = result.data.standards_id;
+        // finishSessionBtn stays disabled here -- saveSampleReadings()
+        // below handles the button's disabled state for the rest of
+        // this flow (either re-enabling on failure or keeping it
+        // locked through the reload on success).
+        saveSampleReadings(result.data.standards_id);
+      })
+      .catch(function () {
+        showToast('toastStack', 'Network error — please try again.', 'error');
+        finishSessionBtn.disabled = false;
+      });
+
+      } // end proceedWithSave
     });
   })();
 }

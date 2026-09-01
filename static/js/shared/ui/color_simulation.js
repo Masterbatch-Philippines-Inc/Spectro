@@ -16,11 +16,12 @@
  *  ILLUMINANT_D65 in spectrometer.py) -> linear sRGB -> gamma-corrected
  *  sRGB -> hex string.
  *
- *  Output format matches this project's existing convention: an 8-digit
- *  hex string in #AARRGGBB order (alpha first) -- e.g. "#FFE0F3FC" --
- *  NOT the CSS Color 4 #RRGGBBAA order. See samples_record.py's export
- *  color-fill fix for why that distinction matters when this value is
- *  later read by openpyxl vs rendered by the browser.
+ *  Output format: plain 6-digit hex, "#RRGGBB" -- no alpha channel.
+ *  Stored/displayed values were previously 8-digit "#AARRGGBB" (alpha
+ *  first, to match openpyxl's ARGB expectation), but since alpha is
+ *  always fully opaque ("FF") it carried no information -- dropped
+ *  here so the stored value is a plain, unambiguous RGB hex usable
+ *  directly by both the browser and openpyxl without reordering.
  */
 
 /**
@@ -29,13 +30,12 @@
  * @param {number} L - sample's raw L* (lightness, 0-100).
  * @param {number} a - sample's raw a* (green-red axis).
  * @param {number} b - sample's raw b* (blue-yellow axis).
- * @returns {string} 8-digit hex color string, "#AARRGGBB" format,
- *   fully opaque (alpha always "FF").
+ * @returns {string} 6-digit hex color string, "#RRGGBB" format.
  *
  * ---- Usage example ----
  *
  *   getColorSimulation(69.72, -27.64, -17.18);
- *   // deep, muted teal-green -> something like "#FF5CA6A0"
+ *   // deep, muted teal-green -> something like "#5CA6A0"
  *   // (exact bytes depend on the sRGB gamut clamp for this Lab point)
  */
 export function getColorSimulation(L, a, b) {
@@ -76,5 +76,5 @@ export function getColorSimulation(L, a, b) {
     return clamped.toString(16).toUpperCase().padStart(2, '0');
   };
 
-  return '#FF' + toHexByte(r) + toHexByte(g) + toHexByte(bl);
+  return '#' + toHexByte(r) + toHexByte(g) + toHexByte(bl);
 }
