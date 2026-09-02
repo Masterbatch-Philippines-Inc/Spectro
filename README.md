@@ -161,7 +161,12 @@ DJANGO_DEBUG=True
 DJANGO_ALLOWED_HOSTS=
 ```
 
-Generate a real secret key with:
+Copy `.env.example` to `.env`, run powershell terminal in same directory and run:
+```bash
+Copy-Item .env.example .env
+```
+
+Fill in the values in `.env` first before generating a secret key. Command to generate a real secret key with:
 ```bash
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
