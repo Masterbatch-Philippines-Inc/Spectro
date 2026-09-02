@@ -108,6 +108,26 @@ export function initSamplesRecordPage(urls) {
   let selectedRows = new Set();
   let currentThreshold = 1.00;
 
+  // Task 4: default sort on load -- DR-prefixed sticker lots first,
+  // then LT-prefixed, then everything else, each group keeping the
+  // server's original relative order (stable sort).
+  function defaultSortRank(row) {
+    const name = (row.stickerLot || '').trim().toUpperCase();
+    if (name.startsWith('DR')) return 0;
+    if (name.startsWith('LT')) return 1;
+    return 2;
+  }
+
+  function applyDefaultSort(rows) {
+    return rows
+      .map(function (row, index) { return { row: row, index: index }; })
+      .sort(function (a, b) {
+        const rankDiff = defaultSortRank(a.row) - defaultSortRank(b.row);
+        return rankDiff !== 0 ? rankDiff : a.index - b.index;
+      })
+      .map(function (entry) { return entry.row; });
+  }
+
   function judgementFor(dE) {
     if (dE === null || dE === undefined) return '-';
     return dE > currentThreshold ? 'FAILED' : 'PASSED';
@@ -138,6 +158,8 @@ export function initSamplesRecordPage(urls) {
           icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--success))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
         } else if (row.qcMatch === 'anomaly') {
           icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--warn))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>';
+        } else if (row.qcMatch === 'reference') {
+          icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>';
         } else {
           icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--danger))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
         }
@@ -147,8 +169,16 @@ export function initSamplesRecordPage(urls) {
     },
   ];
 
+  const PRODUCT_CODE_SESSION_KEY = 'spectroSamplesRecordProductCode';
+  const STANDARD_SESSION_KEY = 'spectroSamplesRecordStandardId';
+  const STD_DE_SESSION_KEY = 'spectroSamplesRecordStdDeUsed';
+  const SEARCH_SESSION_KEY = 'spectroSamplesRecordSearchQuery';
+  const FREEZE_SESSION_KEY = 'spectroSamplesRecordFreezeCount';
+  let searchRestoredFromSession = false;
+
   window.addEventListener('load', function () {
     const productCodeFilter = document.getElementById('productCodeFilterValue');
+    const productCodeFilterText = document.getElementById('productCodeFilter');
     const standardFilter = document.getElementById('standardFilter');
     const stdDeUsedBox = document.getElementById('stdDeUsedBox');
 
@@ -191,6 +221,7 @@ export function initSamplesRecordPage(urls) {
             ? 'Freeze: ' + (frozenColumnCount === 1 ? '1st Column' : 'First ' + frozenColumnCount + ' Columns')
             : 'Freeze Columns Filter';
           dataTable.applyFreeze(frozenColumnCount);
+          try { sessionStorage.setItem(FREEZE_SESSION_KEY, String(frozenColumnCount)); } catch (e) {}
         });
       });
     }
@@ -444,13 +475,17 @@ export function initSamplesRecordPage(urls) {
       if (hasProduct && hasStandard) {
         selectedRows.clear();
         frozenColumnCount = 0;
+        try {
+          const savedFreeze = parseInt(sessionStorage.getItem(FREEZE_SESSION_KEY), 10);
+          if (!isNaN(savedFreeze)) frozenColumnCount = savedFreeze;
+        } catch (e) { /* sessionStorage unavailable -- default stays 0 */ }
 
         fetch(urls.lotSamplesForStandard + '?standards_id=' + encodeURIComponent(standardFilter.value), {
           headers: { 'X-Requested-With': 'XMLHttpRequest' },
         })
           .then(function (res) { return res.json(); })
           .then(function (data) {
-            dataset = data.rows || [];
+            dataset = applyDefaultSort(data.rows || []);
             dataTable.resetSort();
             dataTable.renderHeader();
             dataTable.renderBody();
@@ -466,6 +501,25 @@ export function initSamplesRecordPage(urls) {
             }
             if (generateReportBtn) generateReportBtn.disabled = dataset.length === 0;
             renderScatter();
+
+            // Task 8: reapply the last search filter once, after real
+            // data has actually loaded -- doing it here (instead of at
+            // page load) means it works regardless of how long the
+            // product-code/standard restore chain takes.
+            if (!searchRestoredFromSession) {
+              searchRestoredFromSession = true;
+              let savedQuery = null;
+              try {
+                savedQuery = sessionStorage.getItem(SEARCH_SESSION_KEY);
+              } catch (e) { /* sessionStorage unavailable -- nothing to restore */ }
+              if (savedQuery && searchInput && !searchInput.disabled) {
+                searchInput.value = savedQuery;
+                const visibleCount = dataTable.applySearch(savedQuery);
+                const showNoResults = visibleCount === 0;
+                noResultsState.classList.toggle('hidden', !showNoResults);
+                noResultsState.classList.toggle('flex', showNoResults);
+              }
+            }
           })
           .catch(function () {
             showToast('toastStack', 'Failed to load samples for this standard.', 'danger');
@@ -477,8 +531,11 @@ export function initSamplesRecordPage(urls) {
         searchInput.disabled = false;
         searchInput.value = '';
         freezeDropdownBtn.disabled = false;
-        freezeDropdownLabel.textContent = 'Freeze Columns Filter';
+        freezeDropdownLabel.textContent = frozenColumnCount > 0
+          ? 'Freeze: ' + (frozenColumnCount === 1 ? '1st Column' : 'First ' + frozenColumnCount + ' Columns')
+          : 'Freeze Columns Filter';
         renderFreezePanel();
+        dataTable.applyFreeze(frozenColumnCount);
       } else {
         dataset = [];
         dataTable.hideTable();
@@ -500,6 +557,17 @@ export function initSamplesRecordPage(urls) {
     if (productCodeFilter) {
       productCodeFilter.addEventListener('change', function () {
         const productCode = productCodeFilter.value;
+
+        // Task 6: remember the chosen code across page navigation --
+        // saved regardless of whether it's a repeat pick, so the user
+        // never has to retype it after leaving and coming back.
+        try {
+          if (productCode) {
+            sessionStorage.setItem(PRODUCT_CODE_SESSION_KEY, productCode);
+          } else {
+            sessionStorage.removeItem(PRODUCT_CODE_SESSION_KEY);
+          }
+        } catch (e) { /* sessionStorage unavailable -- fail silently */ }
 
         if (productCode && productCode === currentlyLoadedProductCode) {
           showToast('toastStack', 'This product code is already showing sample data.', 'info');
@@ -529,11 +597,34 @@ export function initSamplesRecordPage(urls) {
             });
             standardFilter.disabled = standardsList.length === 0;
 
+            // Task 6: if a previously chosen standard exists among this
+            // product code's standards, restore it instead of leaving
+            // the dropdown unselected.
+            let savedStandardId = null;
+            try {
+              savedStandardId = sessionStorage.getItem(STANDARD_SESSION_KEY);
+            } catch (e) { /* sessionStorage unavailable -- nothing to restore */ }
+
+            const savedStandardExists = savedStandardId
+              && standardsList.some(function (std) { return String(std.standards_id) === String(savedStandardId); });
+
+            if (savedStandardExists) {
+              standardFilter.value = savedStandardId;
+              standardFilter.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
             currentStdDeUsed = (data.std_delta_e_used !== null && data.std_delta_e_used !== undefined)
               ? Number(data.std_delta_e_used)
               : null;
             currentThreshold = currentStdDeUsed !== null ? currentStdDeUsed : 1.00;
             stdDeUsedBox.value = currentStdDeUsed !== null ? currentStdDeUsed.toFixed(2) : '';
+            try {
+              if (currentStdDeUsed !== null) {
+                sessionStorage.setItem(STD_DE_SESSION_KEY, stdDeUsedBox.value);
+              } else {
+                sessionStorage.removeItem(STD_DE_SESSION_KEY);
+              }
+            } catch (e) { /* sessionStorage unavailable -- fail silently */ }
 
             if (standardsList.length === 0) {
               showEmptyState('no-standards');
@@ -549,7 +640,16 @@ export function initSamplesRecordPage(urls) {
     }
 
     if (standardFilter) {
-      standardFilter.addEventListener('change', tryLoadTable);
+      standardFilter.addEventListener('change', function () {
+        try {
+          if (standardFilter.value) {
+            sessionStorage.setItem(STANDARD_SESSION_KEY, standardFilter.value);
+          } else {
+            sessionStorage.removeItem(STANDARD_SESSION_KEY);
+          }
+        } catch (e) { /* sessionStorage unavailable -- fail silently */ }
+        tryLoadTable();
+      });
     }
 
     let currentStdDeUsed = null;
@@ -646,6 +746,7 @@ export function initSamplesRecordPage(urls) {
               currentStdDeUsed = parseFloat(result.data.std_delta_e_used);
               currentThreshold = currentStdDeUsed;
               stdDeUsedBox.value = currentStdDeUsed.toFixed(2);
+              try { sessionStorage.setItem(STD_DE_SESSION_KEY, stdDeUsedBox.value); } catch (e) {}
 
               recalcSpectroJudgements();
               dataTable.renderBody();
@@ -687,6 +788,14 @@ export function initSamplesRecordPage(urls) {
         const showNoResults = !!q && visibleCount === 0;
         noResultsState.classList.toggle('hidden', !showNoResults);
         noResultsState.classList.toggle('flex', showNoResults);
+
+        try {
+          if (q) {
+            sessionStorage.setItem(SEARCH_SESSION_KEY, searchInput.value);
+          } else {
+            sessionStorage.removeItem(SEARCH_SESSION_KEY);
+          }
+        } catch (e) { /* sessionStorage unavailable -- fail silently */ }
       });
     }
 
@@ -695,11 +804,33 @@ export function initSamplesRecordPage(urls) {
       noResultsClearBtn.addEventListener('click', function () {
         searchInput.value = '';
         dataTable.applySearch('');
+        try { sessionStorage.removeItem(SEARCH_SESSION_KEY); } catch (e) {}
         noResultsState.classList.add('hidden');
         noResultsState.classList.remove('flex');
         searchInput.focus();
       });
     }
+
+    // Task 6: restore the last-chosen product code on page load, so the
+    // user doesn't have to re-enter it after navigating away and back.
+    (function restoreProductCodeFromSession() {
+      let savedCode = null;
+      try {
+        savedCode = sessionStorage.getItem(PRODUCT_CODE_SESSION_KEY);
+      } catch (e) { /* sessionStorage unavailable -- nothing to restore */ }
+
+      if (!savedCode || !productCodeFilter) return;
+
+      productCodeFilter.value = savedCode;
+      if (productCodeFilterText) productCodeFilterText.value = savedCode;
+
+      try {
+        const savedStdDe = sessionStorage.getItem(STD_DE_SESSION_KEY);
+        if (savedStdDe && stdDeUsedBox) stdDeUsedBox.value = savedStdDe;
+      } catch (e) { /* sessionStorage unavailable -- nothing to pre-fill */ }
+
+      productCodeFilter.dispatchEvent(new Event('change', { bubbles: true }));
+    })();
 
     tryLoadTable();
   });

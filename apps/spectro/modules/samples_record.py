@@ -3,7 +3,7 @@ apps/spectro/modules/samples_record.py
 
 Module for the "Samples Record".
 """
-import io, json, re
+import io, re
 
 import openpyxl
 from openpyxl.formatting.rule import CellIsRule
@@ -13,6 +13,7 @@ from openpyxl.utils import get_column_letter
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.spectro.models import (
@@ -182,6 +183,10 @@ def _qc_lookup_for_row(product_code, sample_name):
     view on the 'server' database (see apps/core/db_router.py).
 
     Step order matches the spec exactly:
+      0. sample_name carries the "LT " or "DR " reference-reading
+         prefix (see LOT_NUMBER_RE / samples_reader.py)?  yes ->
+         reference, stop here -- these are calibration-adjacent
+         readings, never expected to exist in QC at all.
       1. product_code present in QC?  no -> warning, stop here.
       2. sample_name matches sticker_lot OR internal_lot for that
          product code?  no -> warning, stop here.
@@ -193,12 +198,22 @@ def _qc_lookup_for_row(product_code, sample_name):
 
     Returns:
         {
-            "match": "ok" | "warning",
+            "match": "ok" | "warning" | "anomaly" | "reference",
             "message": <user-facing string>,
             "bag": <str>,            # bag_number or "N/A"
             "status_value": <str>|None,  # QC's own "status" column, only set when match == "ok"
         }
     """
+    name_check = (sample_name or "").strip().upper()
+    if name_check.startswith("LT ") or name_check.startswith("DR "):
+        return {
+            "match": "reference",
+            "message": "This is a reference lot and not expected to exist in QC.",
+            "bag": "N/A",
+            "internal_lot": "-",
+            "status_value": None,
+        }
+
     if not product_code:
         return {
             "match": "warning",
@@ -227,6 +242,22 @@ def _qc_lookup_for_row(product_code, sample_name):
 
     name = (sample_name or "").strip().upper()
     h_split = _split_lot_code(name)
+
+    # (0) 3rd/final data-cleaning layer: Spectro's own LOT_NUMBER_RE
+    # (samples_reader.py, enforced client- and server-side) should make
+    # this unreachable through the app itself -- but a lot inserted
+    # directly via DB/admin could still bypass that. Without this check
+    # such a value would silently fall through every branch below to
+    # "no_match" and surface as a generic red "not found in QC", which
+    # is misleading -- the real problem is Spectro's own data, not QC's.
+    if name and h_split is None:
+        return {
+            "match": "anomaly",
+            "message": "Typographical spectro lot number",
+            "bag": "N/A",
+            "internal_lot": "-",
+            "status_value": None,
+        }
 
     matched_row = None
     matched_result = None
@@ -278,7 +309,7 @@ def _qc_lookup_for_row(product_code, sample_name):
 
         return {
             "match": "ok",
-            "message": "This record is found in QC.",
+            "message": "This Lot/Bag is found in QC.",
             "bag": bag,
             "internal_lot": internal_lot,
             "status_value": matched_row.status if matched_row.status else "N/A",
@@ -360,7 +391,7 @@ def _serialize_lot_sample_row(lot_sample, standards_id, product_code=None):
         "colorSimulation": lot_sample.color_simulation or "-",
         "dateTime": format_datetime_no_leading_zeros(lot_sample.date_time),
         "stickerLot": lot_sample.sample_name,
-        "bag": qc_info["bag"],
+        "bag": lot_sample.bag if lot_sample.bag else "N/A",
         "internalLot": qc_info["internal_lot"],
         "de00": num(delta.delta_e) if delta else None,
         "L": num(raw.raw_l) if raw else None,
@@ -414,19 +445,32 @@ def _recalculate_spectro_judgements(record, threshold):
 
 @login_required
 def render_samples_record(request):
-    product_codes = (
-        SpectrometerRecord.objects
-        .order_by("product_code")
-        .values_list("product_code", flat=True)
-        .distinct()
-    )
-    product_code_options = [(code, code) for code in product_codes]
-
     context = {
-        "product_code_options": product_code_options,
-        "product_code_options_json": json.dumps(product_code_options),
+        "search_product_codes_url": reverse("api_search_product_codes"),
     }
     return render(request, "pages/samples_record.html", context)
+
+
+@login_required
+def search_product_codes(request):
+    """
+    Task 1: debounced (client-side), server-side product code lookup for
+    Samples Record's combobox. Replaces dumping every product code to the
+    client at page load -- only codes matching the current query are ever
+    sent, and only once the user has actually typed something.
+    """
+    query = request.GET.get("q", "").strip()
+    if not query:
+        return JsonResponse({"results": []})
+
+    codes = list(
+        SpectrometerRecord.objects
+        .filter(product_code__icontains=query)
+        .order_by("product_code")
+        .values_list("product_code", flat=True)
+        .distinct()[:20]
+    )
+    return JsonResponse({"results": codes})
 
 
 @login_required
@@ -679,6 +723,20 @@ def export_samples_report(request):
         row["dateTime"] = dt
         row["code"] = product_code
         row["stdDeUsed"] = std_de_used
+
+    # Task 5: DR-prefixed sticker lots first, then LT-prefixed, then
+    # everything else -- same ordering as the Samples Record table's
+    # default sort. Python's sort is stable, so rows within each group
+    # keep their original (-date_time, -lot_samples_id) order.
+    def _sort_rank(row):
+        name = (row.get("stickerLot") or "").strip().upper()
+        if name.startswith("DR"):
+            return 0
+        if name.startswith("LT"):
+            return 1
+        return 2
+
+    rows.sort(key=_sort_rank)
 
     wb = openpyxl.Workbook()
     ws = wb.active

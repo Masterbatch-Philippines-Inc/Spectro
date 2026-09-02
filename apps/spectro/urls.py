@@ -1,9 +1,28 @@
 from django.urls import path
+from django.contrib.auth import views as auth_views
 from apps.spectro import views
 
 urlpatterns = [
     path("",                                views.login_view,                           name="auth_login"                       ),
     path("logout/",                         views.logout_view,                          name="auth_logout"                      ),
+
+    # Forgot Password
+    path("forgot-password/", auth_views.PasswordResetView.as_view(
+        template_name="pages/auth/password_reset_form.html",
+        email_template_name="pages/auth/password_reset_email.html",
+        subject_template_name="pages/auth/password_reset_subject.txt",
+        success_url="/forgot-password/sent/",
+    ), name="password_reset"),
+    path("forgot-password/sent/", auth_views.PasswordResetDoneView.as_view(
+        template_name="pages/auth/password_reset_done.html",
+    ), name="password_reset_done"),
+    path("forgot-password/confirm/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(
+        template_name="pages/auth/password_reset_confirm.html",
+        success_url="/forgot-password/complete/",
+    ), name="password_reset_confirm"),
+    path("forgot-password/complete/", auth_views.PasswordResetCompleteView.as_view(
+        template_name="pages/auth/password_reset_complete.html",
+    ), name="password_reset_complete"),
  
     # Samples Reader
     path("samples-reader/",                 views.samples_reader_view,                  name="samples_reader"                   ),
@@ -16,6 +35,7 @@ urlpatterns = [
  
     # Samples Record
     path("samples-record/",                 views.samples_record_view,                  name="samples_record"                   ),
+    path("product-codes/search/",           views.search_product_codes_view,            name="api_search_product_codes"         ),
     path("standards/",                      views.standards_for_product_code_view,      name="api_standards_for_product_code"   ),
     path("std-delta-e/",                    views.save_std_delta_e_used_view,           name="api_save_std_delta_e"             ),
     path("lot-samples/",                    views.lot_samples_for_standard_view,        name="api_lot_samples_for_standard"     ),

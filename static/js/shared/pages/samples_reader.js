@@ -519,7 +519,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           measureLabel1.textContent = 'Read Reference';
           if (statusText1) statusText1.textContent = 'Ready to scan';
           if (statusSub1) statusSub1.textContent = 'Press the button below once the sample is in position.';
-          showToast('toastStack', 'Measurement failed — is the agent running?', 'error');
+          showToast('toastStack', 'Measurement failed. Is the agent running?', 'error');
           console.error(err);
         });
     }
@@ -736,6 +736,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // is an optional single-letter sub-prefix inserted right after the
     // initial 2 letters.
     const PRODUCT_CODE_RE = /^[A-Z]{2}(-[A-Z])?\d{1,5}E(-I)?$/;
+    // Task 2: no longer dumped in full client-side -- grows only from
+    // actual server search results / saves, same principle as Samples
+    // Record's product code lookup (Task 1).
     let existingCodes = Array.isArray(productCodeOptions) ? productCodeOptions.slice() : [];
 
     let savedCode = null;
@@ -744,16 +747,18 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // cancelled "clear the code" confirmation can restore it exactly.
     let lastNonEmptyProductCode = '';
 
-    function renderSuggestions(query) {
+    const SUGGEST_DEBOUNCE_MS = 300;
+    let suggestDebounceTimer = null;
+    let suggestRequestSeq = 0; // guards a stale, slow response from overwriting a newer one
+
+    function renderMatches(query, matches) {
       const q = query.trim().toUpperCase();
-      const matches = q ? existingCodes.filter(function (c) { return c.startsWith(q); }) : existingCodes;
       let html = '';
       matches.forEach(function (c) {
         html += '<div class="px-3 py-2 text-[13px] cursor-pointer hover:bg-[hsl(var(--accent))] font-mono" data-code="' + c + '">' + c + '</div>';
       });
-      // client-side dedupe guard: never offer "+ Add" for a code that's
-      // already in the known product_codes list
-      if (q && PRODUCT_CODE_RE.test(q) && existingCodes.indexOf(q) === -1) {
+      // dedupe guard: never offer "+ Add" for a code the search already matched
+      if (q && PRODUCT_CODE_RE.test(q) && matches.indexOf(q) === -1) {
         html += '<div class="px-3 py-2 text-[13px] cursor-pointer hover:bg-[hsl(var(--accent))] font-mono text-[hsl(var(--primary))]" data-add-code="' + q + '">+ Add "' + q + '"</div>';
       }
       if (!html) {
@@ -780,6 +785,38 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           saveProductCode();
         });
       });
+    }
+
+    // Task 2: debounced (~300ms) server-side lookup -- fires only after
+    // the user stops typing, instead of filtering a full client-side list.
+    function renderSuggestions(query) {
+      const q = query.trim();
+      clearTimeout(suggestDebounceTimer);
+
+      if (!q) {
+        productCodeSuggestions.style.display = 'none';
+        productCodeSuggestions.innerHTML = '';
+        return;
+      }
+
+      suggestDebounceTimer = setTimeout(function () {
+        const seq = ++suggestRequestSeq;
+        fetch(urls.searchProductCodes + '?q=' + encodeURIComponent(q), {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (seq !== suggestRequestSeq) return; // superseded -- drop stale response
+            const matches = data.results || [];
+            matches.forEach(function (c) { if (existingCodes.indexOf(c) === -1) existingCodes.push(c); });
+            renderMatches(query, matches);
+          })
+          .catch(function () {
+            if (seq !== suggestRequestSeq) return;
+            productCodeSuggestions.innerHTML = '<div class="px-3 py-2 text-[13px] text-[hsl(var(--muted-foreground))] italic">Search failed</div>';
+            productCodeSuggestions.style.display = 'block';
+          });
+      }, SUGGEST_DEBOUNCE_MS);
     }
 
     // Selecting a code already known client-side -- no need to hit the

@@ -35,10 +35,14 @@
           class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-border bg-card text-foreground outline-none focus:border-ring focus:ring-[3px] focus:ring-ring/40">
       </div>
 
-      <div class="field mb-5">
+      <div class="field mb-2">
         <label for="id_password" class="block text-xs font-semibold mb-1.5">Password</label>
         <input type="password" name="password" id="id_password" autocomplete="current-password"
           class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-border bg-card text-foreground outline-none focus:border-ring focus:ring-[3px] focus:ring-ring/40">
+      </div>
+
+      <div class="text-right mb-5">
+        <a href="{% url 'password_reset' %}" class="text-[11.5px] text-muted-foreground hover:text-foreground underline">Forgot password?</a>
       </div>
 
       <button type="submit" class="btn bg-primary text-primary-foreground border border-primary text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer w-full hover:opacity-90 transition">

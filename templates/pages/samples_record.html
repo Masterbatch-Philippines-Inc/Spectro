@@ -4,7 +4,7 @@
 {% csrf_token %}
 <section class="flex-1 min-h-0 flex flex-col overflow-hidden">
   <div class="shrink-0 flex items-center gap-2.5 flex-wrap px-5 py-3 border-b border-border bg-card">
-    {% include "components/shared/ui/dropdown.html" with dropdown_type="combobox" dropdown_id="productCodeFilter" dropdown_placeholder="Select one product code" dropdown_options_json=product_code_options_json %}
+    {% include "components/shared/ui/dropdown.html" with dropdown_type="combobox" dropdown_id="productCodeFilter" dropdown_placeholder="Select one product code" dropdown_remote_url=search_product_codes_url %}
     {% include "components/shared/ui/dropdown.html" with dropdown_id="standardFilter" dropdown_placeholder="Select one standard" dropdown_options=None dropdown_disabled=True %}
     <div class="flex items-center gap-2">
       <label for="stdDeUsedBox" class="text-[11px] font-bold whitespace-nowrap">STD ΔE USED:</label>

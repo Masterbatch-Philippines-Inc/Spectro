@@ -61,20 +61,20 @@ ASGI_APPLICATION = "apps.core.asgi.application"
 # NOTE: point this at the actual Postgres instance used by the project.
 DATABASES = {
     'default': {
-        'ENGINE':   'django.db.backends.postgresql',
-        'NAME':     config('DB_NAME', default=''),
-        'USER':     config('DB_USER', default=''),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST':     config('DB_HOST', default=''),
-        'PORT':     config('DB_PORT', default=''),
+        'ENGINE':   config('DB_ENGINE', default='django.db.backends.postgresql'),
+        'NAME':     config('DB_NAME', default='db_spectro'),
+        'USER':     config('DB_USER', default='postgres'),
+        'PASSWORD': config('DB_PASSWORD', default='postgres'),
+        'HOST':     config('DB_HOST', default='localhost'),
+        'PORT':     config('DB_PORT', default='5432'),
     },
     'server': {
-        'ENGINE':   'django.db.backends.postgresql',
-        'NAME':     config('SERVER_DB_NAME', default=''),
-        'USER':     config('SERVER_DB_USER', default=''),
-        'PASSWORD': config('SERVER_DB_PASSWORD', default=''),
-        'HOST':     config('SERVER_DB_HOST', default=''),
-        'PORT':     config('SERVER_DB_PORT', default=''),
+        'ENGINE':   config('SERVER_DB_ENGINE', default='django.db.backends.postgresql'),
+        'NAME':     config('SERVER_DB_NAME', default='db_spectro'),
+        'USER':     config('SERVER_DB_USER', default='postgres'),
+        'PASSWORD': config('SERVER_DB_PASSWORD', default='postgres'),
+        'HOST':     config('SERVER_DB_HOST', default='localhost'),
+        'PORT':     config('SERVER_DB_PORT', default='5432'),
     }
 }
 
@@ -86,6 +86,16 @@ AUTH_USER_MODEL = "spectro.User"
 LOGIN_URL = "auth_login"
 LOGIN_REDIRECT_URL = "samples_reader"
 LOGOUT_REDIRECT_URL = "auth_login"
+
+# --- EMAIL / PASSWORD RESET CONFIGURATION ---
+EMAIL_BACKEND           = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST              = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT              = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS           = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER         = config('EMAIL_HOST_USER', default='mbpi.itsupport@gmail.com')
+EMAIL_HOST_PASSWORD     = config('EMAIL_HOST_PASSWORD', default='secret')
+DEFAULT_FROM_EMAIL      = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+PASSWORD_RESET_TIMEOUT  = 3600  # seconds -- reset link valid for 1 hour
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

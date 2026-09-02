@@ -4,9 +4,9 @@ export function initFooterClock() {
   if (!el) return;
   function tick() {
     const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: '2-digit', month: '2-digit', day: '2-digit' });
     const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' });
-    el.textContent = 'Today is ' + dateStr + ', ' + timeStr;
+    el.textContent = dateStr + ' - ' + timeStr;
   }
   tick();
   setInterval(tick, 1000);
@@ -22,6 +22,6 @@ export function initDarkModeToggle() {
     e.preventDefault();
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    toggle.textContent = isDark ? 'Try Light Mode' : 'Try Dark Mode';
+    toggle.textContent = isDark ? 'Try Light Mode' : 'Try Dark Mode';0
   });
 }

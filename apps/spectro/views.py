@@ -25,6 +25,7 @@ from apps.spectro.modules.samples_record import (
     save_spectro_remarks,
     save_special_pass_by,
     export_samples_report,
+    search_product_codes,
 )
 
 
@@ -57,6 +58,9 @@ def check_lot_exists_view(request):
 
 def samples_record_view(request):
     return render_samples_record(request)
+
+def search_product_codes_view(request):
+    return search_product_codes(request)
 
 def standards_for_product_code_view(request):
     return get_standards_for_product_code(request)

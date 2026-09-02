@@ -25,7 +25,7 @@ Requires dropdown.js (initDropdowns) which is auto-loaded by base.js.
 {% endcomment %}
 
 {% if dropdown_type == "combobox" %}
-<div class="relative" data-combobox data-combobox-options="{{ dropdown_options_json }}">
+<div class="relative" data-combobox {% if dropdown_remote_url %}data-combobox-remote-url="{{ dropdown_remote_url }}"{% else %}data-combobox-options="{{ dropdown_options_json }}"{% endif %}>
   <input type="text" id="{{ dropdown_id }}" autocomplete="off"
     placeholder="{{ dropdown_placeholder|default:'Type to search...' }}"
     {% if dropdown_disabled %}disabled{% endif %}

@@ -18,11 +18,21 @@ export function initCombobox() {
     const suggestions = wrapper.querySelector('[id$="Suggestions"]');
     if (!textInput || !hiddenInput || !suggestions) return;
 
+    // Remote mode (data-combobox-remote-url): options are NOT dumped to
+    // the client -- every keystroke (debounced) queries the server for
+    // just the matching codes instead of filtering a full local list.
+    const remoteUrl = wrapper.dataset.comboboxRemoteUrl || null;
+    const DEBOUNCE_MS = 300;
+    let debounceTimer = null;
+    let requestSeq = 0; // guards a stale, slow response from overwriting a newer one
+
     let options = [];
-    try {
-      options = JSON.parse(wrapper.dataset.comboboxOptions || '[]');
-    } catch (e) {
-      options = [];
+    if (!remoteUrl) {
+      try {
+        options = JSON.parse(wrapper.dataset.comboboxOptions || '[]');
+      } catch (e) {
+        options = [];
+      }
     }
 
     let highlightedIndex = -1;
@@ -46,9 +56,7 @@ export function initCombobox() {
       highlightedIndex = index;
     }
 
-    function renderSuggestions(query) {
-      const q = query.trim().toLowerCase();
-      const matches = q ? options.filter(function (o) { return o[1].toLowerCase().includes(q); }) : options;
+    function renderMatches(matches) {
       highlightedIndex = -1;
 
       if (!matches.length) {
@@ -69,8 +77,45 @@ export function initCombobox() {
       });
     }
 
+    function renderSuggestionsLocal(query) {
+      const q = query.trim().toLowerCase();
+      const matches = q ? options.filter(function (o) { return o[1].toLowerCase().includes(q); }) : options;
+      renderMatches(matches);
+    }
+
+    function renderSuggestionsRemote(query) {
+      const q = query.trim();
+      if (!q) {
+        suggestions.classList.add('hidden');
+        suggestions.innerHTML = '';
+        return;
+      }
+      const seq = ++requestSeq;
+      fetch(remoteUrl + '?q=' + encodeURIComponent(q), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (seq !== requestSeq) return; // superseded -- drop stale response
+          const matches = (data.results || []).map(function (code) { return [code, code]; });
+          renderMatches(matches);
+        })
+        .catch(function () {
+          if (seq !== requestSeq) return;
+          suggestions.innerHTML = '<div class="px-3 py-2 text-[12.5px] text-muted-foreground italic">Search failed</div>';
+          suggestions.classList.remove('hidden');
+        });
+    }
+
+    function renderSuggestions(query) {
+      if (!remoteUrl) {
+        renderSuggestionsLocal(query);
+        return;
+      }
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function () { renderSuggestionsRemote(query); }, DEBOUNCE_MS);
+    }
+
     textInput.addEventListener('focus', function () {
-      renderSuggestions(textInput.value);
+      if (!remoteUrl) renderSuggestions(textInput.value);
     });
 
     textInput.addEventListener('input', function () {
