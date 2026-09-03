@@ -86,8 +86,10 @@ This is an internal-only project.
 mbpi_spectro/
 ├── manage.py
 ├── package.json
-├── package-lock.json
+├── pnpm-lock.yaml
 ├── requirements.txt
+├── .gitignore
+├── .env.example
 ├── .env                            # local environment variables (gitignored)
 │
 ├── apps/
@@ -140,31 +142,43 @@ mbpi_spectro/
 
 ### Requirements
 - Python 3.11+
-- Node.js (v18+ recommended) & pnpm
+- Node.js (v24+ recommended) & pnpm
 - PostgreSQL (running instance, credentials you control)
 - uv
 - see other libraries at `requirements.txt` file
 
 ### Step 1 — Install dependencies
+For Windows:
 ```bash
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" 
-# macOS & Linux: curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
+For Unix:
+```bash
+url -LsSf https://astral.sh/uv/install.sh | sh
+```
+#### Verify `uv` installation
 ```bash
 uv --version
 ```
 ```bash
 uv venv
 ```
+#### Activate the virtual environment
+
+For Windows:
 ```bash
 .venv\Scripts\activate    
-# macOS & Linux: source .venv/bin/activate
 ```
+For Unix:
+```bash
+source .venv/bin/activate
+```
+#### Start installing dependecies
 ```bash
 uv pip install -r requirements.txt
 ```
 
-Install pnpm (if not already installed):
+#### Install pnpm (if not already installed, make sure node.js is also installed):
 ```bash
 npm install -g pnpm
 ```
@@ -173,29 +187,46 @@ pnpm install
 ```
 
 ### Step 2 — Configure environment variables
-Create a `.env` file at the project root (same level as `manage.py`). This file is gitignored and never committed.
 
+#### Copy `.env.example` to `.env`, run terminal in same directory and run:
+For Windows:
+```bash
+copy .env.example .env
 ```
-DJANGO_SECRET_KEY=your-real-secret-key-here
+For Unix:
+```bash
+cp .env.example .env
+```
+
+#### Open text editor to edit the `.env` credentials
+For Windows:
+```bash
+notepad .env
+```
+For Unix:
+```bash
+nano .env
+```
+
+#### You will see something like:
+```
+DJANGO_SECRET_KEY=<your-real-secret-key-here>
 DJANGO_DEBUG=True
 DJANGO_ALLOWED_HOSTS=
+
+DB_E...
 ```
 
-
-Copy `.env.example` to `.env`, run powershell terminal in same directory and run:
-```bash
-Copy-Item .env.example .env
-```
-
-Fill in the values in `.env` first before generating a secret key. Command to generate a real secret key with:
+#### Fill in the values in `.env` first before generating a secret key for `DJANGO_SECRET_KEY` variable. 
+#### Command to generate a secret key with:
 ```bash
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-For a production/deployment environment, set `DJANGO_DEBUG=False` and list the actual server hostname(s)/IP(s) in `DJANGO_ALLOWED_HOSTS` instead of using a wildcard.
+> For a production/deployment environment, set `DJANGO_DEBUG=False` and list the actual server hostname(s)/IP(s) in `DJANGO_ALLOWED_HOSTS` instead of using a wildcard.
 
 ### Step 3 — Configure the database
-Edit `apps/core/settings.py` → create variables in you env file → `DATABASES["default"]`:
+Edit `apps/core/settings.py` → create variables in you env file to `DATABASES["default"{},"server"{}]`:
 ```python
 from decouple import config
 
@@ -207,10 +238,18 @@ DATABASES = {
         'PASSWORD': config('DB_PASSWORD'),
         'HOST':     config('DB_HOST'),
         'PORT':     config('DB_PORT'),
+    },
+    "server": {
+        'ENGINE':   'django.db.backends.postgresql',
+        'NAME':     config('SERVER_DB_NAME'),
+        'USER':     config('SERVER_DB_USER'),
+        'PASSWORD': config('SERVER_DB_PASSWORD'),
+        'HOST':     config('SERVER_DB_HOST'),
+        'PORT':     config('SERVER_DB_PORT'),
     }
 }
 ```
-Create the database first (e.g. `createdb mbpi_spectro_db` or via pgAdmin).
+Create the database first (e.g. `createdb mbpi_spectro_db` or via pgAdmin GUI).
 
 ### Step 4 — Run migrations
 ```bash
@@ -286,5 +325,4 @@ Visit `http://127.0.0.1:8000/` → lands on the login page.
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" />
   <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" />
-  <img src="https://img.shields.io/badge/python--decouple-3A3A3A?style=for-the-badge&logoColor=white" />
 </p>

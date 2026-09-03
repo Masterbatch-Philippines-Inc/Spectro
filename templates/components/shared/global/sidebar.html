@@ -47,6 +47,8 @@
       {% include "components/shared/ui/scatter_graph.html" with passed_dot_class="bg-muted-foreground/50" note_text="Tick rows in the table to filter which points are plotted." %}
     {% elif request.resolver_match.url_name == 'samples_reader' %}
       {% include "components/shared/ui/scatter_graph.html" with passed_dot_class="bg-blue" note_text="Updates live as samples are read this session." %}
+    {% else %}
+      {% include "components/shared/ui/scatter_graph.html" with passed_dot_class="bg-muted-foreground/50" note_text="Select a page to view the graph." %}
     {% endif %}
     <!-- Account Nav. -->
     <nav id="sidebarAccount" class="p-2.5 pr-0 mb-2 flex flex-col gap-0.5">

@@ -27,6 +27,7 @@ from apps.spectro.modules.samples_record import (
     export_samples_report,
     search_product_codes,
 )
+from apps.spectro.modules import handlers
 
 
 def login_view(request):
@@ -85,3 +86,6 @@ def save_special_pass_by_view(request):
 
 def export_samples_report_view(request):
     return export_samples_report(request)
+
+def maintenance_view(request):
+    return handlers.handler503(request)

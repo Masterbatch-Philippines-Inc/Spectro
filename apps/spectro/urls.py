@@ -44,4 +44,6 @@ urlpatterns = [
     path("spectro-judgement/remarks/",      views.save_spectro_remarks_view,            name="api_save_spectro_remarks"         ),
     path("special-pass/",                   views.save_special_pass_by_view,            name="api_save_special_pass_by"         ),
     path("samples-report/",                 views.export_samples_report_view,           name="api_export_samples_report"        ),
+    
+    path("maintenance/", views.maintenance_view, name="maintenance"),
 ]
