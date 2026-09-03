@@ -53,6 +53,10 @@ jobs:
 
       - name: Install Node Dependencies
         run: |
+          npm install -g pnpm
+
+      - name: Use pnpm to start dependency
+        run: |
           pnpm install --frozen-lockfile
 
       - name: Build Tailwind CSS
