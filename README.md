@@ -148,6 +148,8 @@ mbpi_spectro/
 - see other libraries at `requirements.txt` file
 
 ### Step 1 — Install dependencies
+
+#### a. Install `uv` package manager for python
 For Windows:
 ```bash
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" 
@@ -156,14 +158,18 @@ For Unix:
 ```bash
 url -LsSf https://astral.sh/uv/install.sh | sh
 ```
-#### Verify `uv` installation
+
+> Note: Installation of `uv` is one time only.
+
+#### b. Verify `uv` installation
 ```bash
 uv --version
 ```
+#### c. Install the virtual environment
 ```bash
 uv venv
 ```
-#### Activate the virtual environment
+#### d. Activate the virtual environment
 
 For Windows:
 ```bash
@@ -173,12 +179,12 @@ For Unix:
 ```bash
 source .venv/bin/activate
 ```
-#### Start installing dependecies
+#### e. Start installing dependecies
 ```bash
 uv pip install -r requirements.txt
 ```
 
-#### Install pnpm (if not already installed, make sure node.js is also installed):
+#### f. Install pnpm (if not already installed, make sure node.js is also installed):
 ```bash
 npm install -g pnpm
 ```
@@ -188,7 +194,7 @@ pnpm install
 
 ### Step 2 — Configure environment variables
 
-#### Copy `.env.example` to `.env`, run terminal in same directory and run:
+#### a. Copy `.env.example` to `.env`, run terminal in same directory and run:
 For Windows:
 ```bash
 copy .env.example .env
@@ -198,7 +204,7 @@ For Unix:
 cp .env.example .env
 ```
 
-#### Open text editor to edit the `.env` credentials
+#### b. Open text editor to edit the `.env` credentials
 For Windows:
 ```bash
 notepad .env
@@ -208,7 +214,7 @@ For Unix:
 nano .env
 ```
 
-#### You will see something like:
+#### c. You will see something like:
 ```
 DJANGO_SECRET_KEY=<your-real-secret-key-here>
 DJANGO_DEBUG=True
@@ -217,8 +223,8 @@ DJANGO_ALLOWED_HOSTS=
 DB_E...
 ```
 
-#### Fill in the values in `.env` first before generating a secret key for `DJANGO_SECRET_KEY` variable. 
-#### Command to generate a secret key with:
+#### d. Fill in the values in `.env` first before generating a secret key for `DJANGO_SECRET_KEY` variable. 
+#### e. Command to generate a secret key with:
 ```bash
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
