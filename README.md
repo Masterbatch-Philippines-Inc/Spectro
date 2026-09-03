@@ -147,7 +147,8 @@ mbpi_spectro/
 
 ### Step 1 — Install dependencies
 ```bash
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" # in Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" 
+# macOS & Linux: curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 ```bash
 uv --version
@@ -156,7 +157,8 @@ uv --version
 uv venv
 ```
 ```bash
-.venv\Scripts\activate    # macOS & Linux: source .venv/bin/activate
+.venv\Scripts\activate    
+# macOS & Linux: source .venv/bin/activate
 ```
 ```bash
 uv pip install -r requirements.txt
