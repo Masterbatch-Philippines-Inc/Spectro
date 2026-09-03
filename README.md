@@ -279,6 +279,25 @@ Visit `http://127.0.0.1:8000/` → lands on the login page.
 
 ---
 
+## Deployment Note
+
+#### Since `DJANGO_DEV_DEBUG` is **always `False`** in production, Django never auto-serves static files, whitenoise serves the pre-collected, compressed copies instead. Because of this, run the following command on the server **every time a new build is shipped**, 
+
+Run 
+```bash
+pnpm run build:css
+``` 
+
+#### and this will regenerate final `output.css`:
+
+```bash
+python manage.py collectstatic --noinput --ignore=input.css --ignore=design-tokens.css
+```
+
+This compiles the latest Tailwind output and delivers it through `output.css` — skipping it means the server keeps serving stale static files even after a successful deploy.
+
+---
+
 ## 5. Key Concepts
 
 **`views.py` is an orchestrator only.** It imports render functions from `apps/spectro/modules/*` and calls them — it never contains business logic itself. Each page or unit of work gets its own module file. To add a new page: create a new file in `modules/`, add a render function, import it in `views.py`, and wire a URL in `apps/spectro/urls.py`.
