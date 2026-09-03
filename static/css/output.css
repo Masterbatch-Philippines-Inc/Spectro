@@ -48,6 +48,7 @@
     --color-danger: hsl(var(--danger));
     --color-danger-bg: hsl(var(--danger-bg));
     --color-danger-border: hsl(var(--danger-border));
+    --color-warn: hsl(var(--warn));
     --color-warn-bg: hsl(var(--warn-bg));
     --color-warn-border: hsl(var(--warn-border));
   }
@@ -888,6 +889,9 @@
   }
   .bg-transparent {
     background-color: transparent;
+  }
+  .bg-warn {
+    background-color: var(--color-warn);
   }
   .bg-warn-bg {
     background-color: var(--color-warn-bg);

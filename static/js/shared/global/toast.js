@@ -2,7 +2,7 @@
 const TOAST_TONE_CLASSES = {
   info:     'bg-primary text-primary-foreground',
   success:  'bg-success text-white',
-  warning:  'bg-warning text-white',
+  warning:  'bg-warn text-white',
   error:    'bg-danger text-white',
 };
 
@@ -16,3 +16,5 @@ export function showToast(stackId, msg, tone) {
   stack.appendChild(t);
   setTimeout(() => t.remove(), 3000);
 }
+
+window.showToast = showToast;

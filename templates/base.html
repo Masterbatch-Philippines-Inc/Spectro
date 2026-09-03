@@ -19,6 +19,15 @@
         {% block content %}{% endblock %}
         {% include "components/shared/global/footer.html" %}
         {% include "components/shared/ui/toast.html" %}
+        {% if messages %}
+          <script>
+            window.addEventListener('load', function () {
+              {% for message in messages %}
+                showToast('toastStack', '{{ message|escapejs }}', '{{ message.tags|default:"success" }}');
+              {% endfor %}
+            });
+          </script>
+        {% endif %}
         {% include "components/shared/ui/tooltip.html" %}
         </main>
       </div>

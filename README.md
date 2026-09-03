@@ -139,17 +139,35 @@ mbpi_spectro/
 ## 4. Setup and Installation
 
 ### Requirements
-- Python 3.11+- 
-- Node.js (v18+ recommended) & npm
+- Python 3.11+
+- Node.js (v18+ recommended) & pnpm
 - PostgreSQL (running instance, credentials you control)
-- pip
+- uv
 - see other libraries at `requirements.txt` file
 
 ### Step 1 — Install dependencies
 ```bash
-python -m venv venv
-venv/bin/activate    # macOS & Linux: source venv\Scripts\activate
-pip install -r requirements.txt
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" # in Windows
+```
+```bash
+uv --version
+```
+```bash
+uv venv
+```
+```bash
+.venv\Scripts\activate    # macOS & Linux: source .venv/bin/activate
+```
+```bash
+uv pip install -r requirements.txt
+```
+
+Install pnpm (if not already installed):
+```bash
+npm install -g pnpm
+```
+```bash
+pnpm install
 ```
 
 ### Step 2 — Configure environment variables
@@ -160,6 +178,7 @@ DJANGO_SECRET_KEY=your-real-secret-key-here
 DJANGO_DEBUG=True
 DJANGO_ALLOWED_HOSTS=
 ```
+
 
 Copy `.env.example` to `.env`, run powershell terminal in same directory and run:
 ```bash
@@ -194,6 +213,8 @@ Create the database first (e.g. `createdb mbpi_spectro_db` or via pgAdmin).
 ### Step 4 — Run migrations
 ```bash
 python manage.py makemigrations spectro
+```
+```bash
 python manage.py migrate
 ```
 
@@ -207,9 +228,9 @@ To run the project locally, open two terminal windows in the project root:
 
 **Terminal 1 — Tailwind CSS Compiler (Watcher)**
 ```bash
-npm run dev:css
+pnpm run dev:css
 ```
-**Terminal 2 — Where Django (venv) is active**
+**Terminal 2 — Where Django (.venv) is active**
 ```bash
 python manage.py runserver
 ```

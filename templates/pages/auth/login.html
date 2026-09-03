@@ -24,7 +24,7 @@
       {% if error %}
         <script>
           window.addEventListener('load', function () {
-            showToast('toastStack', '{{ error|escapejs }}', 'error');
+            showToast('toastStack', '{{ error|escapejs }}', 'warning');
           });
         </script>
       {% endif %}
