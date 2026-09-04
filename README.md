@@ -1,10 +1,10 @@
-# MBPI SPECTRO
+# Spectro
 
-A web-based color measurement system built for Masterbatch Philippines Inc., replacing manual, spreadsheet-based color quality checks with a digital workflow connected directly to spectrophotometer hardware. Lab technicians connect a spectrometer, calibrate it, and read color measurements from production samples straight from their browser — each sample is automatically compared against its approved color standard to determine a pass/fail result, with every reading, standard, and judgement stored centrally for the QC team to review.
+A web-based color measurement system built for Masterbatch Philippines Inc., replacing manual, spreadsheet-based color quality checks with a digital workflow connected directly to spectrophotometer hardware. Lab technicians connect a spectrometer, calibrate it, and read color measurements from production samples straight from their browser, each sample is automatically compared against its approved color standard to determine a pass/fail result, with every reading, standard, and judgement stored centrally for the Laboratory Department to review.
 
 This is an internal-only project.
 
----
+<br>
 
 ## Table of Contents
 
@@ -15,7 +15,7 @@ This is an internal-only project.
 5. [Key Concepts](#5-key-concepts)
 6. [Models Overview](#6-models-overview)
 
----
+<br>
 
 ## 1. Project Overview
 
@@ -23,9 +23,7 @@ This is an internal-only project.
 - Date: August 01, 2026
 
 **Who is it for?**
-- Lab technicians who calibrate the spectrometer and read color samples
-- QC staff who review standards, judgements, and remarks
-- Admin users who manage standard ΔE tolerance limits and change history
+- Lab Dept. calibrate the spectrometer and read color samples, review standards, judgements, and remarks.
 
 **What does it do?**
 - Connects to a spectrometer over BLE via a separate local hardware agent, keeping all hardware/SDK logic outside the Django project
@@ -38,38 +36,37 @@ This is an internal-only project.
 - Requires sign-in for every page; nothing is viewable without an authenticated session
 
 **Tech Stack**
-- Backend: Python, Django
-- Frontend: HTML, JavaScript, Tailwind CSS
+- Backend: Django
+- Frontend: JavaScript, Tailwind
 - Database: PostgreSQL
-- Environment config: python-decouple
-- Hardware bridge: separate local Flask-based agent (compiled independently, Spectro Agent), talking to the vendor spectrometer SDK over ctypes
+- Hardware bridge: separate local server Flask-based executable (compiled independently via separate repo: Spectro-LSE), talking to the vendor spectrometer SDK over ctypes
 
----
+<br>
 
 ## 2. Features
 
 ### Authentication
-- Sign-in required for every page — unauthenticated visitors are redirected to the login page automatically
+- Sign-in required for every page: unauthenticated visitors are redirected to the login page automatically
 - Successful login redirects straight to the Samples Record page
 - Logout fully clears the session
 
 ### Samples Record Page
-- **Product Code** — type-to-search field; narrows a live list of existing product codes as the user types, shows a "try a different keyword" message when nothing matches, and clears any previously selected code the moment the user starts typing something new
-- **Standard Sample** — dependent dropdown, populated only after a Product Code is chosen
-- **Standard ΔE Used** — editable in place:
+- **Product Code**: type-to-search field; narrows a live list of existing product codes as the user types, shows a "try a different keyword" message when nothing matches, and clears any previously selected code the moment the user starts typing something new
+- **Standard Sample**: dependent dropdown, populated only after a Product Code is chosen
+- **Standard ΔE Used**: editable in place:
   - Accepts numeric input only, masked to two decimal places
   - Empty input is rejected with an error message and reverts to the last known value
   - A lower value than the current one is rejected with an error message and reverts
   - A higher value triggers a confirmation popup before saving
   - On confirmation, the new value is saved and the previous value is written to a change history table along with which user made the change
   - Editing this value immediately recalculates every visible sample's pass/fail result without a page reload
-- **Samples table** — combines data from six related tables (sample record, raw readings, calculated deltas, spectro judgement, visual judgement, special-pass record) into one row per sample:
+- **Samples table**: combines data from six related tables (sample record, raw readings, calculated deltas, spectro judgement, visual judgement, special-pass record) into one row per sample:
   - Color Simulation column shows a color swatch alongside its stored value
   - Visual Judgement is an editable dropdown (Passed/Failed), saving immediately and recording who judged it
   - Reason for Fail and Spectro Remarks are click-to-edit text cells, saving automatically on Enter or on click-away
   - Special Pass and Special Pass By are visible but intentionally locked from editing for now
   - Supports column sorting, freeze-column pinning, and live search filtering
-- **Δa\*/Δb\* scatter graph** — plots every sample in the current table, color-coded to match the table's pass/fail judgement, with a maximizable popup view
+- **Δa\*/Δb\* scatter graph**: plots every sample in the current table, color-coded to match the table's pass/fail judgement, with a maximizable popup view
 
 ### Shared UI
 - Toast notifications with four tones (info, success, warning, danger)
@@ -83,7 +80,7 @@ This is an internal-only project.
 ## 3. Project Structure
 
 ```
-mbpi_spectro/
+spectro/
 ├── manage.py
 ├── package.json
 ├── pnpm-lock.yaml
@@ -136,14 +133,14 @@ mbpi_spectro/
             └── ui/                   # JS behind the ui/ components
 ```
 
----
+<br>
 
 ## 4. Setup and Installation
 
 ### Requirements
-- Python 3.11+
+- Python 3.12+
 - Node.js (v24+ recommended) & pnpm
-- PostgreSQL (running instance, credentials you control)
+- PostgreSQL 16+ (running instance, credentials you control)
 - uv
 - see other libraries at `requirements.txt` file
 
@@ -283,7 +280,7 @@ python manage.py runserver
 ```
 Visit `http://127.0.0.1:8000/` → lands on the login page.
 
----
+<br>
 
 ## Deployment Note
 
@@ -302,7 +299,7 @@ python manage.py collectstatic --noinput --ignore=input.css --ignore=design-toke
 
 This compiles the latest Tailwind output and delivers it through `output.css` — skipping it means the server keeps serving stale static files even after a successful deploy.
 
----
+<br>
 
 ## 5. Key Concepts
 
@@ -320,7 +317,7 @@ This compiles the latest Tailwind output and delivers it through `output.css` �
 
 **Templates follow a shared-shell + component-library pattern.** `base.html` includes the sidebar, header, footer, toast container, and modal container automatically. Reusable pieces live under `templates/components/shared/`, split into `global/` (structural, once-per-page pieces) and `ui/` (smaller, reusable, parameterized building blocks).
 
----
+<br>
 
 ## 6. Models Overview
 
@@ -341,7 +338,7 @@ This compiles the latest Tailwind output and delivers it through `output.css` �
 | `SpecialCaseChangelog` | `spectro_models.py` | Change history for special-pass decisions |
 | `QcProgramRecord` | `spectro_models.py` | Unmanaged — represents a table owned by an external QC program database |
 
----
+<br>
 
 ## Built With
 
