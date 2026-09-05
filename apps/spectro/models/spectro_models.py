@@ -198,6 +198,15 @@ class SpectroJudgement(models.Model):
     color_offset = models.CharField(max_length=100, blank=True, null=True)
     is_pass = models.BooleanField(default=True, blank=True, null=True)
     spectro_remarks = models.TextField(blank=True, null=True)
+    # Per-row snapshot of the STD ΔE Used this row was last evaluated
+    # against. NOT the same as SpectrometerRecord.std_delta_e_used (the
+    # record's current global value) -- this only ratchets upward, and
+    # only when a threshold change causes this row to newly PASS. A
+    # threshold change that leaves the row failing, or that isn't
+    # needed for it to pass, never updates this value. LT/DR reference
+    # rows are always treated as fixed at 1.00 (enforced in views, not
+    # stored here differently).
+    std_de_used = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
     lot_sample = models.ForeignKey(
         LotSample, on_delete=models.CASCADE,
         related_name="spectro_judgements", db_column="lot_samples_id",

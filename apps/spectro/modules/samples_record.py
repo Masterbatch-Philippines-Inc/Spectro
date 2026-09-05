@@ -383,6 +383,15 @@ def _serialize_lot_sample_row(lot_sample, standards_id, product_code=None):
 
     qc_info = _qc_lookup_for_row(product_code, lot_sample.sample_name)
 
+    name_check = (lot_sample.sample_name or "").strip().upper()
+    is_reference = name_check.startswith("LT ") or name_check.startswith("DR ")
+    if is_reference:
+        std_de_used_row = 1.00
+    elif spectro_j and spectro_j.std_de_used is not None:
+        std_de_used_row = num(spectro_j.std_de_used)
+    else:
+        std_de_used_row = None
+
     return {
         "id": lot_sample.lot_samples_id,
         "lotSampleId": lot_sample.lot_samples_id,
@@ -414,6 +423,7 @@ def _serialize_lot_sample_row(lot_sample, standards_id, product_code=None):
         "spectroRemarks": spectro_j.spectro_remarks if spectro_j and spectro_j.spectro_remarks else "",
         "specialPass": bool(special.is_pass) if special else False,
         "specialPassBy": special.passed_by if special and special.passed_by else "",
+        "stdDeUsed": std_de_used_row,
     }
 
 def _recalculate_spectro_judgements(record, threshold):
@@ -427,6 +437,13 @@ def _recalculate_spectro_judgements(record, threshold):
     lot_samples = LotSample.objects.filter(standard__in=standards)
 
     for lot_sample in lot_samples:
+        # LT/DR reference readings are excluded -- their STD ΔE Used is
+        # fixed at 1 (see export/serialize below) and their judgement is
+        # never recalculated against the record's global threshold.
+        name_check = (lot_sample.sample_name or "").strip().upper()
+        if name_check.startswith("LT ") or name_check.startswith("DR "):
+            continue
+
         raw = lot_sample.raw_values.order_by("-date_time").first() # type: ignore
         delta = raw.delta_values.order_by("-date_time").first() if raw else None
         if delta is None:
@@ -434,13 +451,26 @@ def _recalculate_spectro_judgements(record, threshold):
 
         is_pass = float(delta.delta_e) <= threshold
 
-        spectro_j, _ = SpectroJudgement.objects.get_or_create(
+        spectro_j, created = SpectroJudgement.objects.get_or_create(
             lot_sample=lot_sample,
-            defaults={"is_pass": is_pass, "standard": lot_sample.standard},
+            defaults={"is_pass": is_pass, "standard": lot_sample.standard, "std_de_used": threshold},
         )
+        if created:
+            continue
+
+        update_fields = ["is_pass", "standard"]
         spectro_j.is_pass = is_pass
         spectro_j.standard = lot_sample.standard
-        spectro_j.save(update_fields=["is_pass", "standard"])
+
+        # Ratchet-up-only: only stamp this row's std_de_used when the new
+        # threshold is what actually caused it to newly PASS. A threshold
+        # change that leaves the row failing, or one that wasn't needed
+        # for it to pass, never touches the stored value here.
+        if is_pass and (spectro_j.std_de_used is None or float(delta.delta_e) > float(spectro_j.std_de_used)):
+            spectro_j.std_de_used = threshold
+            update_fields.append("std_de_used")
+
+        spectro_j.save(update_fields=update_fields)
 
 
 @login_required
@@ -710,7 +740,6 @@ def export_samples_report(request):
 
     record = standard.record
     product_code = record.product_code
-    std_de_used = float(record.std_delta_e_used) if record.std_delta_e_used is not None else None
 
     lot_samples = LotSample.objects.filter(standard_id=standards_id).order_by("-date_time", "-lot_samples_id")
     rows = [_serialize_lot_sample_row(ls, standards_id, product_code) for ls in lot_samples]
@@ -722,7 +751,6 @@ def export_samples_report(request):
             dt = timezone.localtime(dt).replace(tzinfo=None)
         row["dateTime"] = dt
         row["code"] = product_code
-        row["stdDeUsed"] = std_de_used
 
     # Task 5: DR-prefixed sticker lots first, then LT-prefixed, then
     # everything else -- same ordering as the Samples Record table's

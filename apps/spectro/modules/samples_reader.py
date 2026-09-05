@@ -434,12 +434,14 @@ def save_sample_readings(request):
                 )
 
                 de_value = float(row["de"])
+                is_reference = kind in ("light", "dark")
                 SpectroJudgement.objects.create(
                     color_offset=row.get("colorOffset", "").strip() or None,
                     is_pass=(de_value <= threshold),
                     spectro_remarks=row.get("remarks", "").strip() or None,
                     lot_sample=lot_sample,
                     standard=standard,
+                    std_de_used=1.00 if is_reference else threshold,
                 )
 
                 saved_ids.append(lot_sample.lot_samples_id)
