@@ -742,6 +742,12 @@ def export_samples_report(request):
     product_code = record.product_code
 
     lot_samples = LotSample.objects.filter(standard_id=standards_id).order_by("-date_time", "-lot_samples_id")
+
+    lot_sample_ids_raw = request.GET.get("lot_sample_ids", "").strip()
+    if lot_sample_ids_raw:
+        selected_ids = [v for v in lot_sample_ids_raw.split(",") if v.strip().isdigit()]
+        if selected_ids:
+            lot_samples = lot_samples.filter(lot_samples_id__in=selected_ids)
     rows = [_serialize_lot_sample_row(ls, standards_id, product_code) for ls in lot_samples]
     # export needs real datetime objects (not the UI's display string) so Excel can sort/filter dates.
     # Excel/openpyxl can't hold timezone-aware datetimes, so convert to local time and strip tzinfo.

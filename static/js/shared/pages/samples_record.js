@@ -190,7 +190,11 @@ export function initSamplesRecordPage(urls) {
     if (generateReportBtn) {
       generateReportBtn.addEventListener('click', function () {
         if (!standardFilter.value || dataset.length === 0) return;
-        window.location.href = urls.exportReport + '?standards_id=' + encodeURIComponent(standardFilter.value);
+        let url = urls.exportReport + '?standards_id=' + encodeURIComponent(standardFilter.value);
+        if (selectedRows.size > 0) {
+          url += '&lot_sample_ids=' + encodeURIComponent(Array.from(selectedRows).join(','));
+        }
+        window.location.href = url;
       });
     }
     const freezeDropdownBtn = document.getElementById('freezeDropdownBtn');
