@@ -888,6 +888,17 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     function unlockModeSelect() {
       modeSelectLockOverlay.style.display = 'none';
       modeSelectContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+      // Task 4: cache whether this product code already has ANY standard
+      // record -- gates the "STANDARD" keyword allowed in CMA/Lot Number
+      // (only permitted for genuinely new product codes with none yet).
+      window.productCodeHasStandard = null; // unknown until the fetch below resolves
+      fetchStandardsForCurrentProductCode()
+        .then(function (data) {
+          window.productCodeHasStandard = (data.standards || []).length > 0;
+        })
+        .catch(function () {
+          window.productCodeHasStandard = true; // fail safe -- block the keyword if we can't confirm
+        });
     }
 
     // Task 10 (revised) — once Step 2 is completed, disable the specific
@@ -939,6 +950,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       productCodeGlobal.value = '';
       savedCode = null;
       selectedMode = null;
+      window.currentStandardFlowIsNew = false;
       productCodeSavedChip.style.display = 'none';
       productCodeGlobalErr.style.display = 'none';
       productCodeGlobalMatch.style.display = 'none';
@@ -1123,12 +1135,14 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         card.classList.add('selected');
 
         if (selectedMode === 'new') {
+          window.currentStandardFlowIsNew = true;
           unlockStepDetails();
           flowNewStandard.style.display = 'block';
           if (window.setReadSampleButtonState) window.setReadSampleButtonState(true);
           if (window.setFinishReadingMode) window.setFinishReadingMode(true);
           if (window.setSpecialReadButtonsDisabled) window.setSpecialReadButtonsDisabled(false);
         } else {
+          window.currentStandardFlowIsNew = false;
           lockStepDetails();
           flowNewStandard.style.display = 'none';
           useExistingStandardFlow();
@@ -1313,6 +1327,18 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // incomplete, as long as it isn't mid-decimal.
     const CMA_LOT_RE = /^(CMA-)?\d{1,5}[A-Za-z]{0,2}$/i;
     const DOSAGE_FORMAT_RE = /^\d{1,2}\.\d{1,2}%$/;
+    const STANDARD_KEYWORD = 'STANDARD';
+
+    // Task 4: "STANDARD" is accepted as a CMA/Lot value ONLY when this
+    // product code has no existing standard at all -- otherwise it's
+    // rejected with a specific toast, distinct from the generic format
+    // error, since the text itself is well-formed, just not allowed here.
+    function isCmaFormatValid(v) {
+      if (v.trim().toUpperCase() === STANDARD_KEYWORD) {
+        return window.productCodeHasStandard !== true;
+      }
+      return CMA_LOT_RE.test(v);
+    }
 
     // (a) prefilled on load, user is free to delete it entirely
     if (!cma_lot.value) cma_lot.value = 'CMA-';
@@ -1331,16 +1357,21 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     function validateCmaFormat(silent) {
       const v = cma_lot.value.trim();
       if (!isCmaTyped()) return false; // nothing real typed yet -- not an error, just incomplete
-      const valid = CMA_LOT_RE.test(v);
+      const isStandardKeyword = v.toUpperCase() === STANDARD_KEYWORD;
+      const valid = isCmaFormatValid(v);
       if (!valid && !silent) {
-        showToast('toastStack', 'Invalid CMA/Lot format — use a lot number (e.g. 1234A) or CMA-lot format (e.g. CMA-1234A).', 'error');
+        if (isStandardKeyword) {
+          showToast('toastStack', '"STANDARD" is not allowed — this product code already has an existing standard.', 'error');
+        } else {
+          showToast('toastStack', 'Invalid CMA/Lot format — use a lot number (e.g. 1234A) or CMA-lot format (e.g. CMA-1234A).', 'error');
+        }
       }
       return valid;
     }
 
     // (d) preview only shows once both fields are complete AND valid
     function updatePreview() {
-      const cmaValid = isCmaTyped() && CMA_LOT_RE.test(cma_lot.value.trim());
+      const cmaValid = isCmaTyped() && isCmaFormatValid(cma_lot.value.trim());
       const dosageValid = isDosageTyped();
 
       if (cmaValid && dosageValid) {
@@ -1373,9 +1404,14 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         cma_lot.focus();
         return false;
       }
-      if (!CMA_LOT_RE.test(cma_lot.value.trim())) {
+      const v = cma_lot.value.trim();
+      if (!isCmaFormatValid(v)) {
         cma_lot.classList.add('error');
-        showToast('toastStack', 'Invalid CMA/Lot format — use a lot number (e.g. 1234A) or CMA-lot format (e.g. CMA-1234A).', 'error');
+        if (v.toUpperCase() === STANDARD_KEYWORD) {
+          showToast('toastStack', '"STANDARD" is not allowed — this product code already has an existing standard.', 'error');
+        } else {
+          showToast('toastStack', 'Invalid CMA/Lot format — use a lot number (e.g. 1234A) or CMA-lot format (e.g. CMA-1234A).', 'error');
+        }
         cma_lot.focus();
         return false;
       }
@@ -1780,6 +1816,17 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
       if (field === 'lotNumber') isEditingLotNumber = true;
 
+      // Task 6.1: lot number input is always forced to uppercase as the
+      // user types, so "lt sample" / "1234a" etc. auto-correct without
+      // waiting for commit.
+      if (field === 'lotNumber') {
+        input.addEventListener('input', function () {
+          const pos = input.selectionStart;
+          input.value = input.value.toUpperCase();
+          try { input.setSelectionRange(pos, pos); } catch (e) {}
+        });
+      }
+
     // Bag Number format is restricted to a fixed set of shapes:
     // 0, 00, 000, 0-0, 0-00, 00-00, 00-000, 000-000 -- anything else
     // (letters, extra hyphens, other digit-length pairings) is invalid.
@@ -1797,12 +1844,12 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         if (hasCommitted) return;
         hasCommitted = true;
 
-        const newVal = input.value.trim();
+        const newVal = field === 'lotNumber' ? input.value.trim().toUpperCase() : input.value.trim();
         if (field === 'lotNumber') {
           const requiredPrefix = rowData.kind === 'light' ? 'LT ' : rowData.kind === 'dark' ? 'DR ' : null;
           if (requiredPrefix && !newVal.toUpperCase().startsWith(requiredPrefix)) {
             showToast('toastStack', 'The "' + requiredPrefix.trim() + '" prefix cannot be removed from this lot number.', 'error');
-          } else if (!newVal || !window.isValidLotNumber(newVal)) {
+          } else if (!newVal || !window.isValidLotNumber(newVal, rowData.kind)) {
             showToast('toastStack', 'Invalid lot number format.', 'error');
           } else {
             rowData.name = newVal;
@@ -1933,7 +1980,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // unrenamed/invalid lot number (e.g. the default "Sample N" name).
     window.hasInvalidLotNumbers = function () {
       return Object.keys(rows).some(function (id) {
-        return !window.isValidLotNumber(rows[id].name);
+        return !window.isValidLotNumber(rows[id].name, rows[id].kind);
       });
     };
 
@@ -2026,8 +2073,22 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // or "DR "/"LT " prefix + same
     const LOT_NUMBER_RE = /^(DR |LT )?\d{4}[A-Za-z]{1,2}$/;
 
-    window.isValidLotNumber = function (name) {
-      return LOT_NUMBER_RE.test((name || '').trim());
+    // Task 4: for a brand-new standard ONLY, Light/Dark reference rows
+    // may alternatively be named "LT SAMPLE 0.00%" / "DR SAMPLE 0.00%"
+    // instead of a lot-number shape. Existing standards must still use
+    // the normal LOT_NUMBER_RE format above.
+    const SAMPLE_LOT_RE = /^(LT|DR)\s+SAMPLE$/i;
+
+    // kind: 'light' | 'dark' | 'sample' -- the SAMPLE_LOT_RE alternative
+    // only applies to light/dark rows, and only while the wizard is in
+    // the new-standard flow (window.currentStandardFlowIsNew).
+    window.isValidLotNumber = function (name, kind) {
+      const v = (name || '').trim();
+      if (LOT_NUMBER_RE.test(v)) return true;
+      if ((kind === 'light' || kind === 'dark') && window.currentStandardFlowIsNew) {
+        return SAMPLE_LOT_RE.test(v);
+      }
+      return false;
     };
 
     let sampleCounter = 1;
@@ -2118,7 +2179,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         // gate both only apply to the "new standard" flow.
         if (window.refreshReadSampleGateIfExposed) window.refreshReadSampleGateIfExposed();
       } else {
-        finishSessionBtn.disabled = rows.length < 3;
+        finishSessionBtn.disabled = rows.length < 1;
         if (step3Caption) step3Caption.textContent = DEFAULT_STEP3_CAPTION;
       }
     };
@@ -2183,6 +2244,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           body: new URLSearchParams({
             standards_id: standardsId,
             rows: JSON.stringify(rows),
+            is_new_standard: window.currentStandardFlowIsNew ? '1' : '0',
             csrfmiddlewaretoken: getCsrfToken(),
           }),
         })

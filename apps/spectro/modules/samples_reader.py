@@ -30,6 +30,13 @@ from apps.spectro.models import (
 PRODUCT_CODE_RE = re.compile(r'^[A-Z]{2}(-[A-Z])?\d{4,5}E(-I)?$')
 LOT_NUMBER_RE   = re.compile(r'^(DR |LT )?\d{4}[A-Za-z]{1,2}$')
 
+# Task 4/6.1: for a brand-new standard ONLY, Light/Dark reference rows
+# may alternatively be named exactly "LT SAMPLE" / "DR SAMPLE" instead
+# of the normal lot-number shape above. Existing standards must still
+# use LOT_NUMBER_RE. Must stay in sync with SAMPLE_LOT_RE in
+# static/js/shared/pages/samples_reader.js.
+SAMPLE_LOT_RE = re.compile(r'^(LT|DR)\s+SAMPLE$', re.IGNORECASE)
+
 # Bag Number is restricted to a fixed set of shapes: 0, 00, 000, 0-0,
 # 0-00, 00-00, 00-000, 000-000 -- anything else is rejected. Must stay
 # in sync with BAG_NUMBER_RE in static/js/shared/pages/samples_reader.js.
@@ -235,7 +242,7 @@ def get_spectrometer_info(request):
     })
 
 
-def _validate_sample_payload_row(index, row):
+def _validate_sample_payload_row(index, row, is_new_standard=False):
     """
     Structural + format validation for a single row of the samples
     payload. Returns an error message string, or None if the row is fine.
@@ -245,7 +252,12 @@ def _validate_sample_payload_row(index, row):
 
     if not name:
         return f"Row {index + 1}: lot number is required."
-    if not LOT_NUMBER_RE.match(name):
+
+    is_reference_row = kind in ("light", "dark")
+    lot_format_ok = bool(LOT_NUMBER_RE.match(name)) or (
+        is_new_standard and is_reference_row and bool(SAMPLE_LOT_RE.match(name))
+    )
+    if not lot_format_ok:
         return f'Row {index + 1} ("{name}"): invalid lot number format.'
     if kind not in ("light", "dark", "sample"):
         return f'Row {index + 1} ("{name}"): unrecognized reading type.'
@@ -336,6 +348,7 @@ def save_sample_readings(request):
 
     standards_id = request.POST.get("standards_id", "").strip()
     rows_raw = request.POST.get("rows", "")
+    is_new_standard = request.POST.get("is_new_standard", "").strip() in ("1", "true", "True")
 
     if not standards_id:
         return JsonResponse({"tone": "danger", "message": "standards_id is required."}, status=400)
@@ -354,7 +367,7 @@ def save_sample_readings(request):
 
     # ---- structural / format validation, row by row ----
     for idx, row in enumerate(rows):
-        error = _validate_sample_payload_row(idx, row)
+        error = _validate_sample_payload_row(idx, row, is_new_standard)
         if error:
             return JsonResponse({"tone": "danger", "message": error}, status=400)
 
