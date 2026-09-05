@@ -29,23 +29,7 @@ care whether points came from a dataset table or a live wizard session.
   </div>
 
   <svg class="w-full h-auto block" id="scatterSvg" viewBox="0 0 200 180">
-    <line x1="10" y1="20" x2="10" y2="160" stroke="hsl(var(--border))" stroke-width="1"/>
-    <line x1="95" y1="20" x2="95" y2="160" stroke="hsl(var(--border))" stroke-width="1"/>
-    <line x1="10" y1="20" x2="180" y2="20" stroke="hsl(var(--border))" stroke-width="1"/>
-    <line x1="10" y1="90" x2="180" y2="90" stroke="hsl(var(--border))" stroke-width="1"/>
-    <line x1="10" y1="160" x2="180" y2="160" stroke="hsl(var(--border))" stroke-width="1"/>
-    <line x1="10" y1="90" x2="180" y2="90" stroke="hsl(var(--foreground))" stroke-width="1.4"/>
-    <line x1="95" y1="20" x2="95" y2="160" stroke="hsl(var(--foreground))" stroke-width="1.4"/>
-    <text x="10" y="172" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">-1</text>
-    <text x="52" y="172" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">-0.5</text>
-    <text x="95" y="172" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">0</text>
-    <text x="138" y="172" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">0.5</text>
-    <text x="180" y="172" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">1</text>
-    <text x="4" y="23" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">1</text>
-    <text x="4" y="92" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">0</text>
-    <text x="4" y="163" font-size="7" fill="hsl(var(--muted-foreground))" text-anchor="middle">-1</text>
-    <text x="100" y="14" font-size="8" font-weight="700" fill="hsl(var(--foreground))" text-anchor="end">Δa*</text>
-    <text x="-60" y="212" font-size="8" font-weight="700" fill="hsl(var(--foreground))" text-anchor="start" transform="rotate(-90 6 30)">Δb*</text>
+    <g id="scatterAxis"></g>
     <g id="scatterPoints"></g>
   </svg>
 
