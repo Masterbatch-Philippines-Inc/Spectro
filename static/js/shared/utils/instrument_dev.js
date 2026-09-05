@@ -27,7 +27,7 @@
 // ============================================================
 // TOGGLE THIS -- the only line that should ever need touching.
 // ============================================================
-const DEV = true;
+const DEV = false;
 
 const AGENT_BASE = 'http://localhost:5151';
 
@@ -53,9 +53,9 @@ const DEV_DEVICE = {
 // DEV-mode-only instrument state, kept here so calibrate/connect/status
 // mock calls stay internally consistent within a session.
 const devState = {
-  connected: true,
-  black_calibrated: true,
-  white_calibrated: true,
+  connected: false,
+  black_calibrated: false,
+  white_calibrated: false,
 };
 
 /* ---------------------------------------------------------------------
