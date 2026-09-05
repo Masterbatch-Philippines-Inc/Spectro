@@ -1065,6 +1065,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           if (!standards.length) {
             showToast('toastStack', 'No Standard data for this product code yet.', 'info');
             selectedMode = 'new';
+            window.currentStandardFlowIsNew = true;
             [modeCardNew, modeCardExisting].forEach(function (c) { c.classList.remove('selected'); });
             modeCardNew.classList.add('selected');
             unlockStepDetails();
@@ -1492,9 +1493,57 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     window.isAnyReadingInProgress = function () { return readingInProgress; };
     window.setReadingInProgress = function (val) { readingInProgress = val; };
 
+    // Task 2: when a captured Light/Dark row is deleted, its one-shot
+    // button should become usable again so the user can redo that
+    // reading -- unless the overall flow has locked special reads
+    // entirely (e.g. "Use Existing Standard"), in which case it stays
+    // disabled regardless of row state.
+    window.reenableSpecialReadButton = function (kind) {
+      const btn = kind === 'light' ? readLightBtn : (kind === 'dark' ? readDarkBtn : null);
+      if (!btn) return;
+      if (btn.dataset.lockedByFlow) return;
+      btn.disabled = false;
+      delete btn.dataset.usedOnce;
+    };
+
+    function specialBtnLabel(btn) {
+      return btn ? btn.querySelector('.btn-label') : null;
+    }
+
+    // Task 2 (selection-based redo): selecting an EXISTING Light or Dark
+    // row (without deleting it) flips its matching button into "re-read"
+    // mode -- label swaps to "Re-Read Light/Dark", the button becomes
+    // usable again (even if already used once), and clicking it or
+    // pressing F5 re-measures that same row in place instead of
+    // capturing a brand-new one. Deselecting (or selecting a different
+    // kind of row) restores the button to its normal one-shot state.
+    window.updateSpecialReadButtonsForSelection = function (selectedKind) {
+      [
+        { btn: readLightBtn, kind: 'light', defaultLabel: 'Read Light', reReadLabel: 'Re-Read Light' },
+        { btn: readDarkBtn, kind: 'dark', defaultLabel: 'Read Dark', reReadLabel: 'Re-Read Dark' },
+      ].forEach(function (entry) {
+        const btn = entry.btn;
+        if (!btn) return;
+        const label = specialBtnLabel(btn);
+        if (selectedKind === entry.kind) {
+          btn.dataset.reReadMode = 'true';
+          btn.disabled = !!btn.dataset.lockedByFlow; // still respect the overall flow gate
+          if (label) label.textContent = entry.reReadLabel;
+        } else {
+          delete btn.dataset.reReadMode;
+          if (label) label.textContent = entry.defaultLabel;
+          btn.disabled = !!btn.dataset.lockedByFlow || !!btn.dataset.usedOnce;
+        }
+      });
+    };
+
     if (readLightBtn) {
       readLightBtn.addEventListener('click', function () {
         if (window.isAnyReadingInProgress()) return;
+        if (readLightBtn.dataset.reReadMode === 'true') {
+          if (window.rereadSelectedSpecialRow) window.rereadSelectedSpecialRow('light');
+          return;
+        }
         readLightBtn.disabled = true;
         readLightBtn.dataset.usedOnce = 'true';
         if (window.captureSpecialReading) window.captureSpecialReading('light');
@@ -1503,6 +1552,10 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     if (readDarkBtn) {
       readDarkBtn.addEventListener('click', function () {
         if (window.isAnyReadingInProgress()) return;
+        if (readDarkBtn.dataset.reReadMode === 'true') {
+          if (window.rereadSelectedSpecialRow) window.rereadSelectedSpecialRow('dark');
+          return;
+        }
         readDarkBtn.disabled = true;
         readDarkBtn.dataset.usedOnce = 'true';
         if (window.captureSpecialReading) window.captureSpecialReading('dark');
@@ -1525,6 +1578,17 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
       if (window.isAnyReadingInProgress()) {
         showToast('toastStack', 'Please wait until the current reading finishes.', 'info');
+        return;
+      }
+
+      // re-read mode takes priority — a selected Light/Dark row means
+      // the user explicitly wants THAT row redone, not a new capture.
+      if (readLightBtn && readLightBtn.dataset.reReadMode === 'true' && !readLightBtn.disabled) {
+        if (window.rereadSelectedSpecialRow) window.rereadSelectedSpecialRow('light');
+        return;
+      }
+      if (readDarkBtn && readDarkBtn.dataset.reReadMode === 'true' && !readDarkBtn.disabled) {
+        if (window.rereadSelectedSpecialRow) window.rereadSelectedSpecialRow('dark');
         return;
       }
 
@@ -1561,7 +1625,10 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     }
 
     function refreshReadSampleGate() {
-      const gated = readSampleGateEnabled && !hasLightAndDark();
+      const selectedKind = selectedRowId && rows[selectedRowId] ? rows[selectedRowId].kind : null;
+      const specialRowSelected = selectedKind === 'light' || selectedKind === 'dark';
+      const lightDarkGate = readSampleGateEnabled && !hasLightAndDark();
+      const gated = lightDarkGate || specialRowSelected;
       measureBtn2.disabled = gated;
       measureBtn2.style.opacity = gated ? '0.5' : '';
     }
@@ -1572,13 +1639,22 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         tr.classList.toggle('bg-success-bg', tr.dataset.rowId === selectedRowId);
       });
       updateButtonLabel();
+      refreshReadSampleGate();
+      if (window.updateSpecialReadButtonsForSelection) {
+        const selectedKind = selectedRowId && rows[selectedRowId] ? rows[selectedRowId].kind : null;
+        window.updateSpecialReadButtonsForSelection(selectedKind);
+      }
     }
 
-    // Read Sample doubles as re-read for ANY selected row (light, dark,
-    // or sample kind) -- Read Light / Read Dark are strictly one-shot.
+    // Read Sample doubles as re-read, but ONLY for a selected "sample"
+    // kind row -- a selected Light/Dark row must be redone via its own
+    // Read Light / Read Dark button instead (see refreshReadSampleGate,
+    // which disables Read Sample entirely in that case).
     function updateButtonLabel() {
       if (!measureLabel2) return;
-      measureLabel2.textContent = selectedRowId ? 'Re-read Sample' : 'Read Sample';
+      const selectedKind = selectedRowId && rows[selectedRowId] ? rows[selectedRowId].kind : null;
+      const isSpecialSelection = selectedKind === 'light' || selectedKind === 'dark';
+      measureLabel2.textContent = (selectedRowId && !isSpecialSelection) ? 'Re-read Sample' : 'Read Sample';
     }
 
     // true = gate this button behind "LT and DR rows both present" (new
@@ -1707,8 +1783,14 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         const id = tr.dataset.rowId;
         const proceed = window.confirm('Delete "' + rows[id].name + '"? This cannot be undone.');
         if (!proceed) return;
+        const deletedKind = rows[id].kind;
         delete rows[id];
-        if (selectedRowId === id) { selectedRowId = null; updateButtonLabel(); }
+        if (selectedRowId === id) {
+          selectedRowId = null;
+          updateButtonLabel();
+          if (window.updateSpecialReadButtonsForSelection) window.updateSpecialReadButtonsForSelection(null);
+        }
+        if (window.reenableSpecialReadButton) window.reenableSpecialReadButton(deletedKind);
         renderAll();
         return;
       }
@@ -1744,6 +1826,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       if (historyTableBody.contains(e.target)) return;
       selectedRowId = null;
       updateButtonLabel();
+      if (window.updateSpecialReadButtonsForSelection) window.updateSpecialReadButtonsForSelection(null);
       renderAll();
     });
 
@@ -1885,6 +1968,11 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         showToast('toastStack', 'Please wait until the current reading finishes.', 'info');
         return;
       }
+      const preSelectedKind = selectedRowId && rows[selectedRowId] ? rows[selectedRowId].kind : null;
+      if (preSelectedKind === 'light' || preSelectedKind === 'dark') {
+        showToast('toastStack', 'Use the Read Light / Read Dark button to redo this reading.', 'info');
+        return;
+      }
       if (readSampleGateEnabled && !hasLightAndDark()) {
         showToast('toastStack', 'Please click Read Light and Read Dark button to capture both samples first.', 'error');
         return;
@@ -1906,6 +1994,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
             showToast('toastStack', name + ' re-read successfully.', 'success');
             selectedRowId = null;
             updateButtonLabel();
+            if (window.updateSpecialReadButtonsForSelection) window.updateSpecialReadButtonsForSelection(null);
           } else {
             rows[newRowData.id] = newRowData;
             showToast('toastStack', newRowData.name + ' captured successfully.', 'success');
@@ -1924,6 +2013,43 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     }
 
     measureBtn2.addEventListener('click', captureReading);
+
+    // Task 2 (selection-based redo): re-measures the currently selected
+    // Light/Dark row in place -- same overwrite pattern captureReading()
+    // already uses for its own re-read path, just triggered from the
+    // Read Light / Read Dark buttons (or F5) instead of Read Sample.
+    window.rereadSelectedSpecialRow = function (kind) {
+      if (isReading || window.isAnyReadingInProgress()) {
+        showToast('toastStack', 'Please wait until the current reading finishes.', 'info');
+        return;
+      }
+      if (!selectedRowId || !rows[selectedRowId] || rows[selectedRowId].kind !== kind) return;
+
+      const id = selectedRowId;
+      const name = rows[id].name;
+
+      isReading = true;
+      window.setReadingInProgress(true);
+      showToast('toastStack', 'Re-reading ' + kind + '…', 'info');
+
+      makeRow(kind, name)
+        .then(function (newRowData) {
+          rows[id] = Object.assign(newRowData, { id: id, remarks: rows[id].remarks, bag: rows[id].bag });
+          showToast('toastStack', name + ' re-read successfully.', 'success');
+          selectedRowId = null;
+          updateButtonLabel();
+          if (window.updateSpecialReadButtonsForSelection) window.updateSpecialReadButtonsForSelection(null);
+          renderAll();
+        })
+        .catch(function (err) {
+          showToast('toastStack', 'Measurement failed — is the agent running?', 'error');
+          console.error(err);
+        })
+        .finally(function () {
+          isReading = false;
+          window.setReadingInProgress(false);
+        });
+    };
 
     // Task 3/4: Spacebar triggers the same action as clicking Read Sample
     // (read or re-read) -- excludes Read Light / Read Dark, which remain
@@ -1965,7 +2091,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     window.clearSelectedSampleRow = function () {
       selectedRowId = null;
       updateButtonLabel();
-      updateSpecialButtonLabels();
+      if (window.updateSpecialReadButtonsForSelection) window.updateSpecialReadButtonsForSelection(null);
     };
 
     window.resetSampleSession = function () {
@@ -1973,6 +2099,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       if (window.resetSampleCounter) window.resetSampleCounter();
       selectedRowId = null;
       updateButtonLabel();
+      if (window.updateSpecialReadButtonsForSelection) window.updateSpecialReadButtonsForSelection(null);
       renderAll();
     };
 
