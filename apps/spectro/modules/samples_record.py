@@ -426,6 +426,43 @@ def _serialize_lot_sample_row(lot_sample, standards_id, product_code=None):
         "stdDeUsed": std_de_used_row,
     }
 
+def _build_threshold_changed_by_map(record):
+    """
+    Task: Excel export only -- maps each historical STD ΔE Used value
+    for this record to who changed it TO that value, using
+    StdLimitChangelog (old_std_delta_e = value BEFORE that change).
+
+    A changelog entry's "new value" is the old_std_delta_e of the NEXT
+    entry chronologically, or the record's current std_delta_e_used if
+    it's the most recent entry. Walked backwards from current so each
+    entry only needs to look at the value that came right after it.
+    """
+    changelogs = list(StdLimitChangelog.objects.filter(record=record).order_by("date_time"))
+    mapping = {}
+    current_value = record.std_delta_e_used
+
+    for entry in reversed(changelogs):
+        if current_value is not None:
+            changed_by = entry.changed_by.strip() if entry.changed_by else None
+            mapping[float(current_value)] = changed_by if changed_by else "-"
+        current_value = entry.old_std_delta_e
+
+    return mapping
+
+
+def _get_changed_by_for_threshold(changed_by_map, threshold):
+    # Task rule: 1.00 is the fixed default value -- treat as "never
+    # changed" and always return '-', regardless of changelog data.
+    if threshold is None:
+        return "-"
+    try:
+        if float(threshold) == 1.00:
+            return "-"
+    except (TypeError, ValueError):
+        return "-"
+    return changed_by_map.get(float(threshold), "-")
+
+
 def _recalculate_spectro_judgements(record, threshold):
     """
     Re-evaluate is_pass for every lot sample under this record's standards
@@ -711,6 +748,7 @@ REPORT_COLUMNS = [
     ("colorOffset", "Color Offset"),
     ("spectroJudgement", "Spectro Judgement"),
     ("stdDeUsed", "STD ΔE used"),
+    ("changedBy", "Changed By"),
     ("visualJudgement", "Visual Judgement"),
     ("finalQcEval", "Final QC Evaluation"),
     ("reasonIfFail", "Reason for Fail (if not color)"),
@@ -719,7 +757,7 @@ REPORT_COLUMNS = [
     ("specialPassBy", "Special Pass BY:"),
 ]
 
-REPORT_COLUMN_WIDTHS = [20, 17, 16, 22, 12, 12, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 14, 16, 13, 16, 18, 24, 20, 12, 16]
+REPORT_COLUMN_WIDTHS = [20, 17, 16, 22, 12, 12, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 14, 16, 13, 16, 16, 18, 24, 20, 12, 16]
 
 
 @login_required
@@ -749,6 +787,7 @@ def export_samples_report(request):
         if selected_ids:
             lot_samples = lot_samples.filter(lot_samples_id__in=selected_ids)
     rows = [_serialize_lot_sample_row(ls, standards_id, product_code) for ls in lot_samples]
+    changed_by_map = _build_threshold_changed_by_map(record)
     # export needs real datetime objects (not the UI's display string) so Excel can sort/filter dates.
     # Excel/openpyxl can't hold timezone-aware datetimes, so convert to local time and strip tzinfo.
     for lot_sample, row in zip(lot_samples, rows):
@@ -757,6 +796,7 @@ def export_samples_report(request):
             dt = timezone.localtime(dt).replace(tzinfo=None)
         row["dateTime"] = dt
         row["code"] = product_code
+        row["changedBy"] = _get_changed_by_for_threshold(changed_by_map, row.get("stdDeUsed"))
 
     # Task 5: DR-prefixed sticker lots first, then LT-prefixed, then
     # everything else -- same ordering as the Samples Record table's

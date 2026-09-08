@@ -8,8 +8,8 @@
  *  it calls the functions exported here instead.
  *
  *  Why this exists: samples_reader.html is unusable without a real
- *  3NH YS3060 physically connected over BLE + the agent running. That
- *  makes it impossible to iterate on the wizard's UI/logic on a
+ *  3NH instrument physically connected over BLE + the agent running.
+ *  That makes it impossible to iterate on the wizard's UI/logic on a
  *  machine without the dongle. Flipping DEV to true below returns
  *  fake-but-plausible agent responses instead, so every downstream
  *  consumer (color_offset.js, color_simulation.js, the stepper, the
@@ -28,6 +28,10 @@
 // TOGGLE THIS -- the only line that should ever need touching.
 // ============================================================
 const DEV_SOURCE = false;
+
+// ========================================================================
+// Do not touch anything below this line unless you know what you're doing.
+// ========================================================================
 const DEV = DEV_SOURCE;
 
 const AGENT_BASE = 'http://localhost:5151';

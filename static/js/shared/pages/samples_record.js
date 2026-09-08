@@ -142,6 +142,18 @@ export function initSamplesRecordPage(urls) {
   const leadingColumns = [
     {
       renderHeader: function () {
+        return '';
+      },
+      renderCell: function (row) {
+        const isPass = row.spectroJudgement === 'PASSED';
+        const label = row.spectroJudgement === '-' ? '-' : (isPass ? 'Pass' : 'Fail');
+        const dotColor = row.spectroJudgement === '-' ? 'bg-muted-foreground' : (isPass ? 'bg-success' : 'bg-danger');
+        return '<div class="flex items-center justify-center" data-tooltip="Spectro Judgement: ' + label + '"><span class="w-2.5 h-2.5 rounded-full inline-block ' + dotColor + '"></span></div>';
+      },
+      width: 'w-9',
+    },
+    {
+      renderHeader: function () {
         return '<div class="flex items-center justify-center py-2"><input type="checkbox" id="selectAllCheckbox" class="w-3.5 h-3.5 accent-white cursor-pointer"></div>';
       },
       renderCell: function (row) {
@@ -200,7 +212,7 @@ export function initSamplesRecordPage(urls) {
     const freezeDropdownBtn = document.getElementById('freezeDropdownBtn');
     const freezeDropdownLabel = document.getElementById('freezeDropdownLabel');
     const freezeDropdownPanel = document.getElementById('freezeDropdownPanel');
-    const FREEZE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+    const FREEZE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
     let frozenColumnCount = 0;
 
     function renderFreezePanel() {

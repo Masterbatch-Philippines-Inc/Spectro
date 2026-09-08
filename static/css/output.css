@@ -418,6 +418,9 @@
   .h-2 {
     height: calc(var(--spacing) * 2);
   }
+  .h-2\.5 {
+    height: calc(var(--spacing) * 2.5);
+  }
   .h-3\.5 {
     height: calc(var(--spacing) * 3.5);
   }
@@ -498,6 +501,9 @@
   }
   .w-2 {
     width: calc(var(--spacing) * 2);
+  }
+  .w-2\.5 {
+    width: calc(var(--spacing) * 2.5);
   }
   .w-3\.5 {
     width: calc(var(--spacing) * 3.5);
@@ -874,6 +880,9 @@
   }
   .bg-muted {
     background-color: var(--color-muted);
+  }
+  .bg-muted-foreground {
+    background-color: var(--color-muted-foreground);
   }
   .bg-muted-foreground\/50 {
     background-color: color-mix(in srgb, hsl(var(--muted-foreground)) 50%, transparent);

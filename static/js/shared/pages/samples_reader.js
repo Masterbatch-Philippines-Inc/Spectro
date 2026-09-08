@@ -1362,9 +1362,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       const valid = isCmaFormatValid(v);
       if (!valid && !silent) {
         if (isStandardKeyword) {
-          showToast('toastStack', '"STANDARD" is not allowed — this product code already has an existing standard.', 'error');
+          showToast('toastStack', '"STANDARD" is not allowed - this product code already has an existing standard.', 'error');
         } else {
-          showToast('toastStack', 'Invalid CMA/Lot format — use a lot number (e.g. 1234A) or CMA-lot format (e.g. CMA-1234A).', 'error');
+          showToast('toastStack', 'Invalid standard name format.', 'error');
         }
       }
       return valid;
@@ -1411,7 +1411,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         if (v.toUpperCase() === STANDARD_KEYWORD) {
           showToast('toastStack', '"STANDARD" is not allowed — this product code already has an existing standard.', 'error');
         } else {
-          showToast('toastStack', 'Invalid CMA/Lot format — use a lot number (e.g. 1234A) or CMA-lot format (e.g. CMA-1234A).', 'error');
+          showToast('toastStack', 'Invalid standard name format.', 'error');
         }
         cma_lot.focus();
         return false;
