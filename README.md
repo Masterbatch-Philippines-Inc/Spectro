@@ -1,8 +1,10 @@
-# Spectro
+<div align="center">
 
-A web-based color measurement system built for Masterbatch Philippines Inc., replacing manual, spreadsheet-based color quality checks with a digital workflow connected directly to spectrophotometer hardware. Lab technicians connect a spectrometer, calibrate it, and read color measurements from production samples straight from their browser, each sample is automatically compared against its approved color standard to determine a pass/fail result, with every reading, standard, and judgement stored centrally for the Laboratory Department to review.
+  # Spectro
 
-This is an internal-only project.
+  A web-based color measurement system built for Masterbatch Philippines Inc., replacing manual, spreadsheet-based color quality checks with a digital workflow connected directly to spectrophotometer hardware. Lab technicians connect a spectrometer, calibrate it, and read color measurements from production samples straight from their browser, each sample is automatically compared against its approved color standard to determine a pass/fail result, with every reading, standard, and judgement stored centrally for the Laboratory Department to review.
+
+</div>
 
 <br>
 
