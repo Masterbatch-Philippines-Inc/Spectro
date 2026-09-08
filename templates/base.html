@@ -14,7 +14,8 @@
     <div class="flex flex-col h-screen app bg-accent">
       <div class="flex-1 min-h-0 flex">
         {% include "components/shared/global/sidebar.html" %}
-        <main class="flex-1 min-w-0 flex flex-col overflow-hidden rounded-xl m-4 bg-card shadow-md">
+        <div id="sidebarBackdrop" class="hidden fixed inset-0 bg-black/40 z-30 md:hidden"></div>
+        <main class="flex-1 min-w-0 flex flex-col overflow-hidden rounded-xl m-2 sm:m-4 bg-card shadow-md">
         {% include "components/shared/global/header.html" %}
         {% block content %}{% endblock %}
         {% include "components/shared/global/footer.html" %}

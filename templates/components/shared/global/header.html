@@ -47,16 +47,16 @@
   }
 </style>
 {% endblock %}
-<header class="h-[52px] shrink-0 flex items-center gap-3.5 px-5 border-b border-border bg-card">
-  <button id="hamburgerBtn" class="hamburger-btn w-[30px] h-[30px] rounded-md border border-border bg-card flex items-center justify-center hover:bg-accent">
+<header class="h-[52px] shrink-0 flex items-center gap-2 sm:gap-3.5 px-3 sm:px-5 border-b border-border bg-card">
+  <button id="hamburgerBtn" class="hamburger-btn w-[30px] h-[30px] rounded-md border border-border bg-card flex items-center justify-center hover:bg-accent shrink-0">
     <span class="hamburger-bars">
       <span></span>
       <span></span>
       <span></span>
     </span>
   </button>
-  <div class="w-px h-5 bg-border"></div>
-  <div class="text-[15px] font-bold tracking-wide">
+  <div class="w-px h-5 bg-border hidden sm:block"></div>
+  <div class="text-[13px] sm:text-[15px] font-bold tracking-wide truncate">
     {% if request.resolver_match.url_name == 'samples_record' %}
       Samples Record
     {% elif request.resolver_match.url_name == 'samples_reader' %}

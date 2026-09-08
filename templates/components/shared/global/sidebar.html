@@ -1,6 +1,6 @@
 {% load static %}
 {% if user.is_authenticated %}
-<aside id="sidebar" class="w-[230px] overflow-hidden transition-all duration-300 ease-in-out shrink-0 bg-accent flex flex-col">
+<aside id="sidebar" class="hidden md:flex w-[230px] max-w-[80vw] overflow-hidden transition-all duration-300 ease-in-out shrink-0 bg-accent flex-col fixed md:static inset-y-0 left-0 z-40 shadow-xl md:shadow-none">
   <div id="sidebarContent" class="w-full flex flex-col h-full">
     <div class="flex items-center gap-2.5 px-4 py-3.5 mt-4">
       <img
@@ -65,7 +65,7 @@
           </div>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-vertical ml-auto size-4"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
         </button>
-        <div id="accountMenuPanel" class="hidden fixed z-50 w-[160px] bg-card border border-border rounded-md shadow-lg p-1.5 flex flex-col gap-0.5" style="left: 238px; bottom: 20px;">
+        <div id="accountMenuPanel" class="hidden fixed z-50 w-[160px] max-w-[calc(100vw-32px)] bg-card border border-border rounded-md shadow-lg p-1.5 flex flex-col gap-0.5" style="left: 238px; bottom: 20px;">
           <a href="{% url 'auth_logout' %}" class="flex items-center gap-2 px-2.5 py-2 rounded-md font-medium text-danger hover:bg-danger-bg">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></svg>
             <span class="text-danger">Logout</span>

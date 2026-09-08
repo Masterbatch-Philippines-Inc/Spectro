@@ -5,20 +5,20 @@
 <section class="flex-1 min-h-0 flex overflow-hidden">
 
   <!-- Vertical stepper rail -->
-  <div class="w-[230px] shrink-0 flex flex-col px-6 py-9 pr-0 bg-background">
-    <div class="ts-step active flex items-center cursor-pointer gap-3" id="tsStep1" data-step="1">
+  <div class="w-16 md:w-[230px] shrink-0 flex flex-col px-2 md:px-6 py-6 md:py-9 pr-0 bg-background transition-all duration-300">
+    <div class="ts-step active flex items-center cursor-pointer gap-2 md:gap-3" id="tsStep1" data-step="1">
       <div class="ts-circle" id="tsCircle1">1</div>
-      <div class="ts-label">Setup the Instrument</div>
+      <div class="ts-label hidden md:block">Setup the Instrument</div>
     </div>
     <div class="ts-line h-full ml-[15px]" id="tsLine1"></div>
-    <div class="ts-step flex items-center cursor-pointer gap-3" id="tsStep2" data-step="2">
+    <div class="ts-step flex items-center cursor-pointer gap-2 md:gap-3" id="tsStep2" data-step="2">
       <div class="ts-circle" id="tsCircle2">2</div>
-      <div class="ts-label">Choose Product Code</div>
+      <div class="ts-label hidden md:block">Choose Product Code</div>
     </div>
     <div class="ts-line h-full ml-[15px]" id="tsLine2"></div>
-    <div class="ts-step flex items-center cursor-pointer gap-3" id="tsStep3" data-step="3">
+    <div class="ts-step flex items-center cursor-pointer gap-2 md:gap-3" id="tsStep3" data-step="3">
       <div class="ts-circle" id="tsCircle3">3</div>
-      <div class="ts-label">Read the Sample</div>
+      <div class="ts-label hidden md:block">Read the Sample</div>
     </div>
   </div>
 
@@ -27,7 +27,7 @@
     <!-- ===================================================
         STEP 1 — INSTRUMENT SETUP
     ==================================================== -->
-    <div class="step-panel min-h-[calc(100vh-104px)] flex items-center justify-center px-5" id="stepPanel1">
+    <div class="step-panel min-h-[calc(100vh-104px)] flex items-center justify-center px-3 sm:px-5" id="stepPanel1">
       <div class="max-w-[520px] w-full pt-8 pb-16">
       <div class="bg-card border border-border rounded-[10px] shadow-sm p-5 mb-4">
         <div class="flex items-start justify-between gap-3 mb-4">
@@ -95,8 +95,8 @@
     <!-- ===================================================
           STEP 2 — INPUT STANDARD DATA
     ==================================================== -->
-    <div class="step-panel max-w-[900px] mx-auto px-5 pt-2 pb-16" id="stepPanel2">
-      <div class="step-page max-w-[900px] mx-auto px-5" id="page2">
+    <div class="step-panel max-w-[900px] mx-auto px-3 sm:px-5 pt-2 pb-16" id="stepPanel2">
+      <div class="step-page max-w-[900px] mx-auto px-3 sm:px-5" id="page2">
         <div id="step2Lock" class="relative">
           <div id="step2LockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
             <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm">
@@ -124,7 +124,7 @@
                 </div>
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-4 items-start max-[900px]:grid-cols-1" id="modeDetailsRow">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start" id="modeDetailsRow">
             <div class="flex flex-col" id="modeColumnLeft">
             <div id="modeSelect" class="relative">
               <div id="modeSelectLockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
@@ -245,8 +245,8 @@
     <!-- ===================================================
           STEP 3 — INPUT SAMPLES DATA
     ==================================================== -->
-    <div class="step-panel max-w-full mx-auto px-5 pb-[60px]" id="stepPanel3">
-      <div class="step-page wide max-w-full mx-auto px-5" id="page3">
+    <div class="step-panel max-w-full mx-auto px-3 sm:px-5 pb-[60px]" id="stepPanel3">
+      <div class="step-page wide max-w-full mx-auto px-3 sm:px-5" id="page3">
         <div id="step3Lock" class="relative">
           <div id="step3LockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
             <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm">
@@ -271,8 +271,8 @@
                 </div>
               </div>
 
-              <div class="flex-1 min-h-0 flex gap-3">
-                <div class="w-[130px] shrink-0 flex flex-col gap-2">
+              <div class="flex-1 min-h-0 flex flex-col sm:flex-row gap-3">
+                <div class="w-full sm:w-[130px] shrink-0 flex flex-row sm:flex-col gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0">
                   {% include "components/shared/ui/button.html" with btn_id="readLightBtn"     btn_variant="primary" btn_label=" "              btn_extra_class="w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label">Read Light</span>' %}
                   {% include "components/shared/ui/button.html" with btn_id="readDarkBtn"      btn_variant="primary" btn_label=" "              btn_extra_class="w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label">Read Dark</span>' %}
                   {% include "components/shared/ui/button.html" with btn_id="measureBtn2"      btn_variant="primary" btn_label=" "              btn_extra_class="w-full border bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label" id="measureLabel2">Read Sample</span>' %}
