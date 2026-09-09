@@ -329,6 +329,26 @@
 
   </div>
 </section>
+
+<div data-modal="stdDeConfirmModal" class="fixed inset-0 bg-black/40 backdrop-blur-[2px] hidden items-center justify-center z-[100] p-5">
+  <div class="modal-anim bg-card border border-border rounded-xl shadow-lg p-6 w-full max-w-[420px]">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-[13px] font-bold uppercase tracking-wide text-muted-foreground">Confirm Standard ΔE Change</span>
+      <button data-modal-close type="button" class="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="text-[13px] leading-relaxed mb-4">
+      <div class="flex justify-between py-1.5 border-b border-border"><span class="text-muted-foreground">Current Standard ΔE Used</span><span class="font-mono font-semibold" id="stdDeConfirmCurrent">—</span></div>
+      <div class="flex justify-between py-1.5 border-b border-border"><span class="text-muted-foreground">New Standard ΔE Used</span><span class="font-mono font-semibold" id="stdDeConfirmNew">—</span></div>
+      <p class="text-[12px] text-muted-foreground mt-3 leading-relaxed">Raising this value changes the passing limit for every sample in this batch (ΔE*00 ≤ new value), and becomes the record's new Standard ΔE Used going forward. Previously saved batches keep their own stamped limit and are not affected.</p>
+    </div>
+    <div class="flex gap-2.5">
+      <button type="button" data-modal-close class="flex-1 border border-border text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer hover:bg-accent transition">Cancel</button>
+      <button type="button" id="stdDeConfirmAcceptBtn" class="flex-1 bg-primary text-primary-foreground border border-primary text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer hover:opacity-90 transition">Confirm Change</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}

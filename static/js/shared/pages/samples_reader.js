@@ -1,5 +1,6 @@
 
 import { showToast } from "../global/toast.js";
+import { openModal, closeModal } from "../global/modal.js";
 import { getColorOffset } from "../ui/color_offset.js";
 import { getColorSimulation } from "../ui/color_simulation.js";
 import { renderScatter } from "../ui/scatter_graph.js";
@@ -385,6 +386,15 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
   const step1FooterNote = document.getElementById('step1FooterNote');
   let step2Unlocked = false;
 
+  function setStdDeInputEditable(editable) {
+    const input = document.getElementById('sampleRefChipDeInput');
+    if (!input) return;
+    input.disabled = !editable;
+    input.value = '1.00';
+    if (window.resetStdDeOverride) window.resetStdDeOverride();
+  }
+  window.setStdDeInputEditable = setStdDeInputEditable;
+
   function unlockStep2() {
     if (step2Unlocked) return;
     step2Unlocked = true;
@@ -576,6 +586,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         if (sampleRefChipName) sampleRefChipName.textContent = wizardStandard.standardName;
         if (sampleRefChipDe) sampleRefChipDe.textContent = '   (Standard ΔE: ' + parseFloat(wizardStandard.stdDe).toFixed(2) + ')';
         if (sampleRefChipProductCode) sampleRefChipProductCode.textContent = wizardStandard.productCode;
+        if (window.setStdDeInputEditable) window.setStdDeInputEditable(false);
 
         showToast('toastStack', 'Standard raw values save into session', 'info');
 
@@ -1089,6 +1100,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
               : '';
           }
           if (sampleRefChipProductCode) sampleRefChipProductCode.textContent = productCodeGlobal.value.trim();
+          if (window.setStdDeInputEditable) window.setStdDeInputEditable(true);
 
           wizardStandard.productCode = productCodeGlobal.value.trim();
           wizardStandard.standardName = active.standard_name;
@@ -1309,6 +1321,93 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       } else {
         dosage.classList.remove('error');
       }
+    });
+  })();
+
+  /* =========================================================
+      Step 3 — Standard ΔE Used override (Existing Standard flow
+      only). Field always displays 1.00 by default; pressing Enter
+      with a greater value opens a confirm modal showing the
+      before/after. Only a CONFIRMED value is baked into the batch
+      at Finish Reading -- an untouched "1.00" default is never
+      treated as an override.
+  ========================================================== */
+  let stdDeOverrideValue = null; // confirmed new value (float) or null
+
+  window.getStdDeOverrideValue = function () { return stdDeOverrideValue; };
+  window.resetStdDeOverride = function () { stdDeOverrideValue = null; };
+
+  (function stdDeOverrideControl() {
+    const input = document.getElementById('sampleRefChipDeInput');
+    if (!input) return;
+
+    function currentThreshold() {
+      const v = parseFloat(wizardStandard.stdDe);
+      return isNaN(v) ? 1.00 : v;
+    }
+
+    function revertInput() {
+      input.value = stdDeOverrideValue !== null ? stdDeOverrideValue.toFixed(2) : '1.00';
+    }
+
+    function openConfirm(newValue) {
+      const currentEl = document.getElementById('stdDeConfirmCurrent');
+      const newEl = document.getElementById('stdDeConfirmNew');
+      if (currentEl) currentEl.textContent = currentThreshold().toFixed(2);
+      if (newEl) newEl.textContent = newValue.toFixed(2);
+
+      const acceptBtn = document.getElementById('stdDeConfirmAcceptBtn');
+      if (!acceptBtn) return;
+
+      let resolved = false;
+
+      function onAccept() {
+        resolved = true;
+        stdDeOverrideValue = newValue;
+        input.value = newValue.toFixed(2);
+        showToast('toastStack', 'Standard ΔE Used will be updated to ' + newValue.toFixed(2) + ' for this batch.', 'success');
+        if (window.recalculateJudgementsForThreshold) window.recalculateJudgementsForThreshold(newValue);
+        closeModal('stdDeConfirmModal');
+      }
+
+      function onModalClosed(e) {
+        if (!(e.detail && e.detail.modalId === 'stdDeConfirmModal')) return;
+        if (!resolved) revertInput();
+        acceptBtn.removeEventListener('click', onAccept);
+        document.removeEventListener('modal:closed', onModalClosed);
+      }
+
+      acceptBtn.addEventListener('click', onAccept);
+      document.addEventListener('modal:closed', onModalClosed);
+      openModal('stdDeConfirmModal');
+    }
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (input.disabled) return;
+
+      const raw = input.value.trim();
+      const parsed = parseFloat(raw);
+
+      if (raw === '' || isNaN(parsed)) {
+        showToast('toastStack', 'Standard ΔE must be a valid number.', 'error');
+        revertInput();
+        return;
+      }
+
+      if (parsed <= currentThreshold()) {
+        showToast('toastStack', 'New Standard ΔE must be greater than the current Standard ΔE Used.', 'error');
+        revertInput();
+        return;
+      }
+
+      openConfirm(parsed);
+    });
+
+    // leaving the field without pressing Enter discards any half-typed value
+    input.addEventListener('blur', function () {
+      revertInput();
     });
   })();
 
@@ -1665,8 +1764,25 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     };
 
     function currentThreshold() {
+      const override = window.getStdDeOverrideValue ? window.getStdDeOverrideValue() : null;
+      if (override !== null) return override;
       return wizardStandard.stdDe ? parseFloat(wizardStandard.stdDe) : 1.00;
     }
+
+    // Task: live recalculation when the user confirms a new Standard ΔE
+    // Used mid-batch -- every already-captured non-reference row's
+    // pass/fail is re-judged against the new threshold immediately, so
+    // the table/scatter graph reflect the new limit before saving.
+    // Reference (light/dark) rows always stay judged against the fixed
+    // 1.00 baseline, same rule the save endpoint itself enforces.
+    window.recalculateJudgementsForThreshold = function (newThreshold) {
+      Object.keys(rows).forEach(function (id) {
+        const r = rows[id];
+        if (r.kind === 'light' || r.kind === 'dark') return;
+        r.passed = r.de <= newThreshold;
+      });
+      renderAll();
+    };
 
     // real agent call -- POSTs the session's standard Lab to
     // /measure/sample, agent measures the physical sample under the
@@ -1780,6 +1896,10 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       const deleteBtn = e.target.closest('[data-action="delete"]');
       if (deleteBtn) {
         e.stopPropagation();
+        if (window.isAnyReadingInProgress && window.isAnyReadingInProgress()) {
+          showToast('toastStack', 'Please wait until the current reading finishes.', 'info');
+          return;
+        }
         const tr = deleteBtn.closest('tr[data-row-id]');
         const id = tr.dataset.rowId;
         const proceed = window.confirm('Delete "' + rows[id].name + '"? This cannot be undone.');
@@ -1980,8 +2100,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       }
       const selectedRow = selectedRowId ? rows[selectedRowId] : null;
       const wasReread = !!selectedRow;
-      const kind = wasReread ? rows[selectedRowId].kind : 'sample';
-      const name = wasReread ? rows[selectedRowId].name : window.nextDefaultSampleName();
+      const rereadId = selectedRowId; // snapshot -- selectedRowId can be cleared mid-flight by the click-away deselect handler
+      const kind = wasReread ? rows[rereadId].kind : 'sample';
+      const name = wasReread ? rows[rereadId].name : window.nextDefaultSampleName();
 
       isReading = true;
       window.setReadingInProgress(true);
@@ -1991,9 +2112,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       makeRow(kind, name)
         .then(function (newRowData) {
           if (wasReread) {
-            rows[selectedRowId] = Object.assign(newRowData, { id: selectedRowId, remarks: rows[selectedRowId].remarks, bag: rows[selectedRowId].bag });
+            rows[rereadId] = Object.assign(newRowData, { id: rereadId, remarks: rows[rereadId].remarks, bag: rows[rereadId].bag });
             showToast('toastStack', name + ' re-read successfully.', 'success');
-            selectedRowId = null;
+            if (selectedRowId === rereadId) selectedRowId = null;
             updateButtonLabel();
             if (window.updateSpecialReadButtonsForSelection) window.updateSpecialReadButtonsForSelection(null);
           } else {
@@ -2258,6 +2379,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       if (step3LockedContent) step3LockedContent.classList.add('opacity-40', 'pointer-events-none', 'select-none');
 
       if (window.setFinishReadingMode) window.setFinishReadingMode(false);
+      if (window.setStdDeInputEditable) window.setStdDeInputEditable(false);
       const finishSessionBtn = document.getElementById('finishSessionBtn');
       if (finishSessionBtn) finishSessionBtn.disabled = true;
 
@@ -2366,6 +2488,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           return;
         }
 
+        const confirmedStdDe = window.getStdDeOverrideValue ? window.getStdDeOverrideValue() : null;
+        const newStdDeVal = confirmedStdDe !== null ? confirmedStdDe.toFixed(2) : '';
+
         fetch(urls.saveSampleReadings, {
           method: 'POST',
           headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -2373,6 +2498,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
             standards_id: standardsId,
             rows: JSON.stringify(rows),
             is_new_standard: window.currentStandardFlowIsNew ? '1' : '0',
+            new_std_de: newStdDeVal,
             csrfmiddlewaretoken: getCsrfToken(),
           }),
         })
