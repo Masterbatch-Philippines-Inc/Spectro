@@ -8,6 +8,16 @@ import { showToast } from "../global/toast.js";
 import { renderScatter } from "../ui/scatter_graph.js";
 import { getCsrfToken } from "../utils/csrf.js";
 
+// sessionStorage key the Samples Reader wizard reads on load to pick up
+// a "Re-Read Selected Samples" carry-over payload. See
+// static/js/shared/pages/samples_reader.js's initRereadFlow().
+const REREAD_PAYLOAD_SESSION_KEY = 'spectroRereadPayload';
+
+function isReferenceRow(row) {
+  const name = (row.stickerLot || '').trim().toUpperCase();
+  return name.startsWith('LT ') || name.startsWith('DR ');
+}
+
 export function initSamplesRecordPage(urls) {
   const COLUMNS = [
     {
@@ -105,6 +115,11 @@ export function initSamplesRecordPage(urls) {
 
   let dataset = [];
   let selectedRows = new Set();
+  let currentProductCode = null;
+  let currentStandardId = null;
+  let currentStandardName = null;
+  let currentStdDeUsed = null;
+  let currentStandardRaw = null; // { raw_l, raw_a, raw_b, raw_c, raw_h }
 
   // Task 4: default sort on load -- DR-prefixed sticker lots first,
   // then LT-prefixed, then everything else, each group keeping the
@@ -126,6 +141,18 @@ export function initSamplesRecordPage(urls) {
       .map(function (entry) { return entry.row; });
   }
 
+  // ---- Re-Read Selected Samples: enable/disable button + lock the
+  // Standard dropdown globally the moment any checkbox is ticked, so
+  // there's never a mix of selections spanning more than one standard
+  // (avoids needing separate cross-standard-selection handling). ----
+  function refreshRereadControls() {
+    const rereadBtn = document.getElementById('rereadSelectedBtn');
+    const standardFilter = document.getElementById('standardFilter');
+    const hasSelection = selectedRows.size > 0;
+    if (rereadBtn) rereadBtn.disabled = !hasSelection;
+    if (standardFilter) standardFilter.disabled = hasSelection || dataset.length === 0;
+  }
+
   const leadingColumns = [
     {
       renderHeader: function () {
@@ -144,6 +171,11 @@ export function initSamplesRecordPage(urls) {
         return '<div class="flex items-center justify-center py-2"><input type="checkbox" id="selectAllCheckbox" class="w-3.5 h-3.5 accent-white cursor-pointer"></div>';
       },
       renderCell: function (row) {
+        // LT/DR reference rows can't be carried into a re-read session --
+        // disable their checkbox entirely rather than allow ticking them.
+        if (isReferenceRow(row)) {
+          return '<div class="flex items-center justify-center" data-tooltip="Reference rows cannot be re-read from here"><input type="checkbox" class="row-checkbox w-3.5 h-3.5 accent-foreground cursor-not-allowed" data-row-id="' + row.id + '" disabled></div>';
+        }
         const checked = selectedRows.has(String(row.id)) ? 'checked' : '';
         return '<div class="flex items-center justify-center"><input type="checkbox" class="row-checkbox w-3.5 h-3.5 accent-foreground cursor-pointer" data-row-id="' + row.id + '" ' + checked + '></div>';
       },
@@ -183,6 +215,7 @@ export function initSamplesRecordPage(urls) {
     const noResultsState = document.getElementById('noResultsState');
     const searchInput = document.getElementById('searchInput');
     const generateReportBtn = document.getElementById('generateReportBtn');
+    const rereadSelectedBtn = document.getElementById('rereadSelectedBtn');
 
     if (generateReportBtn) {
       generateReportBtn.addEventListener('click', function () {
@@ -192,6 +225,51 @@ export function initSamplesRecordPage(urls) {
           url += '&lot_sample_ids=' + encodeURIComponent(Array.from(selectedRows).join(','));
         }
         window.location.href = url;
+      });
+    }
+
+    if (rereadSelectedBtn) {
+      rereadSelectedBtn.addEventListener('click', function () {
+        if (selectedRows.size === 0) {
+          showToast('toastStack', 'Tick at least one sample to re-read.', 'info');
+          return;
+        }
+        if (!currentStandardId || !currentProductCode || !currentStandardRaw) {
+          showToast('toastStack', 'Missing standard/product code data — cannot start re-read.', 'danger');
+          return;
+        }
+
+        // Build straight from the already-loaded in-memory dataset --
+        // no extra DB queries needed, everything required (product
+        // code, standard raw values/ΔE, and each selected lot's own
+        // identity/name/bag) is already sitting in `dataset`.
+        const selectedLots = dataset
+          .filter(function (r) { return selectedRows.has(String(r.id)); })
+          .map(function (r) {
+            return {
+              lotSampleId: r.lotSampleId,
+              stickerLot: r.stickerLot,
+              bag: (r.bag && r.bag !== 'N/A') ? r.bag : '',
+            };
+          });
+
+        const payload = {
+          productCode: currentProductCode,
+          standardsId: currentStandardId,
+          standardName: currentStandardName,
+          stdDe: currentStdDeUsed,
+          raw: currentStandardRaw,
+          lots: selectedLots,
+        };
+
+        try {
+          sessionStorage.setItem('spectroRereadPayload', JSON.stringify(payload));
+        } catch (e) {
+          showToast('toastStack', 'Could not prepare re-read session — please try again.', 'danger');
+          return;
+        }
+
+        window.location.href = urls.samplesReader + '?reread=1';
       });
     }
     const freezeDropdownBtn = document.getElementById('freezeDropdownBtn');
@@ -317,15 +395,17 @@ export function initSamplesRecordPage(urls) {
       onHeaderRendered: function () {
         const selectAllCheckbox = document.getElementById('selectAllCheckbox');
         if (!selectAllCheckbox) return;
-        selectAllCheckbox.checked = dataset.length > 0 && dataset.every(function (r) { return selectedRows.has(String(r.id)); });
+        const selectableRows = dataset.filter(function (r) { return !isReferenceRow(r); });
+        selectAllCheckbox.checked = selectableRows.length > 0 && selectableRows.every(function (r) { return selectedRows.has(String(r.id)); });
         selectAllCheckbox.addEventListener('change', function () {
           if (selectAllCheckbox.checked) {
-            dataset.forEach(function (r) { selectedRows.add(String(r.id)); });
+            selectableRows.forEach(function (r) { selectedRows.add(String(r.id)); });
           } else {
             selectedRows.clear();
           }
           dataTable.renderBody();
           renderScatter();
+          refreshRereadControls();
         });
       },
       onBodyRendered: function () {
@@ -342,10 +422,12 @@ export function initSamplesRecordPage(urls) {
 
             const allCheckbox = document.getElementById('selectAllCheckbox');
             if (allCheckbox) {
-              allCheckbox.checked = dataset.length > 0 && dataset.every(function (r) { return selectedRows.has(String(r.id)); });
+              const selectableRows = dataset.filter(function (r) { return !isReferenceRow(r); });
+              allCheckbox.checked = selectableRows.length > 0 && selectableRows.every(function (r) { return selectedRows.has(String(r.id)); });
             }
 
             renderScatter();
+            refreshRereadControls();
           });
         });
 
@@ -476,6 +558,25 @@ export function initSamplesRecordPage(urls) {
           if (!isNaN(savedFreeze)) frozenColumnCount = savedFreeze;
         } catch (e) { /* sessionStorage unavailable -- default stays 0 */ }
 
+        currentProductCode = productCodeFilterText ? productCodeFilterText.value.trim().toUpperCase() : productCodeFilter.value;
+        currentStandardId = standardFilter.value;
+        const selectedOption = standardFilter.options[standardFilter.selectedIndex];
+        currentStandardName = selectedOption ? selectedOption.textContent : null;
+
+        fetch(urls.standardsForProductCode + '?product_code=' + encodeURIComponent(currentProductCode), {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            currentStdDeUsed = (data.std_delta_e_used !== null && data.std_delta_e_used !== undefined) ? data.std_delta_e_used : 1.00;
+            const stdRow = (data.standards || []).find(function (s) { return String(s.standards_id) === String(currentStandardId); });
+            currentStandardRaw = stdRow ? {
+              raw_l: stdRow.raw_l, raw_a: stdRow.raw_a, raw_b: stdRow.raw_b,
+              raw_c: stdRow.raw_c || null, raw_h: stdRow.raw_h || null,
+            } : null;
+          })
+          .catch(function () { currentStdDeUsed = 1.00; currentStandardRaw = null; });
+
         fetch(urls.lotSamplesForStandard + '?standards_id=' + encodeURIComponent(standardFilter.value), {
           headers: { 'X-Requested-With': 'XMLHttpRequest' },
         })
@@ -494,6 +595,7 @@ export function initSamplesRecordPage(urls) {
               emptyState.style.display = 'none';
             }
             if (generateReportBtn) generateReportBtn.disabled = dataset.length === 0;
+            refreshRereadControls();
             renderScatter();
 
             // Task 8: reapply the last search filter once, after real
@@ -532,8 +634,14 @@ export function initSamplesRecordPage(urls) {
         dataTable.applyFreeze(frozenColumnCount);
       } else {
         dataset = [];
+        currentProductCode = null;
+        currentStandardId = null;
+        currentStandardName = null;
+        currentStdDeUsed = null;
+        currentStandardRaw = null;
         dataTable.hideTable();
         if (generateReportBtn) generateReportBtn.disabled = true;
+        refreshRereadControls();
         showEmptyState(hasProduct ? 'need-standard' : 'default');
         noResultsState.classList.add('hidden');
         noResultsState.classList.remove('flex');

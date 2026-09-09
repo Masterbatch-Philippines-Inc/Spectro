@@ -273,3 +273,37 @@ class SpecialCaseChangelog(models.Model):
 
     class Meta:
         db_table = "special_case_changelogs"
+
+
+class LotSamplesChangeLog(models.Model):
+    """
+    Audit trail for the "Re-Read Selected Samples" feature (Samples
+    Record -> Samples Reader Step 3). Since a re-read UPDATES the
+    original LotSample's raw/delta/judgement rows in place (rather than
+    creating new ones), this table snapshots the OLD values right
+    before they're overwritten, so history isn't silently lost.
+    """
+    reread_log_id = models.AutoField(primary_key=True)
+    date_time = models.DateTimeField(auto_now_add=True)
+    changed_by = models.CharField(max_length=150, blank=True, null=True)
+
+    # snapshot of the OLD values immediately before this re-read overwrote them
+    old_raw_l = models.DecimalField(max_digits=8, decimal_places=4, blank=True, null=True)
+    old_raw_a = models.DecimalField(max_digits=8, decimal_places=4, blank=True, null=True)
+    old_raw_b = models.DecimalField(max_digits=8, decimal_places=4, blank=True, null=True)
+    old_raw_c = models.DecimalField(max_digits=8, decimal_places=4, blank=True, null=True)
+    old_raw_h = models.DecimalField(max_digits=8, decimal_places=4, blank=True, null=True)
+    old_delta_e = models.DecimalField(max_digits=8, decimal_places=4, blank=True, null=True)
+    old_is_pass = models.BooleanField(blank=True, null=True)
+
+    lot_sample = models.ForeignKey(
+        LotSample, on_delete=models.CASCADE,
+        related_name="reread_logs", db_column="lot_samples_id",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, blank=True, null=True,
+        related_name="lot_sample_reread_logs", db_column="users_id",
+    )
+
+    class Meta:
+        db_table = "lot_samples_changelogs"

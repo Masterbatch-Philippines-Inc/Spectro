@@ -21,6 +21,7 @@ from .spectro_models import (
     SpectroJudgementChangelog,
     SpecialCase,
     SpecialCaseChangelog,
+    LotSamplesChangeLog,
 )
 
 __all__ = [
@@ -38,4 +39,5 @@ __all__ = [
     "SpectroJudgementChangelog",
     "SpecialCase",
     "SpecialCaseChangelog",
+    "LotSamplesChangeLog",
 ]

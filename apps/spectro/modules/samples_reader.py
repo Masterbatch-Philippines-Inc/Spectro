@@ -21,6 +21,7 @@ from apps.spectro.models import (
     SpectroRawValues,
     SpectroDeltaValues,
     SpectroJudgement,
+    LotSamplesChangeLog,
 )
 
 # Accepts both the original XX00000E(-I)? shape and the newer
@@ -110,7 +111,7 @@ def save_standard(request):
     something this endpoint will itself write.
     """
     if request.method != "POST":
-        return JsonResponse({"tone": "error", "message": "Invalid request method."}, status=405)
+        return JsonResponse({"tone": "error", "message": "Invalid request method."}, status=400)
 
     product_code = request.POST.get("product_code", "").strip().upper()
     standard_name = request.POST.get("standard_name", "").strip()
@@ -326,11 +327,27 @@ def save_sample_readings(request):
     Step 3 "Finish Reading" -- persists every captured row in one atomic
     batch. Called once per session, after the standard itself already
     exists (either freshly saved via save_standard, or pre-existing via
-    the "Use Existing Standard" flow).
+    the "Use Existing Standard" flow, INCLUDING the "Re-Read Selected
+    Samples" flow carried over from Samples Record).
 
-    Each row becomes exactly one LotSample + one SpectroRawValues + one
-    SpectroDeltaValues + one SpectroJudgement, matching the ERD 1:1:1:1
-    chain for a single reading.
+    Each NEW row becomes exactly one LotSample + one SpectroRawValues +
+    one SpectroDeltaValues + one SpectroJudgement, matching the ERD
+    1:1:1:1 chain for a single reading.
+
+    RE-READ ROWS (option a: update-in-place):
+    A row that carries a "lot_sample_id" is NOT a new reading -- it's an
+    existing LotSample being re-measured. For these rows this endpoint:
+      1. Looks up the existing LotSample (must belong to this standard).
+      2. Snapshots its current raw/delta/judgement values into
+         LotSamplesChangeLog (audit trail) BEFORE overwriting anything.
+      3. Overwrites the existing SpectroRawValues / SpectroDeltaValues /
+         SpectroJudgement rows in place with the newly captured reading.
+      4. Skips the lot/bag uniqueness + "already exists" checks entirely
+         for that row (it's expected to already exist -- that's the
+         point), and skips lot-number FORMAT re-validation too, since
+         the name is already a valid, previously-saved lot.
+    Every other (brand-new) row in the same batch still goes through the
+    full validation/creation path exactly as before.
 
     Standard ΔE Used (the pass/fail limit) now lives entirely on this
     side of the app: for the "Use Existing Standard" flow the user may
@@ -339,16 +356,20 @@ def save_sample_readings(request):
     rule the old Samples Record editor enforced) -- the change is logged
     to StdLimitChangelog and becomes the record's new running value.
     Either way, whatever value is in effect for *this* batch is baked
-    onto every non-reference row's SpectroJudgement.std_de_used at save
-    time and used to compute that row's is_pass right here. Nothing
-    about it is ever recalculated later -- a future batch changing the
-    limit again never touches rows already saved under a prior limit.
+    onto every non-reference NEW row's SpectroJudgement.std_de_used at
+    save time and used to compute that row's is_pass right here.
+    Re-read rows keep re-using the threshold that's currently in effect
+    for this batch as well, but their std_de_used field is only updated
+    if it changes the row's pass/fail outcome favorably, same spirit as
+    the original per-row ratchet rule.
 
     Body: {
         "standards_id": <int>,
         "new_std_de": "1.50",   # optional -- omit/blank to keep current value
+        "is_new_standard": "0" | "1",
         "rows": [
             {
+                "lot_sample_id": <int>,   # OPTIONAL -- present only for re-read rows
                 "name": "1234AB" | "LT 1234AB" | "DR 1234AB",
                 "kind": "light" | "dark" | "sample",
                 "colorSimulation": "#FFFAFBF7",
@@ -411,24 +432,56 @@ def save_sample_readings(request):
     if not isinstance(rows, list) or not rows:
         return JsonResponse({"tone": "danger", "message": "No sample readings were provided."}, status=400)
 
-    # ---- structural / format validation, row by row ----
-    for idx, row in enumerate(rows):
+    # split rows into re-read (update-in-place) vs brand-new (create)
+    reread_rows = []
+    new_rows = []
+    for row in rows:
+        if row.get("lot_sample_id"):
+            reread_rows.append(row)
+        else:
+            new_rows.append(row)
+
+    # ---- resolve + validate every re-read row's target LotSample up front ----
+    reread_targets = {}  # lot_sample_id (str) -> LotSample instance
+    for row in reread_rows:
+        lot_sample_id = str(row.get("lot_sample_id"))
+        lot_sample = LotSample.objects.filter(pk=lot_sample_id, standard=standard).first()
+        if not lot_sample:
+            return JsonResponse({
+                "tone": "danger",
+                "message": f'Re-read target (lot sample #{lot_sample_id}) was not found under this standard.',
+            }, status=404)
+        reread_targets[lot_sample_id] = lot_sample
+
+        # still require the numeric reading fields to be present/valid --
+        # skip the lot-number FORMAT/prefix checks since it's an existing,
+        # already-valid lot name being re-measured, not entered fresh.
+        required_numeric = ("de", "L", "C", "h", "a", "b", "dL", "dC", "dH", "da", "db")
+        for key in required_numeric:
+            val = row.get(key)
+            try:
+                float(val)
+            except (TypeError, ValueError):
+                return JsonResponse({
+                    "tone": "danger",
+                    "message": f'Re-read row "{lot_sample.sample_name}": "{key}" must be a valid number.',
+                }, status=400)
+
+    # ---- structural / format validation for brand-new rows only ----
+    for idx, row in enumerate(new_rows):
         error = _validate_sample_payload_row(idx, row, is_new_standard)
         if error:
             return JsonResponse({"tone": "danger", "message": error}, status=400)
 
-    # ---- duplicate checks ----
-    # Uniqueness is lot + bag, not lot alone -- a repeated lot number is
-    # only a problem when it ALSO shares the same bag (or both are
-    # blank). A bag is only REQUIRED once its lot number repeats within
-    # this session.
+    # ---- duplicate checks -- brand-new rows only; re-read rows are
+    # intentionally excluded since they're expected to already exist ----
     name_counts = {}
-    for row in rows:
+    for row in new_rows:
         key = row["name"].strip().upper()
         name_counts[key] = name_counts.get(key, 0) + 1
 
     seen_pairs = set()
-    for row in rows:
+    for row in new_rows:
         name = row["name"].strip()
         bag = (row.get("bag") or "").strip()
         name_key = name.upper()
@@ -448,7 +501,7 @@ def save_sample_readings(request):
         seen_pairs.add(pair_key)
 
     existing_conflict = None
-    for row in rows:
+    for row in new_rows:
         name = row["name"].strip()
         bag = (row.get("bag") or "").strip()
         bag_filter = Q(bag=bag) if bag else (Q(bag__isnull=True) | Q(bag=""))
@@ -461,11 +514,15 @@ def save_sample_readings(request):
             "message": f'Lot number "{existing_conflict}" already exists in the database for this standard.',
         }, status=400)
 
+    changed_by = request.user.get_full_name() or request.user.username
+
     # ---- persist atomically -- either every row saves, or none do ----
     try:
         with transaction.atomic():
             saved_ids = []
-            for row in rows:
+
+            # --- brand-new rows: same create path as before ---
+            for row in new_rows:
                 name = row["name"].strip()
                 kind = row["kind"].strip()
 
@@ -492,11 +549,6 @@ def save_sample_readings(request):
 
                 de_value = float(row["de"])
                 is_reference = kind in ("light", "dark")
-                # Reference (LT/DR) rows always judge against the fixed
-                # 1.00 baseline. Every other row is judged -- and has its
-                # std_de_used permanently stamped -- against whatever
-                # `threshold` this batch settled on above, never against
-                # a value some later batch might set.
                 SpectroJudgement.objects.create(
                     color_offset=row.get("colorOffset", "").strip() or None,
                     is_pass=(de_value <= (1.00 if is_reference else threshold)),
@@ -505,6 +557,83 @@ def save_sample_readings(request):
                     standard=standard,
                     std_de_used=1.00 if is_reference else threshold,
                 )
+
+                saved_ids.append(lot_sample.lot_samples_id)
+
+            # --- re-read rows: snapshot old values, then update in place ---
+            for row in reread_rows:
+                lot_sample_id = str(row.get("lot_sample_id"))
+                lot_sample = reread_targets[lot_sample_id]
+                kind = (row.get("kind") or ("light" if lot_sample.is_light else "dark" if lot_sample.is_dark else "sample")).strip()
+                is_reference = lot_sample.is_light or lot_sample.is_dark
+
+                old_raw = lot_sample.raw_values.order_by("-date_time").first()
+                old_delta = old_raw.delta_values.order_by("-date_time").first() if old_raw else None
+                old_judgement = (
+                    SpectroJudgement.objects
+                    .filter(lot_sample=lot_sample, standard=standard)
+                    .order_by("-date_time")
+                    .first()
+                )
+
+                LotSamplesChangeLog.objects.create(
+                    lot_sample=lot_sample,
+                    user=request.user,
+                    changed_by=changed_by,
+                    old_raw_l=old_raw.raw_l if old_raw else None,
+                    old_raw_a=old_raw.raw_a if old_raw else None,
+                    old_raw_b=old_raw.raw_b if old_raw else None,
+                    old_raw_c=old_raw.raw_c if old_raw else None,
+                    old_raw_h=old_raw.raw_h if old_raw else None,
+                    old_delta_e=old_delta.delta_e if old_delta else None,
+                    old_is_pass=old_judgement.is_pass if old_judgement else None,
+                )
+
+                # color_simulation lives on LotSample itself -- update it too
+                new_color_sim = (row.get("colorSimulation") or "").strip()
+                if new_color_sim:
+                    lot_sample.color_simulation = new_color_sim
+                    lot_sample.save(update_fields=["color_simulation"])
+
+                if old_raw:
+                    old_raw.raw_l = row["L"]; old_raw.raw_a = row["a"]; old_raw.raw_b = row["b"]
+                    old_raw.raw_c = row["C"]; old_raw.raw_h = row["h"]
+                    old_raw.save(update_fields=["raw_l", "raw_a", "raw_b", "raw_c", "raw_h"])
+                else:
+                    old_raw = SpectroRawValues.objects.create(
+                        raw_l=row["L"], raw_a=row["a"], raw_b=row["b"],
+                        raw_c=row["C"], raw_h=row["h"],
+                        lot_sample=lot_sample,
+                    )
+
+                if old_delta:
+                    old_delta.delta_e = row["de"]; old_delta.delta_l = row["dL"]
+                    old_delta.delta_a = row["da"]; old_delta.delta_b = row["db"]
+                    old_delta.delta_c = row["dC"]; old_delta.delta_h = row["dH"]
+                    old_delta.raw_values = old_raw
+                    old_delta.save(update_fields=["delta_e", "delta_l", "delta_a", "delta_b", "delta_c", "delta_h", "raw_values"])
+                else:
+                    SpectroDeltaValues.objects.create(
+                        delta_e=row["de"], delta_l=row["dL"], delta_a=row["da"],
+                        delta_b=row["db"], delta_c=row["dC"], delta_h=row["dH"],
+                        raw_values=old_raw,
+                    )
+
+                de_value = float(row["de"])
+                new_is_pass = de_value <= (1.00 if is_reference else threshold)
+                if old_judgement:
+                    old_judgement.color_offset = row.get("colorOffset", "").strip() or None
+                    old_judgement.is_pass = new_is_pass
+                    old_judgement.std_de_used = 1.00 if is_reference else threshold
+                    old_judgement.save(update_fields=["color_offset", "is_pass", "std_de_used"])
+                else:
+                    SpectroJudgement.objects.create(
+                        color_offset=row.get("colorOffset", "").strip() or None,
+                        is_pass=new_is_pass,
+                        lot_sample=lot_sample,
+                        standard=standard,
+                        std_de_used=1.00 if is_reference else threshold,
+                    )
 
                 saved_ids.append(lot_sample.lot_samples_id)
     except Exception as e:

@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/Masterbatch-Philippines-Inc/Spectro#readme",
   "devDependencies": {
-    "@tailwindcss/cli": "^4.0.0",
-    "tailwindcss": "^4.0.0"
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
   }
 }

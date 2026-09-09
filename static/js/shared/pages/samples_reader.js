@@ -389,7 +389,11 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
   function setStdDeInputEditable(editable) {
     const input = document.getElementById('sampleRefChipDeInput');
     if (!input) return;
-    input.disabled = !editable;
+    // IMPORTANT (per product decision): Standard ΔE Used editing is
+    // disabled globally, for every flow, until further notice. The
+    // `editable` argument is intentionally ignored -- do not remove
+    // this override without an explicit instruction to re-enable it.
+    input.disabled = true;
     input.value = '1.00';
     if (window.resetStdDeOverride) window.resetStdDeOverride();
   }
@@ -403,6 +407,18 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     if (step1FooterNote) step1FooterNote.style.display = 'none';
     completedSteps.add(1);
     renderStepper();
+
+    // "Re-Read Selected Samples" carry-over: once Step 1 is confirmed
+    // satisfied (connected + calibrated), if a re-read payload from
+    // Samples Record is waiting to be applied, jump straight into it
+    // instead of the normal "go look at Step 2" scroll.
+    if (window.pendingRereadPayload) {
+      const applyFn = window.pendingRereadPayload;
+      window.pendingRereadPayload = null;
+      applyFn();
+      return;
+    }
+
     scrollToNextCard(document.getElementById('stepPanel2'));
   }
 
@@ -1331,6 +1347,11 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       before/after. Only a CONFIRMED value is baked into the batch
       at Finish Reading -- an untouched "1.00" default is never
       treated as an override.
+
+      NOTE: setStdDeInputEditable() now force-disables this input
+      regardless of flow (see the override near the top of this
+      file), so in practice this control is inert for now -- kept
+      intact structurally in case it's re-enabled later.
   ========================================================== */
   let stdDeOverrideValue = null; // confirmed new value (float) or null
 
@@ -1856,14 +1877,18 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     function renderRow(row) {
       const jClass = row.passed ? 'text-success' : 'text-danger';
       const selectedCls = row.id === selectedRowId ? ' bg-success-bg' : '';
+      const rereadBadge = row.pendingReread
+        ? ' <span class="text-[10px] font-bold text-warn bg-warn-bg border border-warn-border rounded-full px-1.5 py-0.5 ml-1 whitespace-nowrap">Awaiting Re-Read</span>'
+        : '';
       return '<tr data-row-id="' + row.id + '" data-kind="' + row.kind + '" data-sample-name="' + row.name + '"'
+        + ' data-pending-reread="' + (row.pendingReread ? '1' : '0') + '"'
         + ' data-da="' + row.da + '" data-db="' + row.db + '" data-judgement="' + (row.passed ? 'pass' : 'fail') + '"'
         + ' class="cursor-pointer hover:bg-accent border-b border-border' + selectedCls + '">'
         + '<td class="py-[7px] px-2.5 text-center"><div class="flex items-center justify-center" data-tooltip="Spectro Judgement: ' + (row.passed ? 'Pass' : 'Fail') + '"><span class="w-2.5 h-2.5 rounded-full inline-block ' + (row.passed ? 'bg-success' : 'bg-danger') + '"></span></div></td>'
         + '<td class="py-[7px] px-2.5 text-center"><button type="button" data-action="delete" title="Delete this reading" class="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:bg-danger-bg hover:text-danger cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg></button></td>'
         + '<td class="py-[7px] px-2.5 whitespace-nowrap" style="background:' + toCssBackgroundColor(row.colorSimulation) + '; color:' + textColorForHex(row.colorSimulation) + ';"><span class="font-mono text-sm font-semibold">' + row.colorSimulation + '</span></td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm whitespace-nowrap">' + row.dateTime + '</td>'
-        + '<td class="py-[7px] px-2.5" data-action="lotNumber" tabindex="0"><span class="lot-number-display font-mono text-sm font-semibold cursor-text underline decoration-dotted">' + row.name + '</span></td>'
+        + '<td class="py-[7px] px-2.5" data-action="lotNumber" tabindex="0"><span class="lot-number-display font-mono text-sm font-semibold cursor-text underline decoration-dotted">' + row.name + '</span>' + rereadBadge + '</td>'
         + '<td class="py-[7px] px-2.5" data-action="bag" tabindex="0"><span class="bag-display font-mono text-sm cursor-text underline decoration-dotted">' + (row.bag ? row.bag : '<span class="text-muted-foreground italic">Click to add…</span>') + '</span></td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.de.toFixed(2) + '</td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.L.toFixed(2) + '</td>'
@@ -1891,6 +1916,35 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       if (window.refreshFinishReadingState) window.refreshFinishReadingState();
       refreshReadSampleGate();
     }
+
+    // ---- "Re-Read Selected Samples" carry-over loader -----------------
+    // Called once, right after the wizard jumps into Step 3 for a
+    // re-read session (see the rereadCarryOver block near the bottom of
+    // this file). Each carried-over lot appears as a placeholder row
+    // (dummy zeroed values, "Awaiting Re-Read" badge) that the user must
+    // select + press "Read Sample" on to actually re-measure -- this
+    // function never fabricates real readings on its own.
+    window.loadCarriedOverRows = function (lots) {
+      (lots || []).forEach(function (lot) {
+        const id = 'row' + (rowSeq++);
+        rows[id] = {
+          id: id,
+          kind: 'sample',
+          name: lot.stickerLot,
+          bag: lot.bag || '',
+          colorOffset: 'None',
+          colorSimulation: '#CCCCCC',
+          dateTime: '(pending re-read)',
+          remarks: '',
+          de: 0, L: 0, C: 0, h: 0, a: 0, b: 0,
+          dL: 0, dC: 0, dH: 0, da: 0, db: 0,
+          passed: false,
+          dbLotSampleId: lot.lotSampleId,
+          pendingReread: true,
+        };
+      });
+      renderAll();
+    };
 
     historyTableBody.addEventListener('click', function (e) {
       const deleteBtn = e.target.closest('[data-action="delete"]');
@@ -2112,7 +2166,17 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       makeRow(kind, name)
         .then(function (newRowData) {
           if (wasReread) {
-            rows[rereadId] = Object.assign(newRowData, { id: rereadId, remarks: rows[rereadId].remarks, bag: rows[rereadId].bag });
+            // preserve remarks/bag AND the carried-over DB link
+            // (dbLotSampleId) if this row came from Samples Record's
+            // "Re-Read Selected Samples" -- once actually re-measured,
+            // pendingReread naturally drops off since it's not part of
+            // newRowData nor re-added here.
+            rows[rereadId] = Object.assign(newRowData, {
+              id: rereadId,
+              remarks: rows[rereadId].remarks,
+              bag: rows[rereadId].bag,
+              dbLotSampleId: rows[rereadId].dbLotSampleId,
+            });
             showToast('toastStack', name + ' re-read successfully.', 'success');
             if (selectedRowId === rereadId) selectedRowId = null;
             updateButtonLabel();
@@ -2156,7 +2220,12 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
       makeRow(kind, name)
         .then(function (newRowData) {
-          rows[id] = Object.assign(newRowData, { id: id, remarks: rows[id].remarks, bag: rows[id].bag });
+          rows[id] = Object.assign(newRowData, {
+            id: id,
+            remarks: rows[id].remarks,
+            bag: rows[id].bag,
+            dbLotSampleId: rows[id].dbLotSampleId,
+          });
           showToast('toastStack', name + ' re-read successfully.', 'success');
           selectedRowId = null;
           updateButtonLabel();
@@ -2233,12 +2302,19 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       });
     };
 
+    // Re-Read Selected Samples: block Finish Reading while any
+    // carried-over row is still an un-re-measured placeholder.
+    window.hasPendingRereadRows = function () {
+      return Object.keys(rows).some(function (id) { return !!rows[id].pendingReread; });
+    };
+
     // Task 8: serialize every captured row into the payload shape the
     // save_sample_readings endpoint expects.
     window.getSampleReadingsPayload = function () {
       return Object.keys(rows).map(function (id) {
         const r = rows[id];
         return {
+          lot_sample_id: r.dbLotSampleId || null,
           name: r.name, bag: r.bag, kind: r.kind,
           colorSimulation: r.colorSimulation, colorOffset: r.colorOffset,
           remarks: r.remarks,
@@ -2252,9 +2328,11 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // Reading time (not per-keystroke). Checks every captured row's
     // lot+bag against the DB under the current standard in one pass.
     // Resolves to an array of conflict messages (empty = all clear).
+    // Re-read rows (dbLotSampleId set) are skipped entirely -- they're
+    // EXPECTED to already exist, that's not a conflict.
     window.checkAllLotsExistOnServer = function () {
       if (!wizardStandard.standardsId) return Promise.resolve([]);
-      const ids = Object.keys(rows);
+      const ids = Object.keys(rows).filter(function (id) { return !rows[id].dbLotSampleId; });
       if (!ids.length) return Promise.resolve([]);
 
       return Promise.all(ids.map(function (id) {
@@ -2446,6 +2524,16 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         return;
       }
 
+      // Re-Read Selected Samples: every carried-over placeholder row
+      // must actually be re-measured (select it + Read Sample) before
+      // it can be saved -- otherwise this would silently overwrite the
+      // real DB values with dummy zeros.
+      if (window.hasPendingRereadRows && window.hasPendingRereadRows()) {
+        showToast('toastStack', 'Please re-read every carried-over sample (select it, then press Read Sample) before saving.', 'error');
+        finishSessionBtn.disabled = false;
+        return;
+      }
+
       if (window.hasInvalidLotNumbers && window.hasInvalidLotNumbers()) {
         showToast('toastStack', 'Rename lot number samples before saving.', 'error');
         finishSessionBtn.disabled = false;
@@ -2578,5 +2666,108 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
       } // end proceedWithSave
     });
+  })();
+
+  /* =========================================================
+      "Re-Read Selected Samples" carry-over consumption.
+      Reads the sessionStorage payload written by Samples Record's
+      rereadSelectedBtn handler (static/js/shared/pages/samples_record.js),
+      then:
+        - Auto-skips Step 1 if an instrument session is already
+          connected AND calibrated (handled by the existing
+          restoreInstrumentSession()/unlockStep2() hook above).
+        - If connected but not yet calibrated, the user simply stays on
+          Step 1 -- the existing "Finish calibration to continue." toast
+          already covers that case; once they finish calibrating,
+          markCalibrated() -> unlockStep2() picks the payload up the
+          same way.
+        - Once Step 1 is confirmed satisfied, jumps straight past the
+          normal manual Step 2 UI (product code typing, mode cards) and
+          populates wizardStandard directly from the carried-over data,
+          then drops the user into Step 3 with every selected lot loaded
+          as an "Awaiting Re-Read" placeholder row.
+  ========================================================== */
+  (function rereadCarryOver() {
+    const REREAD_SESSION_KEY = 'spectroRereadPayload';
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reread') !== '1') return;
+
+    let payload = null;
+    try {
+      const raw = sessionStorage.getItem(REREAD_SESSION_KEY);
+      payload = raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      payload = null;
+    }
+
+    if (!payload || !payload.lots || !payload.lots.length) {
+      showToast('toastStack', 'No re-read data found — please select samples from Samples Record again.', 'info');
+      return;
+    }
+
+    // consume once -- avoid re-triggering if this same URL gets reloaded
+    try { sessionStorage.removeItem(REREAD_SESSION_KEY); } catch (e) {}
+
+    function applyRereadPayload() {
+      wizardStandard.productCode = payload.productCode;
+      wizardStandard.standardName = payload.standardName;
+      wizardStandard.stdDe = payload.stdDe;
+      wizardStandard.standardsId = payload.standardsId;
+      wizardStandard.standardA = payload.raw ? Number(payload.raw.raw_a) : null;
+      wizardStandard.standardB = payload.raw ? Number(payload.raw.raw_b) : null;
+      wizardStandard.raw = payload.raw ? {
+        raw_l: Number(payload.raw.raw_l),
+        raw_a: Number(payload.raw.raw_a),
+        raw_b: Number(payload.raw.raw_b),
+      } : null;
+      wizardStandard.savedToDb = true;
+      window.currentStandardFlowIsNew = false;
+
+      const sampleRefChipName = document.getElementById('sampleRefChipName');
+      const sampleRefChipDe = document.getElementById('sampleRefChipDe');
+      const sampleRefChipProductCode = document.getElementById('sampleRefChipProductCode');
+      if (sampleRefChipName) sampleRefChipName.textContent = (payload.standardName || 'Standard') + ' — Re-Read Mode';
+      if (sampleRefChipDe) {
+        sampleRefChipDe.textContent = (payload.stdDe !== null && payload.stdDe !== undefined)
+          ? '   (Standard ΔE: ' + Number(payload.stdDe).toFixed(2) + ')'
+          : '';
+      }
+      if (sampleRefChipProductCode) sampleRefChipProductCode.textContent = payload.productCode;
+
+      // ΔE input is force-disabled globally anyway (see
+      // setStdDeInputEditable override near the top of this file), but
+      // call it explicitly here too for clarity/consistency.
+      if (window.setStdDeInputEditable) window.setStdDeInputEditable(false);
+
+      completedSteps.add(1);
+      completedSteps.add(2);
+      currentStep = 3;
+      renderStepper();
+
+      if (window.lockStep2CardsAfterStep3) window.lockStep2CardsAfterStep3();
+      if (window.setSpecialReadButtonsDisabled) window.setSpecialReadButtonsDisabled(true);
+      if (window.setReadSampleButtonState) window.setReadSampleButtonState(false);
+      if (window.setFinishReadingMode) window.setFinishReadingMode(false);
+
+      const step2LockOverlayEl = document.getElementById('step2LockOverlay');
+      const step2LockedContentEl = document.getElementById('step2LockedContent');
+      if (step2LockOverlayEl) step2LockOverlayEl.style.display = 'none';
+      if (step2LockedContentEl) step2LockedContentEl.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+
+      const step3LockOverlay = document.getElementById('step3LockOverlay');
+      const step3LockedContent = document.getElementById('step3LockedContent');
+      if (step3LockOverlay) step3LockOverlay.style.display = 'none';
+      if (step3LockedContent) step3LockedContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+
+      if (window.loadCarriedOverRows) window.loadCarriedOverRows(payload.lots);
+
+      showToast('toastStack', 'Loaded ' + payload.lots.length + ' sample(s) for re-reading — select each one, then press Read Sample.', 'info');
+      scrollToNextCard(document.getElementById('stepPanel3'));
+    }
+
+    // Picked up by unlockStep2() the moment Step 1 is confirmed
+    // satisfied -- either immediately below (already-calibrated session)
+    // or later, once the user manually finishes calibrating.
+    window.pendingRereadPayload = applyRereadPayload;
   })();
 }
