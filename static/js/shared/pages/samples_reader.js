@@ -386,15 +386,19 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
   const step1FooterNote = document.getElementById('step1FooterNote');
   let step2Unlocked = false;
 
-  function setStdDeInputEditable(editable) {
+  function setStdDeInputEditable(editable, value) {
     const input = document.getElementById('sampleRefChipDeInput');
     if (!input) return;
-    // IMPORTANT (per product decision): Standard ΔE Used editing is
-    // disabled globally, for every flow, until further notice. The
-    // `editable` argument is intentionally ignored -- do not remove
-    // this override without an explicit instruction to re-enable it.
-    input.disabled = true;
-    input.value = '1.00';
+    // Standard ΔE Used editing is now allowed wherever the caller
+    // explicitly opts in (Use Existing Standard, and the Re-Read
+    // Selected Samples carry-over) -- both go through the same
+    // confirm-modal flow in stdDeOverrideControl() below.
+    input.disabled = !editable;
+    // Carry over whatever the actual current Standard ΔE Used is for
+    // this standard/product code -- falls back to 1.00 only when no
+    // valid numeric value was supplied.
+    const parsed = parseFloat(value);
+    input.value = !isNaN(parsed) ? parsed.toFixed(2) : '1.00';
     if (window.resetStdDeOverride) window.resetStdDeOverride();
   }
   window.setStdDeInputEditable = setStdDeInputEditable;
@@ -602,7 +606,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         if (sampleRefChipName) sampleRefChipName.textContent = wizardStandard.standardName;
         if (sampleRefChipDe) sampleRefChipDe.textContent = '   (Standard ΔE: ' + parseFloat(wizardStandard.stdDe).toFixed(2) + ')';
         if (sampleRefChipProductCode) sampleRefChipProductCode.textContent = wizardStandard.productCode;
-        if (window.setStdDeInputEditable) window.setStdDeInputEditable(false);
+        if (window.setStdDeInputEditable) window.setStdDeInputEditable(false, wizardStandard.stdDe);
 
         showToast('toastStack', 'Standard raw values save into session', 'info');
 
@@ -770,6 +774,11 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
     let savedCode = null;
     let selectedMode = null;
+    // Task 6.1: tracks the actual code matches from the last rendered
+    // suggestion list (excluding the "+ Add" pseudo-entry), so Enter can
+    // commit a single unambiguous match without requiring arrow-key
+    // highlighting first.
+    let currentMatches = [];
     // Task 8: tracks the last non-empty value the field held, so a
     // cancelled "clear the code" confirmation can restore it exactly.
     let lastNonEmptyProductCode = '';
@@ -779,14 +788,15 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     let suggestRequestSeq = 0; // guards a stale, slow response from overwriting a newer one
 
     function renderMatches(query, matches) {
+      currentMatches = matches.slice();
       const q = query.trim().toUpperCase();
       let html = '';
       matches.forEach(function (c) {
-        html += '<div class="px-3 py-2 text-[13px] cursor-pointer hover:bg-[hsl(var(--accent))] font-mono" data-code="' + c + '">' + c + '</div>';
+        html += '<div class="px-3 py-2 text-[12.5px] cursor-pointer hover:bg-[hsl(var(--accent))]" data-code="' + c + '">' + c + '</div>';
       });
       // dedupe guard: never offer "+ Add" for a code the search already matched
       if (q && PRODUCT_CODE_RE.test(q) && matches.indexOf(q) === -1) {
-        html += '<div class="px-3 py-2 text-[13px] cursor-pointer hover:bg-[hsl(var(--accent))] font-mono text-[hsl(var(--primary))]" data-add-code="' + q + '">+ Add "' + q + '"</div>';
+        html += '<div class="px-3 py-2 text-[12.5px] cursor-pointer hover:bg-[hsl(var(--accent))] text-[hsl(var(--primary))]" data-add-code="' + q + '">+ Add "' + q + '"</div>';
       }
       if (!html) {
         productCodeSuggestions.style.display = 'none';
@@ -1053,6 +1063,10 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       // new codes go through the save (server-check) path.
       if (existingCodes.indexOf(v) !== -1) {
         selectExistingCode(v);
+      } else if (currentMatches.length === 1) {
+        // Task 6.1: exactly one suggestion is unambiguous -- commit it
+        // directly, same relief Task 6 gave the Samples Record combobox.
+        selectExistingCode(currentMatches[0]);
       } else {
         saveProductCode();
       }
@@ -1116,7 +1130,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
               : '';
           }
           if (sampleRefChipProductCode) sampleRefChipProductCode.textContent = productCodeGlobal.value.trim();
-          if (window.setStdDeInputEditable) window.setStdDeInputEditable(true);
+          if (window.setStdDeInputEditable) window.setStdDeInputEditable(true, data.std_delta_e_used);
 
           wizardStandard.productCode = productCodeGlobal.value.trim();
           wizardStandard.standardName = active.standard_name;
@@ -1174,6 +1188,10 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           window.currentStandardFlowIsNew = false;
           lockStepDetails();
           flowNewStandard.style.display = 'none';
+          // Task 5: a manual "Use Existing Standard" pick is never a
+          // re-read session -- Read Sample should behave normally
+          // (no row-selection requirement) here.
+          if (window.setReadSampleRequiresSelection) window.setReadSampleRequiresSelection(false);
           useExistingStandardFlow();
         }
       });
@@ -1738,6 +1756,16 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     let rowSeq = 1;
     const rows = {}; // id -> row data object
     let readSampleGateEnabled = false;
+    // Task 5: Read Sample's "must select a row first" gate (Task 2)
+    // only applies to a Re-Read Selected Samples session, where every
+    // capture is inherently a re-read of an existing carried-over row.
+    // The normal "Use Existing Standard" flow (modeCardExisting) still
+    // captures brand-new samples freely, same as before Task 2.
+    let readSampleRequiresSelection = false;
+    window.setReadSampleRequiresSelection = function (requires) {
+      readSampleRequiresSelection = !!requires;
+      refreshReadSampleGate();
+    };
 
     function hasLightAndDark() {
       const kinds = Object.keys(rows).map(function (id) { return rows[id].kind; });
@@ -1748,7 +1776,12 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       const selectedKind = selectedRowId && rows[selectedRowId] ? rows[selectedRowId].kind : null;
       const specialRowSelected = selectedKind === 'light' || selectedKind === 'dark';
       const lightDarkGate = readSampleGateEnabled && !hasLightAndDark();
-      const gated = lightDarkGate || specialRowSelected;
+      // Task 2/5: Read Sample stays disabled until a row is selected,
+      // but only for a Re-Read Selected Samples session -- outside of
+      // that (e.g. Use Existing Standard), it behaves as before and
+      // captures new samples without requiring a selection first.
+      const noRowSelected = readSampleRequiresSelection && !selectedRowId;
+      const gated = lightDarkGate || specialRowSelected || noRowSelected;
       measureBtn2.disabled = gated;
       measureBtn2.style.opacity = gated ? '0.5' : '';
     }
@@ -1880,16 +1913,27 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       const rereadBadge = row.pendingReread
         ? ' <span class="text-[10px] font-bold text-warn bg-warn-bg border border-warn-border rounded-full px-1.5 py-0.5 ml-1 whitespace-nowrap">Awaiting Re-Read</span>'
         : '';
+      // Carried-over re-read rows (and any row already linked to an
+      // existing DB record) keep their lot number and bag frozen --
+      // these identify which existing LotSample gets updated in place,
+      // so they must never be editable from Step 3.
+      const identityLocked = !!row.dbLotSampleId;
+      const lotCell = identityLocked
+        ? '<td class="py-[7px] px-2.5"><span class="lot-number-display font-mono text-sm font-semibold">' + row.name + '</span>' + rereadBadge + '</td>'
+        : '<td class="py-[7px] px-2.5" data-action="lotNumber" tabindex="0"><span class="lot-number-display font-mono text-sm font-semibold cursor-text underline decoration-dotted">' + row.name + '</span>' + rereadBadge + '</td>';
+      const bagCell = identityLocked
+        ? '<td class="py-[7px] px-2.5"><span class="bag-display font-mono text-sm">' + (row.bag ? row.bag : '<span class="text-muted-foreground">N/A</span>') + '</span></td>'
+        : '<td class="py-[7px] px-2.5" data-action="bag" tabindex="0"><span class="bag-display font-mono text-sm cursor-text underline decoration-dotted">' + (row.bag ? row.bag : '<span class="text-muted-foreground italic">Click to add…</span>') + '</span></td>';
       return '<tr data-row-id="' + row.id + '" data-kind="' + row.kind + '" data-sample-name="' + row.name + '"'
         + ' data-pending-reread="' + (row.pendingReread ? '1' : '0') + '"'
         + ' data-da="' + row.da + '" data-db="' + row.db + '" data-judgement="' + (row.passed ? 'pass' : 'fail') + '"'
         + ' class="cursor-pointer hover:bg-accent border-b border-border' + selectedCls + '">'
         + '<td class="py-[7px] px-2.5 text-center"><div class="flex items-center justify-center" data-tooltip="Spectro Judgement: ' + (row.passed ? 'Pass' : 'Fail') + '"><span class="w-2.5 h-2.5 rounded-full inline-block ' + (row.passed ? 'bg-success' : 'bg-danger') + '"></span></div></td>'
-        + '<td class="py-[7px] px-2.5 text-center"><button type="button" data-action="delete" title="Delete this reading" class="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:bg-danger-bg hover:text-danger cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg></button></td>'
+        + (identityLocked ? '<td class="py-[7px] px-2.5"></td>' : '<td class="py-[7px] px-2.5 text-center"><button type="button" data-action="delete" title="Delete this reading" class="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:bg-danger-bg hover:text-danger cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg></button></td>')
         + '<td class="py-[7px] px-2.5 whitespace-nowrap" style="background:' + toCssBackgroundColor(row.colorSimulation) + '; color:' + textColorForHex(row.colorSimulation) + ';"><span class="font-mono text-sm font-semibold">' + row.colorSimulation + '</span></td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm whitespace-nowrap">' + row.dateTime + '</td>'
-        + '<td class="py-[7px] px-2.5" data-action="lotNumber" tabindex="0"><span class="lot-number-display font-mono text-sm font-semibold cursor-text underline decoration-dotted">' + row.name + '</span>' + rereadBadge + '</td>'
-        + '<td class="py-[7px] px-2.5" data-action="bag" tabindex="0"><span class="bag-display font-mono text-sm cursor-text underline decoration-dotted">' + (row.bag ? row.bag : '<span class="text-muted-foreground italic">Click to add…</span>') + '</span></td>'
+        + lotCell
+        + bagCell
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.de.toFixed(2) + '</td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.L.toFixed(2) + '</td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.C.toFixed(2) + '</td>'
@@ -1933,7 +1977,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           name: lot.stickerLot,
           bag: lot.bag || '',
           colorOffset: 'None',
-          colorSimulation: '#CCCCCC',
+          colorSimulation: '#000000',
           dateTime: '(pending re-read)',
           remarks: '',
           de: 0, L: 0, C: 0, h: 0, a: 0, b: 0,
@@ -2062,6 +2106,11 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     function makeCellEditable(cell, rowId, field) {
       const rowData = rows[rowId];
       if (!rowData) return;
+      // Defensive guard -- lotNumber/bag cells for rows tied to an
+      // existing DB record (re-read) no longer render with
+      // data-action/tabindex, but this stops any stray trigger (e.g. a
+      // leftover keyboard focus) from opening an edit box on them.
+      if ((field === 'lotNumber' || field === 'bag') && rowData.dbLotSampleId) return;
       const currentVal = field === 'lotNumber' ? rowData.name : (field === 'bag' ? rowData.bag : rowData.remarks);
       const input = document.createElement('input');
       input.type = 'text';
@@ -2150,6 +2199,14 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       }
       if (readSampleGateEnabled && !hasLightAndDark()) {
         showToast('toastStack', 'Please click Read Light and Read Dark button to capture both samples first.', 'error');
+        return;
+      }
+      // Task 2/5: Read Sample (including its Spacebar shortcut, which
+      // bypasses the disabled button) only ever requires a selected row
+      // during a Re-Read Selected Samples session -- guard here too so
+      // Spacebar can't sneak past the button's disabled state.
+      if (readSampleRequiresSelection && !selectedRowId) {
+        showToast('toastStack', 'Select a sample row first.', 'info');
         return;
       }
       const selectedRow = selectedRowId ? rows[selectedRowId] : null;
@@ -2489,6 +2546,15 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     };
     window.refreshFinishReadingState = function () {
       if (!historyTableBody) { finishSessionBtn.disabled = true; return; }
+      // Task 3: while any carried-over row still shows "Awaiting
+      // Re-Read", saving is blocked outright -- keep the button itself
+      // disabled (not just the click handler) so it's visually clear
+      // saving isn't available yet.
+      if (window.hasPendingRereadRows && window.hasPendingRereadRows()) {
+        finishSessionBtn.disabled = true;
+        if (step3Caption) step3Caption.textContent = 'Re-read every "Awaiting Re-Read" sample before saving.';
+        return;
+      }
       const rows = historyTableBody.querySelectorAll('tr[data-row-id]');
       if (finishRequiresLightDark) {
         let hasLight = false, hasDark = false, hasSample = false;
@@ -2700,10 +2766,10 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       payload = null;
     }
 
-    if (!payload || !payload.lots || !payload.lots.length) {
-      showToast('toastStack', 'No re-read data found — please select samples from Samples Record again.', 'info');
-      return;
-    }
+    // if (!payload || !payload.lots || !payload.lots.length) {
+    //   showToast('toastStack', 'No re-read data found — please select samples from Samples Record again.', 'info');
+    //   return;
+    // }
 
     // consume once -- avoid re-triggering if this same URL gets reloaded
     try { sessionStorage.removeItem(REREAD_SESSION_KEY); } catch (e) {}
@@ -2734,10 +2800,11 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       }
       if (sampleRefChipProductCode) sampleRefChipProductCode.textContent = payload.productCode;
 
-      // ΔE input is force-disabled globally anyway (see
-      // setStdDeInputEditable override near the top of this file), but
-      // call it explicitly here too for clarity/consistency.
-      if (window.setStdDeInputEditable) window.setStdDeInputEditable(false);
+      // Task 4: re-read sessions can also bump the batch's Standard ΔE
+      // Used before saving, same confirm-modal flow as Use Existing
+      // Standard -- pass through the actual latest value carried over
+      // from Samples Record so Step 3 shows/starts from the real limit.
+      if (window.setStdDeInputEditable) window.setStdDeInputEditable(true, payload.stdDe);
 
       completedSteps.add(1);
       completedSteps.add(2);
@@ -2758,6 +2825,10 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       const step3LockedContent = document.getElementById('step3LockedContent');
       if (step3LockOverlay) step3LockOverlay.style.display = 'none';
       if (step3LockedContent) step3LockedContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+
+      // Task 5: this IS a re-read session -- Read Sample must only act
+      // on a selected (carried-over) row.
+      if (window.setReadSampleRequiresSelection) window.setReadSampleRequiresSelection(true);
 
       if (window.loadCarriedOverRows) window.loadCarriedOverRows(payload.lots);
 

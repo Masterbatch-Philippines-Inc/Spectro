@@ -138,6 +138,13 @@ export function initCombobox() {
       } else if (e.key === 'Enter' && highlightedIndex >= 0) {
         e.preventDefault();
         selectOption(items[highlightedIndex]);
+      } else if (e.key === 'Enter' && highlightedIndex < 0 && items.length === 1) {
+        // Task 6: a single matching result is unambiguous -- let Enter
+        // commit it immediately without forcing an arrow-key highlight
+        // first. Only kicks in when there's exactly one suggestion;
+        // two or more still require arrowing down to pick one.
+        e.preventDefault();
+        selectOption(items[0]);
       } else if (e.key === 'Escape') {
         suggestions.classList.add('hidden');
       }
