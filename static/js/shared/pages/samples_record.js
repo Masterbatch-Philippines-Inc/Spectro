@@ -5,7 +5,6 @@
 
 import { createDataTable } from "../ui/table.js";
 import { showToast } from "../global/toast.js";
-import { openModal, closeModal } from "../global/modal.js";
 import { renderScatter } from "../ui/scatter_graph.js";
 import { getCsrfToken } from "../utils/csrf.js";
 
@@ -106,7 +105,6 @@ export function initSamplesRecordPage(urls) {
 
   let dataset = [];
   let selectedRows = new Set();
-  let currentThreshold = 1.00;
 
   // Task 4: default sort on load -- DR-prefixed sticker lots first,
   // then LT-prefixed, then everything else, each group keeping the
@@ -126,17 +124,6 @@ export function initSamplesRecordPage(urls) {
         return rankDiff !== 0 ? rankDiff : a.index - b.index;
       })
       .map(function (entry) { return entry.row; });
-  }
-
-  function judgementFor(dE) {
-    if (dE === null || dE === undefined) return '-';
-    return dE > currentThreshold ? 'FAILED' : 'PASSED';
-  }
-
-  function recalcSpectroJudgements() {
-    dataset.forEach(function (row) {
-      row.spectroJudgement = judgementFor(row.de00);
-    });
   }
 
   const leadingColumns = [
@@ -183,7 +170,6 @@ export function initSamplesRecordPage(urls) {
 
   const PRODUCT_CODE_SESSION_KEY = 'spectroSamplesRecordProductCode';
   const STANDARD_SESSION_KEY = 'spectroSamplesRecordStandardId';
-  const STD_DE_SESSION_KEY = 'spectroSamplesRecordStdDeUsed';
   const SEARCH_SESSION_KEY = 'spectroSamplesRecordSearchQuery';
   const FREEZE_SESSION_KEY = 'spectroSamplesRecordFreezeCount';
   let searchRestoredFromSession = false;
@@ -192,7 +178,6 @@ export function initSamplesRecordPage(urls) {
     const productCodeFilter = document.getElementById('productCodeFilterValue');
     const productCodeFilterText = document.getElementById('productCodeFilter');
     const standardFilter = document.getElementById('standardFilter');
-    const stdDeUsedBox = document.getElementById('stdDeUsedBox');
 
     const emptyState = document.getElementById('emptyState');
     const noResultsState = document.getElementById('noResultsState');
@@ -479,11 +464,6 @@ export function initSamplesRecordPage(urls) {
       emptyState.style.display = 'flex';
     }
 
-    function setStdDeEditable(enabled) {
-      if (!stdDeUsedBox) return;
-      stdDeUsedBox.readOnly = !enabled;
-    }
-
     function tryLoadTable() {
       const hasProduct = !!productCodeFilter.value;
       const hasStandard = !!standardFilter.value;
@@ -509,11 +489,9 @@ export function initSamplesRecordPage(urls) {
             if (dataset.length === 0) {
               dataTable.hideTable();
               showEmptyState('no-samples');
-              setStdDeEditable(false);
             } else {
               dataTable.showTable();
               emptyState.style.display = 'none';
-              setStdDeEditable(true);
             }
             if (generateReportBtn) generateReportBtn.disabled = dataset.length === 0;
             renderScatter();
@@ -555,7 +533,6 @@ export function initSamplesRecordPage(urls) {
       } else {
         dataset = [];
         dataTable.hideTable();
-        setStdDeEditable(false);
         if (generateReportBtn) generateReportBtn.disabled = true;
         showEmptyState(hasProduct ? 'need-standard' : 'default');
         noResultsState.classList.add('hidden');
@@ -593,7 +570,6 @@ export function initSamplesRecordPage(urls) {
 
         standardFilter.innerHTML = '<option value="">Select one standard</option>';
         standardFilter.disabled = true;
-        stdDeUsedBox.value = '';
         tryLoadTable();
 
         if (!productCode) return;
@@ -629,19 +605,6 @@ export function initSamplesRecordPage(urls) {
               standardFilter.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
-            currentStdDeUsed = (data.std_delta_e_used !== null && data.std_delta_e_used !== undefined)
-              ? Number(data.std_delta_e_used)
-              : null;
-            currentThreshold = currentStdDeUsed !== null ? currentStdDeUsed : 1.00;
-            stdDeUsedBox.value = currentStdDeUsed !== null ? currentStdDeUsed.toFixed(2) : '';
-            try {
-              if (currentStdDeUsed !== null) {
-                sessionStorage.setItem(STD_DE_SESSION_KEY, stdDeUsedBox.value);
-              } else {
-                sessionStorage.removeItem(STD_DE_SESSION_KEY);
-              }
-            } catch (e) { /* sessionStorage unavailable -- fail silently */ }
-
             if (standardsList.length === 0) {
               showEmptyState('no-standards');
               showToast('toastStack', 'No standard found.', 'info');
@@ -665,118 +628,6 @@ export function initSamplesRecordPage(urls) {
           }
         } catch (e) { /* sessionStorage unavailable -- fail silently */ }
         tryLoadTable();
-      });
-    }
-
-    let currentStdDeUsed = null;
-
-    function sanitizeStdDe(raw) {
-      let digits = raw.replace(/[^0-9.]/g, '');
-      const dot = digits.indexOf('.');
-      if (dot !== -1) { digits = digits.slice(0, dot + 1) + digits.slice(dot + 1).replace(/\./g, ''); }
-      const parts = digits.split('.');
-      if (parts[1]) parts[1] = parts[1].slice(0, 2);
-      return parts.join('.');
-    }
-
-    if (stdDeUsedBox) {
-      stdDeUsedBox.addEventListener('input', function () {
-        stdDeUsedBox.value = sanitizeStdDe(stdDeUsedBox.value);
-      });
-
-      stdDeUsedBox.addEventListener('click', function () {
-        if (stdDeUsedBox.readOnly) {
-          showToast('toastStack', 'Please select a standard first.', 'info');
-        }
-      });
-
-      function commitStdDeUsed() {
-        const raw = stdDeUsedBox.value.trim();
-
-        if (!raw) {
-          showToast('toastStack', 'Standard ΔE Used cannot be empty.', 'danger');
-          stdDeUsedBox.value = currentStdDeUsed !== null ? currentStdDeUsed.toFixed(2) : '';
-          return;
-        }
-
-        const newValue = parseFloat(raw);
-
-        if (isNaN(newValue)) {
-          showToast('toastStack', 'Please enter a valid number.', 'danger');
-          stdDeUsedBox.value = currentStdDeUsed !== null ? currentStdDeUsed.toFixed(2) : '';
-          return;
-        }
-
-        if (currentStdDeUsed !== null && newValue < currentStdDeUsed) {
-          showToast('toastStack', 'New value cannot be less than the current Standard ΔE Used.', 'danger');
-          stdDeUsedBox.value = currentStdDeUsed.toFixed(2);
-          return;
-        }
-
-        if (currentStdDeUsed !== null && newValue === currentStdDeUsed) {
-          stdDeUsedBox.value = currentStdDeUsed.toFixed(2);
-          return;
-        }
-
-        document.getElementById('deModalNewValue').textContent = newValue.toFixed(2);
-        stdDeUsedBox.dataset.pendingValue = newValue;
-        openModal('stdDeModal');
-      }
-
-      stdDeUsedBox.addEventListener('keydown', function (e) {
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
-        commitStdDeUsed();
-      });
-
-      stdDeUsedBox.addEventListener('focus', function () {
-        stdDeUsedBox.dataset.valueOnFocus = stdDeUsedBox.value;
-      });
-
-      stdDeUsedBox.addEventListener('blur', function () {
-        if (stdDeUsedBox.readOnly) return;
-        if (stdDeUsedBox.value === stdDeUsedBox.dataset.valueOnFocus) return;
-        commitStdDeUsed();
-      });
-    }
-
-    const deModalConfirm = document.getElementById('deModalConfirm');
-    if (deModalConfirm) {
-      deModalConfirm.addEventListener('click', function () {
-        const pendingValue = stdDeUsedBox.dataset.pendingValue;
-        const productCode = productCodeFilter.value;
-
-        fetch(urls.saveStdDeltaE, {
-          method: 'POST',
-          headers: { 'X-Requested-With': 'XMLHttpRequest' },
-          body: new URLSearchParams({
-            product_code: productCode,
-            new_value: pendingValue,
-            csrfmiddlewaretoken: getCsrfToken(),
-          }),
-        })
-          .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-          .then(function (result) {
-            showToast('toastStack', result.data.message, result.data.tone || (result.ok ? 'success' : 'danger'));
-            if (result.ok) {
-              currentStdDeUsed = parseFloat(result.data.std_delta_e_used);
-              currentThreshold = currentStdDeUsed;
-              stdDeUsedBox.value = currentStdDeUsed.toFixed(2);
-              try { sessionStorage.setItem(STD_DE_SESSION_KEY, stdDeUsedBox.value); } catch (e) {}
-
-              recalcSpectroJudgements();
-              dataTable.renderBody();
-              renderScatter();
-            } else {
-              stdDeUsedBox.value = currentStdDeUsed !== null ? currentStdDeUsed.toFixed(2) : '';
-            }
-            closeModal('stdDeModal');
-          })
-          .catch(function () {
-            showToast('toastStack', 'Network error — please try again.', 'danger');
-            stdDeUsedBox.value = currentStdDeUsed !== null ? currentStdDeUsed.toFixed(2) : '';
-            closeModal('stdDeModal');
-          });
       });
     }
 
@@ -839,11 +690,6 @@ export function initSamplesRecordPage(urls) {
 
       productCodeFilter.value = savedCode;
       if (productCodeFilterText) productCodeFilterText.value = savedCode;
-
-      try {
-        const savedStdDe = sessionStorage.getItem(STD_DE_SESSION_KEY);
-        if (savedStdDe && stdDeUsedBox) stdDeUsedBox.value = savedStdDe;
-      } catch (e) { /* sessionStorage unavailable -- nothing to pre-fill */ }
 
       productCodeFilter.dispatchEvent(new Event('change', { bubbles: true }));
     })();

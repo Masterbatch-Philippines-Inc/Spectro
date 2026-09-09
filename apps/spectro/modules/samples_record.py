@@ -431,6 +431,9 @@ def _build_threshold_changed_by_map(record):
     Task: Excel export only -- maps each historical STD ΔE Used value
     for this record to who changed it TO that value, using
     StdLimitChangelog (old_std_delta_e = value BEFORE that change).
+    Changelog entries are now created from the Samples Reader (Step 3,
+    "Use Existing Standard" flow) rather than from this module, but the
+    changelog table itself and this lookup are unchanged.
 
     A changelog entry's "new value" is the old_std_delta_e of the NEXT
     entry chronologically, or the record's current std_delta_e_used if
@@ -461,53 +464,6 @@ def _get_changed_by_for_threshold(changed_by_map, threshold):
     except (TypeError, ValueError):
         return "-"
     return changed_by_map.get(float(threshold), "-")
-
-
-def _recalculate_spectro_judgements(record, threshold):
-    """
-    Re-evaluate is_pass for every lot sample under this record's standards
-    against the new threshold. Matches by lot_sample (+ its standard) and
-    updates the existing SpectroJudgement row in place -- same pattern as
-    save_visual_judgement -- instead of inserting a new row per change.
-    """
-    standards = SpectroStandard.objects.filter(record=record)
-    lot_samples = LotSample.objects.filter(standard__in=standards)
-
-    for lot_sample in lot_samples:
-        # LT/DR reference readings are excluded -- their STD ΔE Used is
-        # fixed at 1 (see export/serialize below) and their judgement is
-        # never recalculated against the record's global threshold.
-        name_check = (lot_sample.sample_name or "").strip().upper()
-        if name_check.startswith("LT ") or name_check.startswith("DR "):
-            continue
-
-        raw = lot_sample.raw_values.order_by("-date_time").first() # type: ignore
-        delta = raw.delta_values.order_by("-date_time").first() if raw else None
-        if delta is None:
-            continue
-
-        is_pass = float(delta.delta_e) <= threshold
-
-        spectro_j, created = SpectroJudgement.objects.get_or_create(
-            lot_sample=lot_sample,
-            defaults={"is_pass": is_pass, "standard": lot_sample.standard, "std_de_used": threshold},
-        )
-        if created:
-            continue
-
-        update_fields = ["is_pass", "standard"]
-        spectro_j.is_pass = is_pass
-        spectro_j.standard = lot_sample.standard
-
-        # Ratchet-up-only: only stamp this row's std_de_used when the new
-        # threshold is what actually caused it to newly PASS. A threshold
-        # change that leaves the row failing, or one that wasn't needed
-        # for it to pass, never touches the stored value here.
-        if is_pass and (spectro_j.std_de_used is None or float(delta.delta_e) > float(spectro_j.std_de_used)):
-            spectro_j.std_de_used = threshold
-            update_fields.append("std_de_used")
-
-        spectro_j.save(update_fields=update_fields)
 
 
 @login_required
@@ -675,56 +631,6 @@ def save_special_pass_by(request):
         )
 
     return JsonResponse({"tone": "success", "message": "Special pass saved.", "passed_by": value})
-
-
-@login_required
-def save_std_delta_e_used(request):
-    if request.method != "POST":
-        return JsonResponse({"tone": "danger", "message": "That's a bad way to check a program, brotha."}, status=405)
-
-    product_code = request.POST.get("product_code", "").strip()
-    new_value_raw = request.POST.get("new_value", "").strip()
-
-    if not product_code:
-        return JsonResponse({"tone": "danger", "message": "product_code is required."}, status=400)
-
-    if not new_value_raw:
-        return JsonResponse({"tone": "danger", "message": "Standard ΔE value is required."}, status=400)
-
-    try:
-        new_value = float(new_value_raw)
-    except ValueError:
-        return JsonResponse({"tone": "danger", "message": "Standard ΔE must be a valid number."}, status=400)
-
-    record = SpectrometerRecord.objects.filter(product_code=product_code).first()
-    if not record:
-        return JsonResponse({"tone": "danger", "message": "No spectrometer record found for this product code."}, status=404)
-
-    old_value = record.std_delta_e_used
-
-    if old_value is not None and new_value <= float(old_value):
-        return JsonResponse({
-            "tone": "danger",
-            "message": "New value must be greater than the current Standard ΔE Used.",
-        }, status=400)
-
-    StdLimitChangelog.objects.create(
-        record=record,
-        old_std_delta_e=old_value,
-        changed_by=request.user.get_full_name() or request.user.username,
-        user=request.user,
-    )
-
-    record.std_delta_e_used = new_value # type: ignore
-    record.save(update_fields=["std_delta_e_used"])
-
-    _recalculate_spectro_judgements(record, new_value)
-
-    return JsonResponse({
-        "tone": "success",
-        "message": "Standard ΔE Used updated successfully.",
-        "std_delta_e_used": new_value,
-    })
 
 
 REPORT_COLUMNS = [

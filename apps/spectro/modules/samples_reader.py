@@ -16,6 +16,7 @@ from apps.spectro.models import (
     Spectrometer,
     SpectrometerRecord,
     SpectroStandard,
+    StdLimitChangelog,
     LotSample,
     SpectroRawValues,
     SpectroDeltaValues,
@@ -159,6 +160,10 @@ def save_standard(request):
         raw_h=raw_values["raw_h"],
     )
 
+    # New-standard flow keeps std_delta_e_used mandatory at 1.00 (see
+    # UI note in samples_reader.html) -- this only ever writes the
+    # record's very first value, distinct from the "existing standard"
+    # flow's editable batch limit handled in save_sample_readings().
     if record.std_delta_e_used != std_delta_e_value:
         record.std_delta_e_used = std_delta_e_value
         record.save(update_fields=["std_delta_e_used"])
@@ -327,8 +332,21 @@ def save_sample_readings(request):
     SpectroDeltaValues + one SpectroJudgement, matching the ERD 1:1:1:1
     chain for a single reading.
 
+    Standard ΔE Used (the pass/fail limit) now lives entirely on this
+    side of the app: for the "Use Existing Standard" flow the user may
+    optionally type a new value into Step 3's chip before saving. If
+    supplied, it must be greater than the record's current value (same
+    rule the old Samples Record editor enforced) -- the change is logged
+    to StdLimitChangelog and becomes the record's new running value.
+    Either way, whatever value is in effect for *this* batch is baked
+    onto every non-reference row's SpectroJudgement.std_de_used at save
+    time and used to compute that row's is_pass right here. Nothing
+    about it is ever recalculated later -- a future batch changing the
+    limit again never touches rows already saved under a prior limit.
+
     Body: {
         "standards_id": <int>,
+        "new_std_de": "1.50",   # optional -- omit/blank to keep current value
         "rows": [
             {
                 "name": "1234AB" | "LT 1234AB" | "DR 1234AB",
@@ -349,6 +367,7 @@ def save_sample_readings(request):
     standards_id = request.POST.get("standards_id", "").strip()
     rows_raw = request.POST.get("rows", "")
     is_new_standard = request.POST.get("is_new_standard", "").strip() in ("1", "true", "True")
+    new_std_de_raw = request.POST.get("new_std_de", "").strip()
 
     if not standards_id:
         return JsonResponse({"tone": "danger", "message": "standards_id is required."}, status=400)
@@ -356,6 +375,33 @@ def save_sample_readings(request):
     standard = SpectroStandard.objects.filter(pk=standards_id).select_related("record").first()
     if not standard:
         return JsonResponse({"tone": "danger", "message": "Standard not found."}, status=404)
+
+    record = standard.record
+    current_threshold = float(record.std_delta_e_used) if record.std_delta_e_used is not None else 1.00
+
+    # ---- optional batch-level Standard ΔE Used change (existing-standard flow only) ----
+    threshold = current_threshold
+    if new_std_de_raw:
+        try:
+            new_threshold = float(new_std_de_raw)
+        except ValueError:
+            return JsonResponse({"tone": "danger", "message": "Standard ΔE must be a valid number."}, status=400)
+
+        if new_threshold <= current_threshold:
+            return JsonResponse({
+                "tone": "danger",
+                "message": "New Standard ΔE must be greater than the current Standard ΔE Used.",
+            }, status=400)
+
+        StdLimitChangelog.objects.create(
+            record=record,
+            old_std_delta_e=current_threshold,
+            changed_by=request.user.get_full_name() or request.user.username,
+            user=request.user,
+        )
+        record.std_delta_e_used = new_threshold
+        record.save(update_fields=["std_delta_e_used"])
+        threshold = new_threshold
 
     try:
         rows = json.loads(rows_raw)
@@ -415,8 +461,6 @@ def save_sample_readings(request):
             "message": f'Lot number "{existing_conflict}" already exists in the database for this standard.',
         }, status=400)
 
-    threshold = float(standard.record.std_delta_e_used) if standard.record.std_delta_e_used is not None else 1.00
-
     # ---- persist atomically -- either every row saves, or none do ----
     try:
         with transaction.atomic():
@@ -448,9 +492,14 @@ def save_sample_readings(request):
 
                 de_value = float(row["de"])
                 is_reference = kind in ("light", "dark")
+                # Reference (LT/DR) rows always judge against the fixed
+                # 1.00 baseline. Every other row is judged -- and has its
+                # std_de_used permanently stamped -- against whatever
+                # `threshold` this batch settled on above, never against
+                # a value some later batch might set.
                 SpectroJudgement.objects.create(
                     color_offset=row.get("colorOffset", "").strip() or None,
-                    is_pass=(de_value <= threshold),
+                    is_pass=(de_value <= (1.00 if is_reference else threshold)),
                     spectro_remarks=row.get("remarks", "").strip() or None,
                     lot_sample=lot_sample,
                     standard=standard,
@@ -468,4 +517,5 @@ def save_sample_readings(request):
         "tone": "success",
         "message": f"Saved {len(saved_ids)} sample reading(s).",
         "lot_sample_ids": saved_ids,
+        "std_delta_e_used": threshold,
     })

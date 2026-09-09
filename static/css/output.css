@@ -556,6 +556,9 @@
   .w-\[38px\] {
     width: 38px;
   }
+  .w-\[64px\] {
+    width: 64px;
+  }
   .w-\[68px\] {
     width: 68px;
   }
@@ -1421,6 +1424,9 @@
   }
   .disabled\:opacity-50:disabled {
     opacity: 50%;
+  }
+  .disabled\:opacity-60:disabled {
+    opacity: 60%;
   }
   .data-\[size\=lg\]\:size-10[data-size="lg"] {
     width: calc(var(--spacing) * 10);

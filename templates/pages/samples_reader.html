@@ -262,9 +262,14 @@
                 <div>
                   <p class="text-sm font-semibold m-0">
                     <span id="sampleRefChipName"></span>
-                    <span class="font-normal text-[12px] text-[hsl(var(--muted-foreground))]" id="sampleRefChipDe"></span>
                   </p>
                   <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 leading-relaxed" id="sampleRefChipProductCode"></p>
+                  <div class="flex items-center gap-1.5 mt-1.5">
+                    <label for="sampleRefChipDeInput" class="text-[11px] font-semibold text-[hsl(var(--muted-foreground))] whitespace-nowrap">Standard ΔE Used:</label>
+                    <input type="text" id="sampleRefChipDeInput" value="1.00" inputmode="decimal" autocomplete="off"
+                      class="w-[64px] text-center font-mono text-[12px] font-semibold px-1.5 py-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)] disabled:opacity-60 disabled:cursor-not-allowed">
+                    <span class="text-[10.5px] text-[hsl(var(--muted-foreground))] italic" id="sampleRefChipDeHint">optional — applies to this batch only</span>
+                  </div>
                 </div>
                 <div class="flex items-end gap-5 flex-wrap">
                   <span class="text-[11px] font-semibold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--accent))] border border-[hsl(var(--border))] rounded-full py-0.5 px-2.5 whitespace-nowrap" id="historyCount">0 Samples</span>

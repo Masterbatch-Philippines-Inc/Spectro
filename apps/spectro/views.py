@@ -18,7 +18,6 @@ from apps.spectro.modules.samples_reader import (
 from apps.spectro.modules.samples_record import (
     render_samples_record,
     get_standards_for_product_code,
-    save_std_delta_e_used,
     get_lot_samples_for_standard,
     save_visual_judgement,
     save_visual_fail_reason,
@@ -65,9 +64,6 @@ def search_product_codes_view(request):
 
 def standards_for_product_code_view(request):
     return get_standards_for_product_code(request)
-
-def save_std_delta_e_used_view(request):
-    return save_std_delta_e_used(request)
 
 def lot_samples_for_standard_view(request):
     return get_lot_samples_for_standard(request)

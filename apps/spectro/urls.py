@@ -37,7 +37,6 @@ urlpatterns = [
     path("samples-record/",                 views.samples_record_view,                  name="samples_record"                   ),
     path("product-codes/search/",           views.search_product_codes_view,            name="api_search_product_codes"         ),
     path("standards/",                      views.standards_for_product_code_view,      name="api_standards_for_product_code"   ),
-    path("std-delta-e/",                    views.save_std_delta_e_used_view,           name="api_save_std_delta_e"             ),
     path("lot-samples/",                    views.lot_samples_for_standard_view,        name="api_lot_samples_for_standard"     ),
     path("visual-judgement/",               views.save_visual_judgement_view,           name="api_save_visual_judgement"        ),
     path("visual-judgement/reason/",        views.save_visual_fail_reason_view,         name="api_save_visual_fail_reason"      ),

@@ -27,7 +27,7 @@
 // ============================================================
 // TOGGLE THIS -- the only line that should ever need touching.
 // ============================================================
-const DEV_SOURCE = false;
+const DEV_SOURCE = true;
 
 // ========================================================================
 // Do not touch anything below this line unless you know what you're doing.

@@ -5,29 +5,16 @@ any element with data-modal-target="<id>", closed by any element
 inside it with data-modal-close (or clicking the overlay backdrop).
 modal.js handles all of this generically -- no modal-specific JS here.
 
-Two concrete modals included below (STD ΔE confirm, Scatter maximize).
-Add more by copying the pattern -- no changes to modal.js needed.
+Concrete modals included below (Scatter maximize). Add more by
+copying the pattern -- no changes to modal.js needed.
+
+Note: the "Recalculate Spectro Judgement?" STD ΔE confirm modal that
+used to live here was removed along with Standard ΔE editing from the
+Samples Record page -- that responsibility now lives entirely in the
+Samples Reader (Step 3), which has its own inline validation instead
+of a confirm popup.
 ============================================================
 {% endcomment %}
-
-<div data-modal="stdDeModal" class="fixed inset-0 bg-black/40 backdrop-blur-[2px] hidden items-center justify-center z-[100] p-5">
-  <div class="modal-anim bg-card border border-border rounded-xl shadow-lg p-6 w-full max-w-sm">
-    <div class="w-14 h-14 rounded-full bg-warn-bg border border-warn-border flex items-center justify-center mx-auto mb-4">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--warn))" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-    </div>
-    <h2 class="text-[16px] font-bold text-center mb-1.5">Recalculate Spectro Judgement?</h2>
-    <p class="text-[12.5px] text-muted-foreground text-center leading-relaxed mb-1">
-      Changing Standard ΔE Used to <span class="font-semibold text-foreground" id="deModalNewValue">—</span> will re-evaluate every row:
-    </p>
-    <p class="text-[12px] text-muted-foreground text-center leading-relaxed mb-5">
-      ΔE*00 greater than this value → <span class="font-semibold text-danger">Failed</span>, otherwise → <span class="font-semibold text-success">Passed</span>.
-    </p>
-    <div class="flex gap-2.5">
-      <button data-modal-close class="flex-1 text-[12.5px] font-semibold px-3.5 py-2 rounded-md border border-border bg-card hover:bg-accent">Cancel</button>
-      <button id="deModalConfirm" class="flex-1 text-[12.5px] font-semibold px-3.5 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90">Apply &amp; Recalculate</button>
-    </div>
-  </div>
-</div>
 
 <div data-modal="scatterModal" class="fixed inset-0 bg-black/40 backdrop-blur-[2px] hidden items-center justify-center z-[100] p-5">
   <div class="modal-anim bg-card border border-border rounded-xl shadow-lg p-6 w-full max-w-[520px]">
