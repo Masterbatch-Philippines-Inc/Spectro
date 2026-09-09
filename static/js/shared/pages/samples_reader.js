@@ -267,9 +267,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
   function doConnect() {
     connectBtn.classList.add('loading');
     connectBtn.disabled = true;
-    connectLabel.textContent = 'Scanning for spectrometer…';
+    connectLabel.textContent = 'Scanning for spectrophotometer…';
     setBadge('connecting');
-    if (connSubtitle) connSubtitle.textContent = 'Searching for BLE spectrometer…';
+    if (connSubtitle) connSubtitle.textContent = 'Searching for BLE spectrophotometer…';
 
     let lastAgentData = null;
     connectInstrument()
@@ -301,7 +301,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         connectBtn.disabled = false;
         connectLabel.textContent = 'Connect to Instument';
         setBadge('offline');
-        if (connSubtitle) connSubtitle.textContent = 'Not linked to a spectrometer yet';
+        if (connSubtitle) connSubtitle.textContent = 'Not linked to a spectrophotometer yet';
         showToast('toastStack', 'Instrument not found.', 'error');
         console.error(err);
       });
@@ -340,9 +340,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
   function doDisconnect() {
     connectBtn.classList.add('loading');
     connectBtn.disabled = true;
-    connectLabel.textContent = 'Disconnecting from spectrometer…';
+    connectLabel.textContent = 'Disconnecting from spectrophotometer…';
     setBadge('disconnecting');
-    if (connSubtitle) connSubtitle.textContent = 'Disconnecting from spectrometer…';
+    if (connSubtitle) connSubtitle.textContent = 'Disconnecting from spectrophotometer…';
 
     function finishDisconnect() {
       instrumentConnected = false;
@@ -357,7 +357,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       connectBtn.classList.add('bg-[hsl(var(--primary))]', 'text-[hsl(var(--primary-foreground))]', 'border-[hsl(var(--primary))]');
       connectLabel.textContent = 'Connect to Instument';
       setBadge('offline');
-      if (connSubtitle) connSubtitle.textContent = 'Not linked to a spectrometer yet';
+      if (connSubtitle) connSubtitle.textContent = 'Not linked to a spectrophotometer yet';
       if (deviceInfo) deviceInfo.style.display = 'none';
       setCalibrateButtonsEnabled(false);
       [blackCell, whiteCell].forEach(function (c) { if (c) c.classList.remove('done'); });
