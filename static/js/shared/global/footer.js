@@ -13,17 +13,3 @@ export function initFooterClock() {
   tick();
   setInterval(tick, 1000);
 }
-
-export function initDarkModeToggle() {
-  const toggle = document.getElementById('darkModeToggle');
-  if (!toggle) return;
-
-  toggle.textContent = document.documentElement.classList.contains('dark') ? 'Try Light Mode' : 'Try Dark Mode';
-
-  toggle.addEventListener('click', function (e) {
-    e.preventDefault();
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    toggle.textContent = isDark ? 'Try Light Mode' : 'Try Dark Mode';0
-  });
-}

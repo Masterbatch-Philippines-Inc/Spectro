@@ -6,3 +6,13 @@
 export function initHeader() {
   // placeholder for future shared header interactions
 }
+
+export function initHeaderThemeToggle() {
+  const toggle = document.getElementById('headerThemeToggle');
+  if (!toggle) return;
+
+  toggle.addEventListener('click', function () {
+    const isDark = document.documentElement.classList.toggle('dark');
+    try { sessionStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch (e) {}
+  });
+}

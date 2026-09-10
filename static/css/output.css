@@ -706,6 +706,9 @@
   .grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
   .grid-cols-5 {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
@@ -1512,9 +1515,6 @@
     .sm\:pb-0 {
       padding-bottom: 0px;
     }
-    .sm\:text-\[12px\] {
-      font-size: 12px;
-    }
     .sm\:text-\[15px\] {
       font-size: 15px;
     }
@@ -1860,6 +1860,52 @@ th.th-sticky.border-r {
   border-right-style: solid;
   border-right-width: 1px;
   border-right-color: hsl(var(--color-border));
+}
+.theme-toggle-btn {
+  position: relative;
+}
+.theme-toggle-btn .theme-icon {
+  position: absolute;
+  transition: transform .45s cubic-bezier(.65,0,.35,1), opacity .35s ease;
+}
+.theme-toggle-btn .theme-icon-sun {
+  opacity: 0;
+  transform: rotate(90deg) scale(.4);
+}
+.theme-toggle-btn .theme-icon-moon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+.dark .theme-toggle-btn .theme-icon-sun {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+.dark .theme-toggle-btn .theme-icon-moon {
+  opacity: 0;
+  transform: rotate(-90deg) scale(.4);
+}
+.theme-toggle-btn {
+  position: relative;
+}
+.theme-toggle-btn .theme-icon {
+  position: absolute;
+  transition: transform .45s cubic-bezier(.65,0,.35,1), opacity .35s ease;
+}
+.theme-toggle-btn .theme-icon-sun {
+  opacity: 0;
+  transform: rotate(90deg) scale(.4);
+}
+.theme-toggle-btn .theme-icon-moon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+.dark .theme-toggle-btn .theme-icon-sun {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+.dark .theme-toggle-btn .theme-icon-moon {
+  opacity: 0;
+  transform: rotate(-90deg) scale(.4);
 }
 .hamburger-btn {
   position: relative;

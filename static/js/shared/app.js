@@ -1,6 +1,7 @@
 
 import { initSidebarToggle } from './global/sidebar.js';
-import { initFooterClock, initDarkModeToggle } from './global/footer.js';
+import { initFooterClock } from './global/footer.js';
+import { initHeaderThemeToggle } from './global/header.js';
 import { initModals } from './global/modal.js';
 import { initDropdowns, initCombobox } from './ui/dropdown.js';
 import { initAjaxForms } from './ui/forms.js';
@@ -11,7 +12,7 @@ import { initSamplesReaderPage } from './pages/samples_reader.js';
 
 export function initApp() {
   initFooterClock();
-  initDarkModeToggle();
+  initHeaderThemeToggle();
   initSidebarToggle();
   initAjaxForms();
   initDropdowns();

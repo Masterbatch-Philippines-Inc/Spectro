@@ -802,7 +802,7 @@ export function initSamplesRecordPage(urls) {
           window.location.href = urls.samplesReader;
           return;
         }
-        const target = (emptyStateMode === 'need-standard' || emptyStateMode === 'no-samples') ? standardFilter : document.getElementById('productCodeFilter');
+        const target = (emptyStateMode === 'need-standard' || emptyStateMode === 'no-samples') ? standardFilterBtn : document.getElementById('productCodeFilter');
         if (!target) return;
         target.focus();
         target.classList.add('ring-2', 'ring-ring/40', 'border-ring');

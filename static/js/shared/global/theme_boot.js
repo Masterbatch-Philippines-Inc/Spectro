@@ -9,7 +9,11 @@
  *  has already painted and the flash would already have happened.
  */
 (function () {
-  if (localStorage.getItem('theme') === 'dark') {
+  var stored = null;
+  try { stored = sessionStorage.getItem('theme'); } catch (e) {}
+  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var isDark = stored ? stored === 'dark' : prefersDark;
+  if (isDark) {
     document.documentElement.classList.add('dark');
   }
 })();
