@@ -741,6 +741,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         rawA: isNaN(rawA) ? null : rawA,
         rawB: isNaN(rawB) ? null : rawB,
         passed: tr.dataset.judgement === 'pass',
+        pending: tr.dataset.pendingReread === '1',
       });
     });
     return points;
@@ -1390,7 +1391,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     }
 
     function revertInput() {
-      input.value = stdDeOverrideValue !== null ? stdDeOverrideValue.toFixed(2) : '1.00';
+      input.value = stdDeOverrideValue !== null ? stdDeOverrideValue.toFixed(2) : currentThreshold().toFixed(2);
     }
 
     function openConfirm(newValue) {
@@ -1923,19 +1924,24 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       // so they must never be editable from Step 3.
       const identityLocked = !!row.dbLotSampleId;
       const lotCell = identityLocked
-        ? '<td class="py-[7px] px-2.5"><span class="lot-number-display font-mono text-sm font-semibold">' + row.name + '</span>' + rereadBadge + '</td>'
-        : '<td class="py-[7px] px-2.5" data-action="lotNumber" tabindex="0"><span class="lot-number-display font-mono text-sm font-semibold cursor-text underline decoration-dotted">' + row.name + '</span>' + rereadBadge + '</td>';
+        ? '<td class="py-[7px] px-2.5"><span class="lot-number-display font-mono text-sm font-semibold">' + row.name + '</span></td>'
+        : '<td class="py-[7px] px-2.5" data-action="lotNumber" tabindex="0"><span class="lot-number-display font-mono text-sm font-semibold cursor-text underline decoration-dotted">' + row.name + '</span></td>';
       const bagCell = identityLocked
         ? '<td class="py-[7px] px-2.5"><span class="bag-display font-mono text-sm">' + (row.bag ? row.bag : '<span class="text-muted-foreground">N/A</span>') + '</span></td>'
         : '<td class="py-[7px] px-2.5" data-action="bag" tabindex="0"><span class="bag-display font-mono text-sm cursor-text underline decoration-dotted">' + (row.bag ? row.bag : '<span class="text-muted-foreground italic">Click to add…</span>') + '</span></td>';
+      const judgementCellClass = row.pendingReread ? 'text-warn' : jClass;
+      const judgementCellText = row.pendingReread ? 'Waiting' : (row.passed ? 'Pass' : 'Fail');
+      const dotClass = row.pendingReread ? 'bg-warn' : (row.passed ? 'bg-success' : 'bg-danger');
+      const dotTooltip = row.pendingReread ? 'Awaiting Re-Read' : (row.passed ? 'Pass' : 'Fail');
+
       return '<tr data-row-id="' + row.id + '" data-kind="' + row.kind + '" data-sample-name="' + row.name + '"'
         + ' data-pending-reread="' + (row.pendingReread ? '1' : '0') + '"'
-        + ' data-da="' + row.da + '" data-db="' + row.db + '" data-raw-a="' + row.a + '" data-raw-b="' + row.b + '" data-judgement="' + (row.passed ? 'pass' : 'fail') + '"'
+        + ' data-da="' + row.da + '" data-db="' + row.db + '" data-judgement="' + (row.passed ? 'pass' : 'fail') + '"'
         + ' class="cursor-pointer hover:bg-accent border-b border-border' + selectedCls + '">'
-        + '<td class="py-[7px] px-2.5 text-center"><div class="flex items-center justify-center" data-tooltip="Spectro Judgement: ' + (row.passed ? 'Pass' : 'Fail') + '"><span class="w-2.5 h-2.5 rounded-full inline-block ' + (row.passed ? 'bg-success' : 'bg-danger') + '"></span></div></td>'
+        + '<td class="py-[7px] px-2.5 text-center"><div class="flex items-center justify-center" data-tooltip="Spectro Judgement: ' + dotTooltip + '"><span class="w-2.5 h-2.5 rounded-full inline-block ' + dotClass + '"></span></div></td>'
         + (identityLocked ? '<td class="py-[7px] px-2.5"></td>' : '<td class="py-[7px] px-2.5 text-center"><button type="button" data-action="delete" title="Delete this reading" class="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:bg-danger-bg hover:text-danger cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg></button></td>')
         + '<td class="py-[7px] px-2.5 whitespace-nowrap" style="background:' + toCssBackgroundColor(row.colorSimulation) + '; color:' + textColorForHex(row.colorSimulation) + ';"><span class="font-mono text-sm font-semibold">' + row.colorSimulation + '</span></td>'
-        + '<td class="py-[7px] px-2.5 font-mono text-sm whitespace-nowrap">' + row.dateTime + '</td>'
+        + '<td class="py-[7px] px-2.5 font-mono text-sm whitespace-nowrap">' + row.dateTime + rereadBadge + '</td>'
         + lotCell
         + bagCell
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.de.toFixed(2) + '</td>'
@@ -1950,7 +1956,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.da.toFixed(2) + '</td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.db.toFixed(2) + '</td>'
         + '<td class="py-[7px] px-2.5 text-sm">' + row.colorOffset + '</td>'
-        + '<td class="py-[7px] px-2.5 text-sm font-bold ' + jClass + '">' + (row.passed ? 'Pass' : 'Fail') + '</td>'
+        + '<td class="py-[7px] px-2.5 text-sm font-bold ' + judgementCellClass + '">' + judgementCellText + '</td>'
         + '<td class="py-[7px] px-2.5" data-action="remarks" tabindex="0">' + (row.remarks ? row.remarks : '<span class="text-muted-foreground italic">Click to add…</span>') + '</td>'
         + '</tr>';
     }
@@ -1982,7 +1988,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           bag: lot.bag || '',
           colorOffset: 'None',
           colorSimulation: '#000000',
-          dateTime: '(pending re-read)',
+          dateTime: '',
           remarks: '',
           de: 0, L: 0, C: 0, h: 0, a: 0, b: 0,
           dL: 0, dC: 0, dH: 0, da: 0, db: 0,
@@ -2796,7 +2802,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       const sampleRefChipName = document.getElementById('sampleRefChipName');
       const sampleRefChipDe = document.getElementById('sampleRefChipDe');
       const sampleRefChipProductCode = document.getElementById('sampleRefChipProductCode');
-      if (sampleRefChipName) sampleRefChipName.textContent = (payload.standardName || 'Standard') + ' — Re-Read Mode';
+      if (sampleRefChipName) sampleRefChipName.textContent = (payload.standardName || 'Standard') + ' - Re-Read Mode';
       if (sampleRefChipDe) {
         sampleRefChipDe.textContent = (payload.stdDe !== null && payload.stdDe !== undefined)
           ? '   (Standard ΔE: ' + Number(payload.stdDe).toFixed(2) + ')'

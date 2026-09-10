@@ -137,9 +137,9 @@ function paintScatterGroup(axisGroup, pointsGroup, points, range, tooltipId) {
     const dot = document.createElementNS(SVG_NS, 'circle');
     dot.setAttribute('cx', x.toFixed(1));
     dot.setAttribute('cy', y.toFixed(1));
-    dot.setAttribute('r', pt.passed ? 2.4 : 3);
-    dot.setAttribute('fill', pt.passed ? 'hsl(var(--muted-foreground))' : 'hsl(var(--danger))');
-    dot.setAttribute('opacity', pt.passed ? '0.6' : '0.95');
+    dot.setAttribute('r', pt.pending ? 3 : (pt.passed ? 2.4 : 3));
+    dot.setAttribute('fill', pt.pending ? 'hsl(var(--warn))' : (pt.passed ? 'hsl(var(--muted-foreground))' : 'hsl(var(--danger))'));
+    dot.setAttribute('opacity', pt.pending ? '0.95' : (pt.passed ? '0.6' : '0.95'));
     dot.style.cursor = 'pointer';
 
     dot.addEventListener('mouseenter', function (e) { showScatterTooltip(e, pt, tooltipId); });
