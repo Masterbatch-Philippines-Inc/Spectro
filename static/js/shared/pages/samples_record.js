@@ -203,7 +203,6 @@ export function initSamplesRecordPage(urls) {
   const PRODUCT_CODE_SESSION_KEY = 'spectroSamplesRecordProductCode';
   const STANDARD_SESSION_KEY = 'spectroSamplesRecordStandardId';
   const SEARCH_SESSION_KEY = 'spectroSamplesRecordSearchQuery';
-  const FREEZE_SESSION_KEY = 'spectroSamplesRecordFreezeCount';
   let searchRestoredFromSession = false;
 
   window.addEventListener('load', function () {
@@ -272,35 +271,25 @@ export function initSamplesRecordPage(urls) {
         window.location.href = urls.samplesReader + '?reread=1';
       });
     }
-    const freezeDropdownBtn = document.getElementById('freezeDropdownBtn');
-    const freezeDropdownLabel = document.getElementById('freezeDropdownLabel');
-    const freezeDropdownPanel = document.getElementById('freezeDropdownPanel');
-    const FREEZE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    let frozenColumnCount = 0;
+    const columnVisibilityDropdownBtn = document.getElementById('columnVisibilityDropdownBtn');
+    const columnVisibilityDropdownPanel = document.getElementById('columnVisibilityDropdownPanel');
 
-    function renderFreezePanel() {
-      if (!freezeDropdownPanel) return;
-      let html = '<div class="text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground px-1.5 pb-1">Freeze Columns</div>';
-      html += '<label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-accent cursor-pointer text-[12px]">'
-        + '<input type="radio" name="freezeOption" class="freeze-option w-3.5 h-3.5 accent-foreground cursor-pointer" value="0"' + (frozenColumnCount === 0 ? ' checked' : '') + '>'
-        + '<span>No Freeze</span></label>';
-      FREEZE_OPTIONS.forEach(function (n) {
-        const checked = frozenColumnCount === n;
-        const label = n === 1 ? 'First Column' : 'First ' + n + ' Columns';
+    function renderColumnVisibilityPanel() {
+      if (!columnVisibilityDropdownPanel) return;
+      const state = dataTable.getColumnState();
+      let html = '<div class="text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground px-1.5 pb-1">Show/Hide Columns</div>';
+      html += '<div class="max-h-[280px] overflow-y-auto flex flex-col gap-0.5">';
+      state.forEach(function (col) {
         html += '<label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-accent cursor-pointer text-[12px]">'
-          + '<input type="radio" name="freezeOption" class="freeze-option w-3.5 h-3.5 accent-foreground cursor-pointer" value="' + n + '"' + (checked ? ' checked' : '') + '>'
-          + '<span>' + label + '</span></label>';
+          + '<input type="checkbox" class="column-visibility-option w-3.5 h-3.5 accent-foreground cursor-pointer" data-col-key="' + col.key + '"' + (col.hidden ? '' : ' checked') + '>'
+          + '<span>' + col.label + '</span></label>';
       });
-      freezeDropdownPanel.innerHTML = html;
+      html += '</div>';
+      columnVisibilityDropdownPanel.innerHTML = html;
 
-      freezeDropdownPanel.querySelectorAll('.freeze-option').forEach(function (radio) {
-        radio.addEventListener('change', function () {
-          frozenColumnCount = parseInt(radio.value, 10);
-          freezeDropdownLabel.textContent = frozenColumnCount > 0
-            ? 'Freeze: ' + (frozenColumnCount === 1 ? '1st Column' : 'First ' + frozenColumnCount + ' Columns')
-            : 'Freeze Columns Filter';
-          dataTable.applyFreeze(frozenColumnCount);
-          try { sessionStorage.setItem(FREEZE_SESSION_KEY, String(frozenColumnCount)); } catch (e) {}
+      columnVisibilityDropdownPanel.querySelectorAll('.column-visibility-option').forEach(function (checkbox) {
+        checkbox.addEventListener('change', function () {
+          dataTable.setColumnHidden(checkbox.dataset.colKey, !checkbox.checked);
         });
       });
     }
@@ -392,6 +381,9 @@ export function initSamplesRecordPage(urls) {
       columns: COLUMNS,
       leadingColumns: leadingColumns,
       getDataset: function () { return dataset; },
+      onColumnStateChange: function () {
+        renderColumnVisibilityPanel();
+      },
       onHeaderRendered: function () {
         const selectAllCheckbox = document.getElementById('selectAllCheckbox');
         if (!selectAllCheckbox) return;
@@ -552,11 +544,6 @@ export function initSamplesRecordPage(urls) {
 
       if (hasProduct && hasStandard) {
         selectedRows.clear();
-        frozenColumnCount = 0;
-        try {
-          const savedFreeze = parseInt(sessionStorage.getItem(FREEZE_SESSION_KEY), 10);
-          if (!isNaN(savedFreeze)) frozenColumnCount = savedFreeze;
-        } catch (e) { /* sessionStorage unavailable -- default stays 0 */ }
 
         currentProductCode = productCodeFilterText ? productCodeFilterText.value.trim().toUpperCase() : productCodeFilter.value;
         currentStandardId = standardFilter.value;
@@ -626,12 +613,8 @@ export function initSamplesRecordPage(urls) {
 
         searchInput.disabled = false;
         searchInput.value = '';
-        freezeDropdownBtn.disabled = false;
-        freezeDropdownLabel.textContent = frozenColumnCount > 0
-          ? 'Freeze: ' + (frozenColumnCount === 1 ? '1st Column' : 'First ' + frozenColumnCount + ' Columns')
-          : 'Freeze Columns Filter';
-        renderFreezePanel();
-        dataTable.applyFreeze(frozenColumnCount);
+        if (columnVisibilityDropdownBtn) columnVisibilityDropdownBtn.disabled = false;
+        renderColumnVisibilityPanel();
       } else {
         dataset = [];
         currentProductCode = null;
@@ -648,8 +631,7 @@ export function initSamplesRecordPage(urls) {
 
         searchInput.disabled = true;
         searchInput.value = '';
-        freezeDropdownBtn.disabled = true;
-        freezeDropdownLabel.textContent = 'Freeze Columns Filter';
+        if (columnVisibilityDropdownBtn) columnVisibilityDropdownBtn.disabled = true;
       }
     }
 

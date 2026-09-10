@@ -6,7 +6,7 @@
   <div class="shrink-0 flex items-center gap-2 sm:gap-2.5 flex-wrap px-3 sm:px-5 py-3 border-b border-border bg-card">
     {% include "components/shared/ui/dropdown.html" with dropdown_type="combobox" dropdown_id="productCodeFilter" dropdown_placeholder="Select one product code" dropdown_remote_url=search_product_codes_url %}
     {% include "components/shared/ui/dropdown.html" with dropdown_id="standardFilter" dropdown_placeholder="Select one standard" dropdown_options=None dropdown_disabled=True %}
-    {% include "components/shared/ui/dropdown.html" with dropdown_type="menu" dropdown_id="freezeDropdown" dropdown_label="Freeze Columns Filter" dropdown_disabled=True %}
+    {% include "components/shared/ui/dropdown.html" with dropdown_type="menu" dropdown_id="columnVisibilityDropdown" dropdown_label="Columns" dropdown_disabled=True %}
     {% include "components/shared/ui/input.html"  with input_id="searchInput" input_type="text" input_placeholder="Search anything in the table..." input_class="flex-1 min-w-[140px] sm:min-w-[180px] max-w-[340px]" input_disabled=True %}
     {% include "components/shared/ui/button.html" with btn_id="rereadSelectedBtn" btn_label="Re-Read Selected Samples" btn_variant="secondary" btn_extra_class="w-full sm:w-auto sm:ml-auto border border-border hover:bg-accent transition" btn_disabled=True %}
     {% include "components/shared/ui/button.html" with btn_id="generateReportBtn" btn_label="Generate Report for this Product Code" btn_variant="primary" btn_extra_class="w-full sm:w-auto btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] hover:opacity-90 transition" btn_disabled=True %}
