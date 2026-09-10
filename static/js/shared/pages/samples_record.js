@@ -276,9 +276,16 @@ export function initSamplesRecordPage(urls) {
 
     function renderColumnVisibilityPanel() {
       if (!columnVisibilityDropdownPanel) return;
+
+      // preserve the scrollable list's current scroll position across
+      // re-renders, so ticking a checkbox further down the list doesn't
+      // visually jump the panel back to the top.
+      const prevScrollEl = columnVisibilityDropdownPanel.querySelector('[data-column-list]');
+      const prevScrollTop = prevScrollEl ? prevScrollEl.scrollTop : 0;
+
       const state = dataTable.getColumnState();
       let html = '<div class="text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground px-1.5 pb-1">Show/Hide Columns</div>';
-      html += '<div class="max-h-[280px] overflow-y-auto flex flex-col gap-0.5">';
+      html += '<div data-column-list class="max-h-[280px] overflow-y-auto flex flex-col gap-0.5">';
       state.forEach(function (col) {
         html += '<label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-accent cursor-pointer text-[12px]">'
           + '<input type="checkbox" class="column-visibility-option w-3.5 h-3.5 accent-foreground cursor-pointer" data-col-key="' + col.key + '"' + (col.hidden ? '' : ' checked') + '>'
@@ -286,6 +293,9 @@ export function initSamplesRecordPage(urls) {
       });
       html += '</div>';
       columnVisibilityDropdownPanel.innerHTML = html;
+
+      const scrollEl = columnVisibilityDropdownPanel.querySelector('[data-column-list]');
+      if (scrollEl) scrollEl.scrollTop = prevScrollTop;
 
       columnVisibilityDropdownPanel.querySelectorAll('.column-visibility-option').forEach(function (checkbox) {
         checkbox.addEventListener('change', function () {
@@ -385,6 +395,7 @@ export function initSamplesRecordPage(urls) {
       getDataset: function () { return dataset; },
       onColumnStateChange: function () {
         renderColumnVisibilityPanel();
+        dataTable.applyFreeze(3);
       },
       onHeaderRendered: function () {
         const selectAllCheckbox = document.getElementById('selectAllCheckbox');
@@ -582,6 +593,7 @@ export function initSamplesRecordPage(urls) {
             } else {
               dataTable.showTable();
               emptyState.style.display = 'none';
+              dataTable.applyFreeze(3);
             }
             if (generateReportBtn) generateReportBtn.disabled = dataset.length === 0;
             refreshRereadControls();

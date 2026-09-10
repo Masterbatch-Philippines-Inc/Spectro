@@ -30,7 +30,6 @@
     --radius-lg: 10px;
     --radius-xl: 12px;
     --radius-2xl: 1rem;
-    --ease-out: cubic-bezier(0, 0, 0.2, 1);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --default-transition-duration: 150ms;
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -806,6 +805,10 @@
   .border-t {
     border-top-style: var(--tw-border-style);
     border-top-width: 1px;
+  }
+  .border-r {
+    border-right-style: var(--tw-border-style);
+    border-right-width: 1px;
   }
   .border-b {
     border-bottom-style: var(--tw-border-style);
@@ -1837,6 +1840,11 @@ th.col-sticky {
     opacity: 0;
     transform: scale(1.35);
   }
+}
+th.th-sticky.border-r {
+  border-right-style: solid;
+  border-right-width: 1px;
+  border-right-color: hsl(var(--color-border));
 }
 @property --tw-border-spacing-x {
   syntax: "<length>";

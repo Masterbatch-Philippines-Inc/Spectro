@@ -66,7 +66,11 @@ export function createDataTable(opts) {
 
   function widthStyle(col) {
     const w = colWidths[col.key];
-    return w ? ('width:' + w + 'px; min-width:' + w + 'px; max-width:' + w + 'px;') : '';
+    // overflow/ellipsis + an explicit background stop long, nowrap cell
+    // content from visually bleeding into neighboring cells once a
+    // column has been narrowed below its natural content width.
+    const clip = 'overflow:hidden; text-overflow:ellipsis;';
+    return w ? ('width:' + w + 'px; min-width:' + w + 'px; max-width:' + w + 'px; ' + clip) : '';
   }
 
   function applyColumnWidthsToDom() {
@@ -78,6 +82,11 @@ export function createDataTable(opts) {
         el.style.width = w + 'px';
         el.style.minWidth = w + 'px';
         el.style.maxWidth = w + 'px';
+        el.style.overflow = 'hidden';
+        el.style.textOverflow = 'ellipsis';
+        // if (el.tagName === 'TD' && !el.classList.contains('bg-card')) {
+        //   el.classList.add('bg-card');
+        // }
       });
     });
   }
@@ -110,14 +119,14 @@ export function createDataTable(opts) {
     let html = '';
 
     leadingColumns.forEach(function (lc, idx) {
-      html += '<th data-col-index="' + idx + '" class="th-sticky bg-foreground text-primary-foreground ' + (lc.width || '') + ' border-b border-foreground">' + lc.renderHeader() + '</th>';
+      html += '<th data-col-index="' + idx + '" class="th-sticky bg-foreground text-primary-foreground ' + (lc.width || '') + ' border-b border-r border-foreground">' + lc.renderHeader() + '</th>';
     });
 
     visibleColumns().forEach(function (col, idx) {
       const isSorted = sortState.key === col.key;
       const arrowUp = isSorted && sortState.dir === 'asc';
       const base = col.headerClass || 'bg-foreground text-primary-foreground';
-      html += '<th data-col-key="' + col.key + '" data-col-index="' + (idx + colOffset()) + '" style="' + widthStyle(col) + '" class="th-sticky relative ' + base + ' border-b border-foreground whitespace-nowrap font-bold text-[10.5px] uppercase tracking-wide">'
+      html += '<th data-col-key="' + col.key + '" data-col-index="' + (idx + colOffset()) + '" style="' + widthStyle(col) + '" class="th-sticky relative ' + base + ' border-b border-r border-foreground whitespace-nowrap font-bold text-[10.5px] uppercase tracking-wide">'
         + '<button type="button" class="th-btn flex items-center gap-1.5 px-2.5 py-2 w-full hover:bg-white/10" data-sort-key="' + col.key + '">'
         + '<span>' + col.label + '</span>'
         + '<svg class="w-[9px] h-[9px] shrink-0 ' + (isSorted ? 'opacity-100' : 'opacity-35') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">'
@@ -204,7 +213,7 @@ export function createDataTable(opts) {
 
       visCols.forEach(function (col, idx) {
         const content = col.render ? col.render(row) : (row[col.key] === null || row[col.key] === undefined ? '<span class="text-muted-foreground">-</span>' : row[col.key]);
-        html += '<td data-col-index="' + (idx + colOffset()) + '" style="' + widthStyle(col) + '" class="border-b border-border px-2.5 py-2 whitespace-nowrap">' + content + '</td>';
+        html += '<td data-col-index="' + (idx + colOffset()) + '" style="' + widthStyle(col) + '" class="border-b border-border px-2.5 py-2 whitespace-nowrap bg-card">' + content + '</td>';
       });
 
       html += '</tr>';
