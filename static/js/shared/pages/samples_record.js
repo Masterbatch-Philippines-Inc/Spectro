@@ -303,6 +303,8 @@ export function initSamplesRecordPage(urls) {
           name: r.stickerLot,
           da: r.da,
           db: r.db,
+          rawA: r.a,
+          rawB: r.b,
           passed: r.spectroJudgement === 'PASSED',
         };
       });
@@ -601,6 +603,7 @@ export function initSamplesRecordPage(urls) {
                 const showNoResults = visibleCount === 0;
                 noResultsState.classList.toggle('hidden', !showNoResults);
                 noResultsState.classList.toggle('flex', showNoResults);
+                setTableAreaOverflowLocked(showNoResults);
               }
             }
           })
@@ -610,6 +613,7 @@ export function initSamplesRecordPage(urls) {
 
         noResultsState.classList.add('hidden');
         noResultsState.classList.remove('flex');
+        setTableAreaOverflowLocked(false);
 
         searchInput.disabled = false;
         searchInput.value = '';
@@ -628,6 +632,7 @@ export function initSamplesRecordPage(urls) {
         showEmptyState(hasProduct ? 'need-standard' : 'default');
         noResultsState.classList.add('hidden');
         noResultsState.classList.remove('flex');
+        setTableAreaOverflowLocked(false);
 
         searchInput.disabled = true;
         searchInput.value = '';
@@ -738,6 +743,13 @@ export function initSamplesRecordPage(urls) {
       });
     }
 
+    const tableArea = document.getElementById('tableArea');
+
+    function setTableAreaOverflowLocked(locked) {
+      if (!tableArea) return;
+      tableArea.style.overflow = locked ? 'hidden' : '';
+    }
+
     if (searchInput) {
       searchInput.addEventListener('input', function () {
         const visibleCount = dataTable.applySearch(searchInput.value);
@@ -745,6 +757,7 @@ export function initSamplesRecordPage(urls) {
         const showNoResults = !!q && visibleCount === 0;
         noResultsState.classList.toggle('hidden', !showNoResults);
         noResultsState.classList.toggle('flex', showNoResults);
+        setTableAreaOverflowLocked(showNoResults);
 
         try {
           if (q) {
@@ -764,6 +777,7 @@ export function initSamplesRecordPage(urls) {
         try { sessionStorage.removeItem(SEARCH_SESSION_KEY); } catch (e) {}
         noResultsState.classList.add('hidden');
         noResultsState.classList.remove('flex');
+        setTableAreaOverflowLocked(false);
         searchInput.focus();
       });
     }

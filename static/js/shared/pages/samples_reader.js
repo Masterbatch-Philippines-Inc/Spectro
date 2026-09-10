@@ -731,11 +731,15 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       const da = parseFloat(tr.dataset.da);
       const db = parseFloat(tr.dataset.db);
       if (isNaN(da) || isNaN(db)) return;
+      const rawA = parseFloat(tr.dataset.rawA);
+      const rawB = parseFloat(tr.dataset.rawB);
       points.push({
         id: tr.dataset.rowId,
         name: tr.dataset.sampleName || tr.dataset.rowId,
         da: da,
         db: db,
+        rawA: isNaN(rawA) ? null : rawA,
+        rawB: isNaN(rawB) ? null : rawB,
         passed: tr.dataset.judgement === 'pass',
       });
     });
@@ -1926,7 +1930,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         : '<td class="py-[7px] px-2.5" data-action="bag" tabindex="0"><span class="bag-display font-mono text-sm cursor-text underline decoration-dotted">' + (row.bag ? row.bag : '<span class="text-muted-foreground italic">Click to add…</span>') + '</span></td>';
       return '<tr data-row-id="' + row.id + '" data-kind="' + row.kind + '" data-sample-name="' + row.name + '"'
         + ' data-pending-reread="' + (row.pendingReread ? '1' : '0') + '"'
-        + ' data-da="' + row.da + '" data-db="' + row.db + '" data-judgement="' + (row.passed ? 'pass' : 'fail') + '"'
+        + ' data-da="' + row.da + '" data-db="' + row.db + '" data-raw-a="' + row.a + '" data-raw-b="' + row.b + '" data-judgement="' + (row.passed ? 'pass' : 'fail') + '"'
         + ' class="cursor-pointer hover:bg-accent border-b border-border' + selectedCls + '">'
         + '<td class="py-[7px] px-2.5 text-center"><div class="flex items-center justify-center" data-tooltip="Spectro Judgement: ' + (row.passed ? 'Pass' : 'Fail') + '"><span class="w-2.5 h-2.5 rounded-full inline-block ' + (row.passed ? 'bg-success' : 'bg-danger') + '"></span></div></td>'
         + (identityLocked ? '<td class="py-[7px] px-2.5"></td>' : '<td class="py-[7px] px-2.5 text-center"><button type="button" data-action="delete" title="Delete this reading" class="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:bg-danger-bg hover:text-danger cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg></button></td>')

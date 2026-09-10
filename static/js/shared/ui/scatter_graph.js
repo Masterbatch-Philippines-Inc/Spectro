@@ -123,7 +123,7 @@ function drawAxis(axisGroup, range) {
   axisGroup.appendChild(yAxisTitle);
 }
 
-function paintScatterGroup(axisGroup, pointsGroup, points, range) {
+function paintScatterGroup(axisGroup, pointsGroup, points, range, tooltipId) {
   if (!pointsGroup) return;
   pointsGroup.innerHTML = '';
 
@@ -142,33 +142,37 @@ function paintScatterGroup(axisGroup, pointsGroup, points, range) {
     dot.setAttribute('opacity', pt.passed ? '0.6' : '0.95');
     dot.style.cursor = 'pointer';
 
-    dot.addEventListener('mouseenter', function (e) { showScatterTooltip(e, pt); });
-    dot.addEventListener('mousemove', moveScatterTooltip);
-    dot.addEventListener('mouseleave', hideScatterTooltip);
+    dot.addEventListener('mouseenter', function (e) { showScatterTooltip(e, pt, tooltipId); });
+    dot.addEventListener('mousemove', function (e) { moveScatterTooltip(e, tooltipId); });
+    dot.addEventListener('mouseleave', function () { hideScatterTooltip(tooltipId); });
 
     pointsGroup.appendChild(dot);
   });
 }
 
-function showScatterTooltip(evt, pt) {
-  const tooltip = document.getElementById('scatterTooltip');
-  if (!tooltip) return;
-  tooltip.innerHTML = '<div class="font-semibold">' + pt.name + '</div>'
-    + '<div>Δa*: ' + pt.da.toFixed(2) + '</div>'
-    + '<div>Δb*: ' + pt.db.toFixed(2) + '</div>';
-  tooltip.classList.remove('hidden');
-  moveScatterTooltip(evt);
+function fmtRaw(v) {
+  return (v === null || v === undefined || isNaN(v)) ? '—' : Number(v).toFixed(2);
 }
 
-function moveScatterTooltip(evt) {
-  const tooltip = document.getElementById('scatterTooltip');
+function showScatterTooltip(evt, pt, tooltipId) {
+  const tooltip = document.getElementById(tooltipId || 'scatterTooltip');
+  if (!tooltip) return;
+  tooltip.innerHTML = '<div class="font-semibold">Lot: ' + pt.name + '</div>'
+    + '<div>Raw A: ' + fmtRaw(pt.rawA) + '</div>'
+    + '<div>Raw B: ' + fmtRaw(pt.rawB) + '</div>';
+  tooltip.classList.remove('hidden');
+  moveScatterTooltip(evt, tooltipId);
+}
+
+function moveScatterTooltip(evt, tooltipId) {
+  const tooltip = document.getElementById(tooltipId || 'scatterTooltip');
   if (!tooltip) return;
   tooltip.style.left = (evt.clientX + 12) + 'px';
   tooltip.style.top = (evt.clientY + 12) + 'px';
 }
 
-function hideScatterTooltip() {
-  const tooltip = document.getElementById('scatterTooltip');
+function hideScatterTooltip(tooltipId) {
+  const tooltip = document.getElementById(tooltipId || 'scatterTooltip');
   if (tooltip) tooltip.classList.add('hidden');
 }
 
@@ -176,8 +180,8 @@ export function renderScatter() {
   const points = (typeof window.getScatterPlotPoints === 'function') ? (window.getScatterPlotPoints() || []) : [];
   const range = computeRange(points);
 
-  paintScatterGroup(document.getElementById('scatterAxis'), document.getElementById('scatterPoints'), points, range);
-  paintScatterGroup(document.getElementById('scatterAxisModal'), document.getElementById('scatterPointsModal'), points, range);
+  paintScatterGroup(document.getElementById('scatterAxis'), document.getElementById('scatterPoints'), points, range, 'scatterTooltip');
+  paintScatterGroup(document.getElementById('scatterAxisModal'), document.getElementById('scatterPointsModal'), points, range, 'scatterTooltipModal');
 }
 
 export function initScatterGraph() {
@@ -189,7 +193,7 @@ export function initScatterGraph() {
     if (e.detail && e.detail.modalId === 'scatterModal') {
       const points = (typeof window.getScatterPlotPoints === 'function') ? (window.getScatterPlotPoints() || []) : [];
       const range = computeRange(points);
-      paintScatterGroup(document.getElementById('scatterAxisModal'), document.getElementById('scatterPointsModal'), points, range);
+      paintScatterGroup(document.getElementById('scatterAxisModal'), document.getElementById('scatterPointsModal'), points, range, 'scatterTooltipModal');
     }
   });
 }

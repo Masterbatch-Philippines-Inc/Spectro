@@ -6,7 +6,7 @@ via inline <script>, then call `createDataTable({...})` from table.js.
 ============================================================
 {% endcomment %}
 
-<div id="{{ table_area_id|default:'tableArea' }}" class="flex-1 min-h-0 relative overflow-auto bg-background">
+<div id="{{ table_area_id|default:'tableArea' }}" class="flex-1 min-h-0 relative overflow-y-auto bg-background">
   <table id="{{ table_id|default:'dataTable' }}" class="hidden border-separate border-spacing-0 w-full text-xs">
     <thead><tr id="{{ header_row_id|default:'headerRow' }}"></tr></thead>
     <tbody id="{{ table_body_id|default:'tableBody' }}"></tbody>
