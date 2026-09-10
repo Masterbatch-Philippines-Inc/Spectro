@@ -148,9 +148,20 @@ export function initSamplesRecordPage(urls) {
   function refreshRereadControls() {
     const rereadBtn = document.getElementById('rereadSelectedBtn');
     const standardFilter = document.getElementById('standardFilter');
+    const standardFilterBtn = document.getElementById('standardFilterBtn');
     const hasSelection = selectedRows.size > 0;
+    // Disabling the standard dropdown should only depend on (a) rows
+    // being selected for re-read, or (b) there being no standards to
+    // choose from at all -- NOT on whether the currently selected
+    // standard happens to have zero samples loaded. A standard with no
+    // samples yet is still a valid, switchable option.
+    const hasStandardOptions = standardFilter
+      ? Array.from(standardFilter.options).some(function (opt) { return opt.value !== ''; })
+      : false;
+    const shouldDisable = hasSelection || !hasStandardOptions;
     if (rereadBtn) rereadBtn.disabled = !hasSelection;
-    if (standardFilter) standardFilter.disabled = hasSelection || dataset.length === 0;
+    if (standardFilter) standardFilter.disabled = shouldDisable;
+    if (standardFilterBtn) standardFilterBtn.disabled = shouldDisable;
   }
 
   const leadingColumns = [
@@ -209,6 +220,49 @@ export function initSamplesRecordPage(urls) {
     const productCodeFilter = document.getElementById('productCodeFilterValue');
     const productCodeFilterText = document.getElementById('productCodeFilter');
     const standardFilter = document.getElementById('standardFilter');
+    const standardFilterBtn = document.getElementById('standardFilterBtn');
+    const standardFilterLabel = document.getElementById('standardFilterLabel');
+    const standardFilterPanel = document.getElementById('standardFilterPanel');
+
+    // Keeps the custom standard dropdown (button label + panel list) in
+    // sync with the hidden native <select id="standardFilter">, which
+    // remains the single source of truth for value/disabled state so
+    // the rest of this file's existing logic doesn't need to change.
+    function syncStandardFilterUI(standardsList) {
+      if (!standardFilterBtn || !standardFilterLabel || !standardFilterPanel) return;
+
+      standardFilterBtn.disabled = standardFilter.disabled;
+
+      let list = standardsList;
+      if (!list) {
+        list = Array.from(standardFilter.options)
+          .filter(function (opt) { return opt.value !== ''; })
+          .map(function (opt) { return { standards_id: opt.value, standard_name: opt.textContent }; });
+      }
+
+      const standardFilterTitleHtml = '<div class="text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground px-1.5 pb-1 select-none">Select a Standard</div>';
+
+      if (!list.length) {
+        standardFilterPanel.innerHTML = standardFilterTitleHtml + '<div class="px-3 py-2 text-[12.5px] text-muted-foreground italic cursor-default select-none">No standard found</div>';
+      } else {
+        standardFilterPanel.innerHTML = standardFilterTitleHtml + list.map(function (std) {
+          const selected = String(std.standards_id) === String(standardFilter.value);
+          return '<div class="px-3 py-2 text-[12.5px] rounded cursor-pointer hover:bg-accent' + (selected ? ' bg-accent font-semibold' : '') + '" data-standards-id="' + std.standards_id + '">' + std.standard_name + '</div>';
+        }).join('');
+
+        standardFilterPanel.querySelectorAll('[data-standards-id]').forEach(function (item) {
+          item.addEventListener('click', function () {
+            standardFilter.value = item.dataset.standardsId;
+            standardFilterPanel.classList.add('hidden');
+            standardFilter.dispatchEvent(new Event('change', { bubbles: true }));
+          });
+        });
+      }
+
+      const selectedOption = standardFilter.options[standardFilter.selectedIndex];
+      // No placeholder once a standard is actually chosen.
+      standardFilterLabel.textContent = (standardFilter.value && selectedOption) ? selectedOption.textContent : 'Standards';
+    }
 
     const emptyState = document.getElementById('emptyState');
     const noResultsState = document.getElementById('noResultsState');
@@ -536,9 +590,9 @@ export function initSamplesRecordPage(urls) {
         if (emptyStateSubtitle) emptyStateSubtitle.textContent = 'Create standard reading at Values Reader page.';
         if (emptyStateActionLabel) emptyStateActionLabel.textContent = 'Create standard reading';
       } else if (mode === 'need-standard') {
-        if (emptyStateTitle) emptyStateTitle.textContent = 'Select one Standard';
+        if (emptyStateTitle) emptyStateTitle.textContent = 'Standards';
         if (emptyStateSubtitle) emptyStateSubtitle.textContent = 'Choose a standard sample to load its readings.';
-        if (emptyStateActionLabel) emptyStateActionLabel.textContent = 'Select one standard';
+        if (emptyStateActionLabel) emptyStateActionLabel.textContent = 'Standards';
       } else if (mode === 'no-samples') {
         if (emptyStateTitle) emptyStateTitle.textContent = 'This standard has no samples yet.';
         if (emptyStateSubtitle) emptyStateSubtitle.textContent = 'Choose a standard with sample to load its readings.';
@@ -675,8 +729,9 @@ export function initSamplesRecordPage(urls) {
         }
         currentlyLoadedProductCode = productCode || null;
 
-        standardFilter.innerHTML = '<option value="">Select one standard</option>';
+        standardFilter.innerHTML = '<option value="">Standards</option>';
         standardFilter.disabled = true;
+        syncStandardFilterUI([]);
         tryLoadTable();
 
         if (!productCode) return;
@@ -695,6 +750,7 @@ export function initSamplesRecordPage(urls) {
               standardFilter.appendChild(opt);
             });
             standardFilter.disabled = standardsList.length === 0;
+            syncStandardFilterUI(standardsList);
 
             // Task 6: if a previously chosen standard exists among this
             // product code's standards, restore it instead of leaving
@@ -734,6 +790,7 @@ export function initSamplesRecordPage(urls) {
             sessionStorage.removeItem(STANDARD_SESSION_KEY);
           }
         } catch (e) { /* sessionStorage unavailable -- fail silently */ }
+        syncStandardFilterUI();
         tryLoadTable();
       });
     }

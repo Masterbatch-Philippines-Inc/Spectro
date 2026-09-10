@@ -56,16 +56,18 @@ export function initCombobox() {
       highlightedIndex = index;
     }
 
+    const suggestionsTitleHtml = '<div class="text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground px-3 pt-2 pb-1 select-none">Select a Product Code</div>';
+
     function renderMatches(matches) {
       highlightedIndex = -1;
 
       if (!matches.length) {
-        suggestions.innerHTML = '<div class="px-3 py-2 text-[12.5px] text-muted-foreground italic">Try different keyword</div>';
+        suggestions.innerHTML = suggestionsTitleHtml + '<div class="px-3 py-2 text-[12.5px] text-muted-foreground italic">Try different keyword</div>';
         suggestions.classList.remove('hidden');
         return;
       }
 
-      suggestions.innerHTML = matches.map(function (o) {
+      suggestions.innerHTML = suggestionsTitleHtml + matches.map(function (o) {
         return '<div class="px-3 py-2 text-[12.5px] cursor-pointer hover:bg-accent" data-value="' + o[0] + '" data-label="' + o[1] + '">' + o[1] + '</div>';
       }).join('');
       suggestions.classList.remove('hidden');
