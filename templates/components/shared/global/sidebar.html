@@ -11,7 +11,7 @@
       <div class="text-[17px] font-bold tracking-tight">Spectro</div>
     </div>
     <!-- Navigations -->
-    <div class="p-2.5 pr-0 flex flex-col gap-0.5">
+    <div class="p-2.5 flex flex-col gap-0.5">
       <a href="{% url 'samples_record' %}" 
          class="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[12.5px] font-medium {% if request.resolver_match.url_name == 'samples_record' %}font-semibold bg-card shadow-sm text-foreground{% else %}text-muted-foreground hover:bg-card hover:text-foreground{% endif %}">
         <span class="w-7">
@@ -51,7 +51,7 @@
       {% include "components/shared/ui/scatter_graph.html" with passed_dot_class="bg-muted-foreground/50" note_text="Select a page to view the graph." %}
     {% endif %}
     <!-- Account Nav. -->
-    <nav id="sidebarAccount" class="p-2.5 pr-0 mb-2 flex flex-col gap-0.5">
+    <nav id="sidebarAccount" class="p-2.5 mb-2 flex flex-col gap-0.5">
       <div class="relative" data-dropdown-menu>
         <button data-sidebar="menu-button" data-size="lg" data-active="false" class="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[12.5px] font-medium text-foreground bg-card text-foreground w-full" type="button" id="accountMenuBtn" aria-haspopup="menu">
           <span data-slot="avatar" data-size="default" class="group/avatar relative flex size-8 shrink-0 overflow-hidden select-none data-[size=lg]:size-10 data-[size=sm]:size-6 h-8 w-8 rounded-lg grayscale">
@@ -65,7 +65,7 @@
           </div>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis-vertical ml-auto size-4"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
         </button>
-        <div id="accountMenuPanel" class="hidden fixed z-50 w-[160px] max-w-[calc(100vw-32px)] bg-card border border-border rounded-md shadow-lg p-1.5 flex flex-col gap-0.5" style="left: 238px; bottom: 20px;">
+        <div id="accountMenuPanel" class="hidden fixed z-50 w-[160px] max-w-[calc(100vw-32px)] bg-card border border-border rounded-md shadow-lg p-1.5 flex flex-col gap-0.5" style="left: 10px; bottom: 60px;">
           <a href="{% url 'auth_logout' %}" class="flex items-center gap-2 px-2.5 py-2 rounded-md font-medium text-danger hover:bg-danger-bg">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></svg>
             <span class="text-danger">Logout</span>
