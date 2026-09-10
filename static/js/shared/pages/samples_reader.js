@@ -103,6 +103,16 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // Tab must never carry focus into a section that's still visually
+  // locked (opacity-40/pointer-events-none) -- `inert` removes the
+  // whole subtree from the tab order (and a11y tree) natively, so
+  // Tab/Shift+Tab skip straight past it to the next real stop.
+  function setSectionInert(el, locked) {
+    if (!el) return;
+    try { el.inert = !!locked; } catch (e) {}
+    if (locked) el.setAttribute('inert', ''); else el.removeAttribute('inert');
+  }
+
   /* ---- Stepper (Task 10) — follows ts-step/ts-circle/ts-line pattern ---- */
   const checkSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
   const tsSteps = { 1: document.getElementById('tsStep1'), 2: document.getElementById('tsStep2'), 3: document.getElementById('tsStep3') };
@@ -408,6 +418,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     step2Unlocked = true;
     if (step2LockOverlay) step2LockOverlay.style.display = 'none';
     if (step2LockedContent) step2LockedContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+    setSectionInert(step2LockedContent, false);
     if (step1FooterNote) step1FooterNote.style.display = 'none';
     completedSteps.add(1);
     renderStepper();
@@ -431,6 +442,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     step2Unlocked = false;
     if (step2LockOverlay) step2LockOverlay.style.display = 'flex';
     if (step2LockedContent) step2LockedContent.classList.add('opacity-40', 'pointer-events-none', 'select-none');
+    setSectionInert(step2LockedContent, true);
     if (step1FooterNote) step1FooterNote.style.display = 'block';
     completedSteps.delete(1);
     renderStepper();
@@ -621,6 +633,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         const step3LockedContent = document.getElementById('step3LockedContent');
         if (step3LockOverlay) step3LockOverlay.style.display = 'none';
         if (step3LockedContent) step3LockedContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+        setSectionInert(step3LockedContent, false);
 
         scrollToNextCard(document.getElementById('stepPanel3'));
       });
@@ -930,6 +943,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     function unlockModeSelect() {
       modeSelectLockOverlay.style.display = 'none';
       modeSelectContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+      setSectionInert(modeSelectContent, false);
       // Task 4: cache whether this product code already has ANY standard
       // record -- gates the "STANDARD" keyword allowed in CMA/Lot Number
       // (only permitted for genuinely new product codes with none yet).
@@ -1001,6 +1015,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       // re-lock the mode-select + standard-details sections
       modeSelectLockOverlay.style.display = 'flex';
       modeSelectContent.classList.add('opacity-40', 'pointer-events-none', 'select-none');
+      setSectionInert(modeSelectContent, true);
       lockStepDetails();
       flowNewStandard.style.display = 'none';
 
@@ -1051,6 +1066,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       if (!productCodeGlobal.value.trim()) {
         modeSelectLockOverlay.style.display = 'flex';
         modeSelectContent.classList.add('opacity-40', 'pointer-events-none', 'select-none');
+        setSectionInert(modeSelectContent, true);
         lockStepDetails();
         flowNewStandard.style.display = 'none';
         [modeCardNew, modeCardExisting].forEach(function (c) { c.classList.remove('selected'); });
@@ -1089,10 +1105,12 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     function lockStepDetails() {
       stepDetailsLockOverlay.style.display = 'flex';
       stepDetails.classList.add('opacity-40', 'pointer-events-none', 'select-none');
+      setSectionInert(stepDetails, true);
     }
     function unlockStepDetails() {
       stepDetailsLockOverlay.style.display = 'none';
       stepDetails.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+      setSectionInert(stepDetails, false);
     }
     // Task 11 — "Use Existing Standard" no longer has its own panel.
     // Clicking it directly looks up the active standard for the current
@@ -1168,6 +1186,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           const step3LockedContent = document.getElementById('step3LockedContent');
           if (step3LockOverlay) step3LockOverlay.style.display = 'none';
           if (step3LockedContent) step3LockedContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+          setSectionInert(step3LockedContent, false);
 
           scrollToNextCard(document.getElementById('stepPanel3'));
         })
@@ -1203,6 +1222,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     });
 
     lockStepDetails();
+    setSectionInert(modeSelectContent, true);
+    setSectionInert(step2LockedContent, true);
+    setSectionInert(document.getElementById('step3LockedContent'), true);
 
     const continueBtn = document.getElementById('continueBtn');
     const stepMeasureCard = document.getElementById('stepMeasure');
@@ -2522,6 +2544,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       const step3LockedContent = document.getElementById('step3LockedContent');
       if (step3LockOverlay) step3LockOverlay.style.display = 'flex';
       if (step3LockedContent) step3LockedContent.classList.add('opacity-40', 'pointer-events-none', 'select-none');
+      setSectionInert(step3LockedContent, true);
 
       if (window.setFinishReadingMode) window.setFinishReadingMode(false);
       if (window.setStdDeInputEditable) window.setStdDeInputEditable(false);
@@ -2830,11 +2853,13 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       const step2LockedContentEl = document.getElementById('step2LockedContent');
       if (step2LockOverlayEl) step2LockOverlayEl.style.display = 'none';
       if (step2LockedContentEl) step2LockedContentEl.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+      setSectionInert(step2LockedContentEl, false);
 
       const step3LockOverlay = document.getElementById('step3LockOverlay');
       const step3LockedContent = document.getElementById('step3LockedContent');
       if (step3LockOverlay) step3LockOverlay.style.display = 'none';
       if (step3LockedContent) step3LockedContent.classList.remove('opacity-40', 'pointer-events-none', 'select-none');
+      setSectionInert(step3LockedContent, false);
 
       // Task 5: this IS a re-read session -- Read Sample must only act
       // on a selected (carried-over) row.
