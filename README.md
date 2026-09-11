@@ -1,8 +1,17 @@
 <div align="center">
 
-  # Spectro
+  # <img src="./static/img/spectro.png" alt="Header" width="400">
 
   A web-based color measurement system built for Masterbatch Philippines Inc., replacing manual, spreadsheet-based color quality checks with a digital workflow connected directly to spectrophotometer hardware. Lab technicians connect a spectrometer, calibrate it, and read color measurements from production samples straight from their browser, each sample is automatically compared against its approved color standard to determine a pass/fail result, with every reading, standard, and judgement stored centrally for the Laboratory Department to review.
+
+  <p>
+    <img src="https://img.shields.io/badge/pnpm-10.0-4a4a4a?style=flat-square&logo=pnpm&logoColor=f69220" alt="pnpm version" />
+    <img src="https://img.shields.io/badge/django-%5E5.0-blue?style=flat-square&logo=django&logoColor=05130d" alt="django version" />
+    <img src="https://img.shields.io/badge/tailwind--css-%5E4.3-blue?style=flat-square&logo=tailwind-css&logoColor=38bdf8" alt="tailwind-css version" />
+    <img src="https://img.shields.io/badge/psycopg2--binary-%5E2.9-blue?style=flat-square" alt="psygopg2-binary version" />
+    <img src="https://img.shields.io/badge/python--decouple-%5E3.8-blue?style=flat-square" alt="python-decouple version" />
+    <img src="https://img.shields.io/badge/whitenoise-%5E6.6-blue?style=flat-square" alt="whitenoise version" />
+  </p>
 
 </div>
 
@@ -311,19 +320,20 @@ python manage.py collectstatic --noinput --ignore=input.css --ignore=design-toke
 | Model | File | Description |
 |---|---|---|
 | `User` | `auth_models.py` | Custom user model, extends Django's `AbstractUser`, mapped to `db_table = "users"` |
+| `QcProgramRecord` | `spectro_models.py` | Unmanaged, read-only view (`view_spectro`) on the external QC program's own database (routed via `QcProgramRouter`) |
 | `Spectrometer` | `spectro_models.py` | A physical spectrometer device record (serial number, model) |
-| `SpectrometerRecord` | `spectro_models.py` | Per-product-code record, holds the active `std_delta_e_used` tolerance value |
-| `SpectroStandard` | `spectro_models.py` | A saved color standard tied to a `SpectrometerRecord` |
+| `SpectrometerRecord` | `spectro_models.py` | Per-product-code record; holds the active `std_delta_e_used` tolerance value, baked into each batch at save time so future limit changes never affect prior batches |
+| `SpectroStandard` | `spectro_models.py` | A saved color standard (with raw L\*/a\*/b\*/C\*/h°) tied to a `SpectrometerRecord`; only one standard per record is ever `is_active_standard=True` |
 | `StdLimitChangelog` | `spectro_models.py` | Change history for `std_delta_e_used` — old value, who changed it, when |
-| `LotSample` | `spectro_models.py` | A single measured production sample, tied to a `SpectroStandard` |
+| `LotSample` | `spectro_models.py` | A single measured production sample (or LT/DR reference reading), tied to a `SpectroStandard` |
 | `SpectroRawValues` | `spectro_models.py` | Raw L\*/a\*/b\*/C\*/h° readings for a `LotSample` |
 | `SpectroDeltaValues` | `spectro_models.py` | Calculated ΔE\*00/ΔL\*/ΔC\*/ΔH\*/Δa\*/Δb\* for a set of raw values |
-| `VisualJudgement` | `spectro_models.py` | Manual pass/fail judgement and remarks for a `LotSample` |
-| `SpectroJudgement` | `spectro_models.py` | Automatic pass/fail judgement, color offset, and remarks for a `LotSample` against a `SpectroStandard` |
+| `VisualJudgement` | `spectro_models.py` | Manual pass/fail judgement and fail reason for a `LotSample` |
+| `SpectroJudgement` | `spectro_models.py` | Automatic pass/fail judgement, color offset, and remarks for a `LotSample` against a `SpectroStandard`; stamps the `std_de_used` this row was evaluated against (never retroactively changed) |
 | `SpectroJudgementChangelog` | `spectro_models.py` | Change history for spectro judgement remarks |
 | `SpecialCase` | `spectro_models.py` | Special-pass override record for a `LotSample` |
 | `SpecialCaseChangelog` | `spectro_models.py` | Change history for special-pass decisions |
-| `QcProgramRecord` | `spectro_models.py` | Unmanaged — represents a table owned by an external QC program database |
+| `LotSamplesChangeLog` | `spectro_models.py` | Audit trail for the "Re-Read Selected Samples" workflow — snapshots a `LotSample`'s old raw/delta/judgement values before a re-read overwrites them in place |
 
 <br>
 
