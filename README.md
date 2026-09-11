@@ -13,9 +13,10 @@
 1. [Project Overview](#1-project-overview)
 2. [Features](#2-features)
 3. [Project Structure](#3-project-structure)
-4. [Setup and Installation](#4-setup-and-installation)
-5. [Key Concepts](#5-key-concepts)
-6. [Models Overview](#6-models-overview)
+4. [Dev Setup](#4-dev-setup)
+5. [Deployment](#5-deployment)
+6. [Key Concepts](#6-key-concepts)
+7. [Models Overview](#7-models-overview)
 
 <br>
 
@@ -113,16 +114,16 @@ spectro/
 │           └── samples_record.py
 │
 ├── templates/
-│   ├── base.html                   # shared page shell
+│   ├── base.django                   # shared page shell
 │   ├── components/
 │   │   └── shared/
 │   │       ├── global/             # site-wide structural pieces (sidebar, header, footer, modals, cards)
 │   │       └── ui/                 # reusable, parameterized UI components (table, dropdown, forms, etc.)
 │   ├── auth/
-│   │   └── login.html
+│   │   └── login.django
 │   └── pages/
-│       ├── samples_reader.html
-│       └── samples_record.html
+│       ├── samples_reader.django
+│       └── samples_record.django
 │
 └── static/
     ├── css/
@@ -137,7 +138,7 @@ spectro/
 
 <br>
 
-## 4. Setup and Installation
+## 4. Dev Setup
 
 ### Requirements
 - Python 3.12+
@@ -146,19 +147,12 @@ spectro/
 - uv
 - see other libraries at `requirements.txt` file
 
-### Step 1 — Install dependencies
+### Install dependencies
 
-#### a. Install `uv` package manager for python
-For Windows:
-```bash
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" 
-```
-For Unix:
-```bash
-url -LsSf https://astral.sh/uv/install.sh | sh
-```
+#### a. Install `uv` package manager for python. See [astral guides](https://docs.astral.sh/uv/getting-started/installation/) for installation setup
 
-> Note: Installation of `uv` is one time only.
+> [!Note] 
+> Installation of `uv` is one time only.
 
 #### b. Verify `uv` installation
 ```bash
@@ -170,13 +164,8 @@ uv venv
 ```
 #### d. Activate the virtual environment
 
-For Windows:
 ```bash
 .venv\Scripts\activate    
-```
-For Unix:
-```bash
-source .venv/bin/activate
 ```
 #### e. Start installing dependecies
 ```bash
@@ -191,72 +180,30 @@ npm install -g pnpm
 pnpm install
 ```
 
-### Step 2 — Configure environment variables
+### Step 2: Configure environment variables
 
 #### a. Copy `.env.example` to `.env`, run terminal in same directory and run:
-For Windows:
 ```bash
 copy .env.example .env
 ```
-For Unix:
-```bash
-cp .env.example .env
-```
 
 #### b. Open text editor to edit the `.env` credentials
-For Windows:
 ```bash
 notepad .env
 ```
-For Unix:
-```bash
-nano .env
-```
 
-#### c. You will see something like:
-```
-DJANGO_SECRET_KEY=<your-real-secret-key-here>
-DJANGO_DEBUG=True
-DJANGO_ALLOWED_HOSTS=
-
-DB_E...
-```
-
-#### d. Fill in the values in `.env` first before generating a secret key for `DJANGO_SECRET_KEY` variable. 
+#### c. Fill in the values in `.env` first before generating a secret key for `DJANGO_SECRET_KEY` variable. 
 #### e. Command to generate a secret key with:
-```bash
+```python
 python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-> For a production/deployment environment, set `DJANGO_DEBUG=False` and list the actual server hostname(s)/IP(s) in `DJANGO_ALLOWED_HOSTS` instead of using a wildcard.
+> [!Important]
+> For a production/deployment environment, 
+> set `DJANGO_DEBUG` to `False` and list the actual server hostname(s)/IP(s) in `DJANGO_ALLOWED_HOSTS` instead of using `*`.
+> e.g. `DJANGO_ALLOWED_HOSTS=127.0.0.1,192.168.1.1`
 
-### Step 3 — Configure the database
-Edit `apps/core/settings.py` → create variables in you env file to `DATABASES["default"{},"server"{}]`:
-```python
-from decouple import config
-
-DATABASES = {
-    "default": {
-        'ENGINE':   'django.db.backends.postgresql',
-        'NAME':     config('DB_NAME'),
-        'USER':     config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST':     config('DB_HOST'),
-        'PORT':     config('DB_PORT'),
-    },
-    "server": {
-        'ENGINE':   'django.db.backends.postgresql',
-        'NAME':     config('SERVER_DB_NAME'),
-        'USER':     config('SERVER_DB_USER'),
-        'PASSWORD': config('SERVER_DB_PASSWORD'),
-        'HOST':     config('SERVER_DB_HOST'),
-        'PORT':     config('SERVER_DB_PORT'),
-    }
-}
-```
-Create the database first (e.g. `createdb mbpi_spectro_db` or via pgAdmin GUI).
-
-### Step 4 — Run migrations
+### Step 3: Run migrations
 ```bash
 python manage.py makemigrations spectro
 ```
@@ -264,19 +211,19 @@ python manage.py makemigrations spectro
 python manage.py migrate
 ```
 
-### Step 5 — Create an admin/login user
+### Step 4: Create an admin/login user
 ```bash
 python manage.py createsuperuser
 ```
 
-### Step 6 — Run the development environment
+### Step 6: Run the development environment
 To run the project locally, open two terminal windows in the project root:
 
-**Terminal 1 — Tailwind CSS Compiler (Watcher)**
+**Terminal 1: Tailwind CSS Compiler (Watcher)**
 ```bash
 pnpm run dev:css
 ```
-**Terminal 2 — Where Django (.venv) is active**
+**Terminal 2: Where Django (.venv) is active**
 ```bash
 python manage.py runserver
 ```
@@ -284,26 +231,57 @@ Visit `http://127.0.0.1:8000/` → lands on the login page.
 
 <br>
 
-## Deployment Note
+## 5. Deployment
 
-#### Since `DJANGO_DEV_DEBUG` is **always `False`** in production, Django never auto-serves static files, whitenoise serves the pre-collected, compressed copies instead. Because of this, run the following command on the server **every time a new build is shipped**, 
-
-Run 
-```bash
-pnpm run build:css
-``` 
-
-#### and this will regenerate final `output.css`:
+### Execute following commands
 
 ```bash
-python manage.py collectstatic --noinput --ignore=input.css --ignore=design-tokens.css
+git clone https://github.com/Masterbatch-Philippines-Inc/Spectro.git
 ```
 
-This compiles the latest Tailwind output and delivers it through `output.css` — skipping it means the server keeps serving stale static files even after a successful deploy.
+#### or if there is existing deployment:
+
+```bash
+git pull
+```
+
+#### then:
+
+```bash
+cd /d <path/to/repo>
+```
+```bash
+uv venv
+```
+```bash
+uv pip install -r requirements.txt
+```
+```bash
+copy .env.example .env
+```
+```bash
+notepad .env
+```
+```python
+python manage.py makemigrations spectro
+```
+```python
+python manage.py migrate
+```
+```python
+python manage.py collectstatic --noinput --ignore=input.css --ignore=design-tokens.css
+```
+> [!Tip]
+> This compiles the latest Tailwind output and delivers it through `output.css` — skipping it means the server keeps serving stale static files even after a successful deploy.
+
+> [!Warning]
+> - Don't change defined values of `env.example` variables.
+> - Edit `.env` file and save.
+> - Ask the dev for other missing required values.
 
 <br>
 
-## 5. Key Concepts
+## 6. Key Concepts
 
 **`views.py` is an orchestrator only.** It imports render functions from `apps/spectro/modules/*` and calls them — it never contains business logic itself. Each page or unit of work gets its own module file. To add a new page: create a new file in `modules/`, add a render function, import it in `views.py`, and wire a URL in `apps/spectro/urls.py`.
 
@@ -317,11 +295,11 @@ This compiles the latest Tailwind output and delivers it through `output.css` �
 
 **Static assets load through a single orchestrator.** `base.js` dynamically loads every shared script and waits for all of them before calling `initApp()` in `app.js`, which is the single place every component's startup behavior is registered.
 
-**Templates follow a shared-shell + component-library pattern.** `base.html` includes the sidebar, header, footer, toast container, and modal container automatically. Reusable pieces live under `templates/components/shared/`, split into `global/` (structural, once-per-page pieces) and `ui/` (smaller, reusable, parameterized building blocks).
+**Templates follow a shared-shell + component-library pattern.** `base.django` includes the sidebar, header, footer, toast container, and modal container automatically. Reusable pieces live under `templates/components/shared/`, split into `global/` (structural, once-per-page pieces) and `ui/` (smaller, reusable, parameterized building blocks).
 
 <br>
 
-## 6. Models Overview
+## 7. Models Overview
 
 | Model | File | Description |
 |---|---|---|
