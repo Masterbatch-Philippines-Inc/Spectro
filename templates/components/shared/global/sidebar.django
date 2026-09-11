@@ -1,6 +1,6 @@
 {% load static %}
 {% if user.is_authenticated %}
-<aside id="sidebar" class="hidden md:flex w-[230px] max-w-[80vw] overflow-hidden transition-all duration-300 ease-in-out shrink-0 bg-accent flex-col fixed md:static inset-y-0 left-0 z-40 shadow-xl md:shadow-none">
+<aside id="sidebar" class="flex w-[230px] max-w-[80vw] overflow-hidden shrink-0 bg-accent flex-col fixed md:static inset-y-0 left-0 z-40 shadow-xl md:shadow-none" style="transition: transform .3s ease-in-out, width .25s ease;">
   <div id="sidebarContent" class="w-full flex flex-col h-full">
     <div class="flex items-center gap-2.5 px-4 py-3.5 mt-4">
       <img

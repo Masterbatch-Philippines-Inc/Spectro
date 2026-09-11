@@ -54,6 +54,12 @@ export function initSamplesRecordPage(urls) {
       }
     },
     {
+      key: 'stdDeUsed', label: 'Std ΔE used', type: 'number',
+      render: function (row) {
+        return (row.stdDeUsed === null || row.stdDeUsed === undefined) ? '<span class="text-muted-foreground">-</span>' : Number(row.stdDeUsed).toFixed(2);
+      }
+    },
+    {
       key: 'visualJudgement', label: 'Visual Judgement', type: 'string',
       render: function (row) {
         const vjColor = row.visualJudgement === 'Pass'
@@ -623,6 +629,8 @@ export function initSamplesRecordPage(urls) {
           .then(function (res) { return res.json(); })
           .then(function (data) {
             currentStdDeUsed = (data.std_delta_e_used !== null && data.std_delta_e_used !== undefined) ? data.std_delta_e_used : 1.00;
+            const latestStdDeUsedInput = document.getElementById('latestStdDeUsedInput');
+            if (latestStdDeUsedInput) latestStdDeUsedInput.value = 'Latest Std ΔE Used:  ' + Number(currentStdDeUsed).toFixed(2);
             const stdRow = (data.standards || []).find(function (s) { return String(s.standards_id) === String(currentStandardId); });
             currentStandardRaw = stdRow ? {
               raw_l: stdRow.raw_l, raw_a: stdRow.raw_a, raw_b: stdRow.raw_b,
@@ -692,6 +700,10 @@ export function initSamplesRecordPage(urls) {
         currentStandardName = null;
         currentStdDeUsed = null;
         currentStandardRaw = null;
+        (function () {
+          const latestStdDeUsedInput = document.getElementById('latestStdDeUsedInput');
+          if (latestStdDeUsedInput) latestStdDeUsedInput.value = 'Latest Std ΔE Used: —';
+        })();
         dataTable.hideTable();
         if (generateReportBtn) generateReportBtn.disabled = true;
         refreshRereadControls();

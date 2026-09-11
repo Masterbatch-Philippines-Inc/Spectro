@@ -86,13 +86,10 @@ th.th-sticky.border-r {
 }
 
 html {
-  transition: background-color .35s ease, color .35s ease;
+  transition: background-color .2s ease, color .2s ease;
 }
-body,
-.bg-background, .bg-card, .bg-accent, .bg-primary, .bg-secondary, .bg-muted,
-.text-foreground, .text-muted-foreground, .text-primary-foreground,
-.border-border, #sidebar, main {
-  transition: background-color .35s ease, color .35s ease, border-color .35s ease;
+*, *::before, *::after {
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease, fill .2s ease, stroke .2s ease;
 }
 
 /* Header Stylesheets */

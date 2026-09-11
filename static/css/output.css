@@ -574,6 +574,9 @@
   .w-\[160px\] {
     width: 160px;
   }
+  .w-\[175px\] {
+    width: 175px;
+  }
   .w-\[200px\] {
     width: 200px;
   }
@@ -1523,9 +1526,6 @@
     .md\:block {
       display: block;
     }
-    .md\:flex {
-      display: flex;
-    }
     .md\:hidden {
       display: none;
     }
@@ -1882,10 +1882,10 @@ th.th-sticky.border-r {
   transform: rotate(-90deg) scale(.4);
 }
 html {
-  transition: background-color .35s ease, color .35s ease;
+  transition: background-color .2s ease, color .2s ease;
 }
-body, .bg-background, .bg-card, .bg-accent, .bg-primary, .bg-secondary, .bg-muted, .text-foreground, .text-muted-foreground, .text-primary-foreground, .border-border, #sidebar, main {
-  transition: background-color .35s ease, color .35s ease, border-color .35s ease;
+*, *::before, *::after {
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease, fill .2s ease, stroke .2s ease;
 }
 .hamburger-btn {
   position: relative;
