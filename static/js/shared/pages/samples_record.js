@@ -256,13 +256,34 @@ export function initSamplesRecordPage(urls) {
           return '<div class="px-3 py-2 text-[12.5px] rounded cursor-pointer hover:bg-accent' + (selected ? ' bg-accent font-semibold' : '') + '" data-standards-id="' + std.standards_id + '">' + std.standard_name + '</div>';
         }).join('');
 
+        function selectStandardItem(item) {
+          standardFilter.value = item.dataset.standardsId;
+          standardFilterPanel.classList.add('hidden');
+          standardFilter.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
         standardFilterPanel.querySelectorAll('[data-standards-id]').forEach(function (item) {
           item.addEventListener('click', function () {
-            standardFilter.value = item.dataset.standardsId;
-            standardFilterPanel.classList.add('hidden');
-            standardFilter.dispatchEvent(new Event('change', { bubbles: true }));
+            selectStandardItem(item);
           });
         });
+
+        // Arrow-key navigation across standard items -- Up/Down moves a
+        // highlighted state, Enter commits it, Escape closes the panel.
+        let standardHighlightIndex = -1;
+        function setStandardHighlight(index) {
+          const items = standardFilterPanel.querySelectorAll('[data-standards-id]');
+          items.forEach(function (el) { el.classList.remove('bg-accent'); });
+          if (index >= 0 && index < items.length) {
+            items[index].classList.add('bg-accent');
+            items[index].scrollIntoView({ block: 'nearest' });
+          }
+          standardHighlightIndex = index;
+        }
+        standardFilterPanel.dataset.arrowNavBound = 'true';
+        standardFilterPanel.__setHighlight = setStandardHighlight;
+        standardFilterPanel.__getHighlightIndex = function () { return standardHighlightIndex; };
+        standardFilterPanel.__selectItem = selectStandardItem;
       }
 
       const selectedOption = standardFilter.options[standardFilter.selectedIndex];

@@ -188,6 +188,34 @@ export function initDropdowns() {
       panel.classList.toggle('hidden');
     });
 
+    // Arrow-key navigation for any panel item list with data-standards-id
+    // (populated dynamically) -- keydown is delegated to the trigger
+    // button since the panel's own items are re-rendered on every open.
+    btn.addEventListener('keydown', function (e) {
+      if (panel.classList.contains('hidden')) return;
+      if (!panel.__setHighlight) return;
+      const items = panel.querySelectorAll('[data-standards-id]');
+      if (!items.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = Math.min(panel.__getHighlightIndex() + 1, items.length - 1);
+        panel.__setHighlight(next);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = Math.max(panel.__getHighlightIndex() - 1, 0);
+        panel.__setHighlight(prev);
+      } else if (e.key === 'Enter') {
+        const idx = panel.__getHighlightIndex();
+        if (idx >= 0 && idx < items.length) {
+          e.preventDefault();
+          panel.__selectItem(items[idx]);
+        }
+      } else if (e.key === 'Escape') {
+        panel.classList.add('hidden');
+      }
+    });
+
     document.addEventListener('click', function (e) {
       if (!panel.classList.contains('hidden') && !panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
         panel.classList.add('hidden');

@@ -800,6 +800,19 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // Task 8: tracks the last non-empty value the field held, so a
     // cancelled "clear the code" confirmation can restore it exactly.
     let lastNonEmptyProductCode = '';
+    // Arrow-key navigation index across the currently rendered
+    // suggestion list (includes the "+ Add" pseudo-entry as the last item).
+    let productCodeHighlightIndex = -1;
+
+    function setProductCodeHighlight(index) {
+      const items = productCodeSuggestions.querySelectorAll('[data-code], [data-add-code]');
+      items.forEach(function (el) { el.classList.remove('bg-[hsl(var(--accent))]'); });
+      if (index >= 0 && index < items.length) {
+        items[index].classList.add('bg-[hsl(var(--accent))]');
+        items[index].scrollIntoView({ block: 'nearest' });
+      }
+      productCodeHighlightIndex = index;
+    }
 
     const SUGGEST_DEBOUNCE_MS = 300;
     let suggestDebounceTimer = null;
@@ -823,6 +836,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       }
       productCodeSuggestions.innerHTML = html;
       productCodeSuggestions.style.display = 'block';
+      productCodeHighlightIndex = -1;
 
       // primary action: clicking an existing code selects it immediately,
       // no Enter/server round-trip needed
@@ -1075,8 +1089,39 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     });
     productCodeGlobal.addEventListener('focus', function () { renderSuggestions(productCodeGlobal.value.trim()); });
     productCodeGlobal.addEventListener('keydown', function (e) {
+      const items = productCodeSuggestions.querySelectorAll('[data-code], [data-add-code]');
+      const suggestionsVisible = productCodeSuggestions.style.display === 'block' && items.length > 0;
+
+      if (e.key === 'ArrowDown' && suggestionsVisible) {
+        e.preventDefault();
+        setProductCodeHighlight(Math.min(productCodeHighlightIndex + 1, items.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp' && suggestionsVisible) {
+        e.preventDefault();
+        setProductCodeHighlight(Math.max(productCodeHighlightIndex - 1, 0));
+        return;
+      }
+      if (e.key === 'Escape' && suggestionsVisible) {
+        productCodeSuggestions.style.display = 'none';
+        return;
+      }
       if (e.key !== 'Enter') return;
       e.preventDefault();
+
+      if (suggestionsVisible && productCodeHighlightIndex >= 0 && productCodeHighlightIndex < items.length) {
+        const item = items[productCodeHighlightIndex];
+        productCodeSuggestions.style.display = 'none';
+        if (item.dataset.code) {
+          productCodeGlobal.value = item.dataset.code;
+          selectExistingCode(item.dataset.code);
+        } else if (item.dataset.addCode) {
+          productCodeGlobal.value = item.dataset.addCode;
+          saveProductCode();
+        }
+        return;
+      }
+
       productCodeSuggestions.style.display = 'none';
       const v = productCodeGlobal.value.trim().toUpperCase();
       // Enter is optional for an existing code -- if it already matches
