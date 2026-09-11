@@ -227,7 +227,13 @@ pnpm run dev:css
 ```bash
 python manage.py runserver
 ```
-Visit `http://127.0.0.1:8000/` → lands on the login page.
+Visit `http://127.0.0.1:8000/` and it lands on the login page.
+
+### Step 7: If development is done, run command to compile final stylesheet
+**Terminal 1: Tailwind CSS**
+```bash
+pnpm run build:css
+```
 
 <br>
 
@@ -262,6 +268,7 @@ copy .env.example .env
 ```bash
 notepad .env
 ```
+> Note: Edit the environment variables first before proceeding on next command.
 ```python
 python manage.py makemigrations spectro
 ```
