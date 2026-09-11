@@ -26,7 +26,7 @@ def render_login(request):
         return redirect("auth_login")
 
     error = request.session.pop("login_error", None)
-    return render(request, "pages/auth/login.html", {"error": error})
+    return render(request, "pages/auth/login.django", {"error": error})
 
 
 def do_logout(request):

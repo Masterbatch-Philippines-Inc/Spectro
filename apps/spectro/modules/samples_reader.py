@@ -89,7 +89,7 @@ def render_samples_reader(request):
     context = {
         "product_code_options": list(product_codes),
     }
-    return render(request, "pages/samples_reader.html", context)
+    return render(request, "pages/samples_reader.django", context)
 
 
 @login_required
@@ -162,7 +162,7 @@ def save_standard(request):
     )
 
     # New-standard flow keeps std_delta_e_used mandatory at 1.00 (see
-    # UI note in samples_reader.html) -- this only ever writes the
+    # UI note in samples_reader.django) -- this only ever writes the
     # record's very first value, distinct from the "existing standard"
     # flow's editable batch limit handled in save_sample_readings().
     if record.std_delta_e_used != std_delta_e_value:

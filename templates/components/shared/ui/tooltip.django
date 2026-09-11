@@ -1,6 +1,6 @@
 {% comment %}
 ============================================================
-Shared hover-tooltip SHELL. One instance lives in base.html and is
+Shared hover-tooltip SHELL. One instance lives in base.django and is
 reused by every element on the page carrying data-tooltip="...".
 tooltip.js handles show/hide/position generically via event
 delegation on document -- it doesn't matter if the tagged element

@@ -2,7 +2,7 @@
 ============================================================
 Shared button component. `btn_variant`: primary | secondary | danger | ghost
 
-  {% include "components/shared/ui/button.html" with
+  {% include "components/shared/ui/button.django" with
       btn_id="generateReportBtn"
       btn_label="Generate Report"
       btn_variant="primary"

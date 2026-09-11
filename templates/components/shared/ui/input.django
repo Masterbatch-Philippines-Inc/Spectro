@@ -1,10 +1,10 @@
 {% comment %}
 ============================================================
 Shared standalone input component (no label, no error slot --
-use field.html inside forms.html for that). For search boxes,
+use field.django inside forms.django for that). For search boxes,
 inline filter inputs, etc.
 
-  {% include "components/shared/ui/input.html" with
+  {% include "components/shared/ui/input.django" with
       input_id="searchInput"
       input_type="text"
       input_placeholder="Search anything in the table..."

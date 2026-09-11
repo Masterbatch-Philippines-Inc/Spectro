@@ -2,7 +2,7 @@
 
    Reusable field partial. Usage:
 
-   {% include "components/shared/ui/field.html" with
+   {% include "components/shared/ui/field.django" with
        field_type="text"
        field_name="cma_lot"
        field_label="CMA/Lot"

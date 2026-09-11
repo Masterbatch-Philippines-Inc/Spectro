@@ -5,7 +5,7 @@ Shared dropdown component. Two variants via `dropdown_type`:
   "select" (default) -- plain native <select>, options passed as list
   of (value, label) tuples via `dropdown_options`.
 
-    {% include "components/shared/ui/dropdown.html" with
+    {% include "components/shared/ui/dropdown.django" with
         dropdown_id="productCodeFilter"
         dropdown_options=product_code_options
         dropdown_placeholder="Choose a Product Code" %}
@@ -15,7 +15,7 @@ Shared dropdown component. Two variants via `dropdown_type`:
   including template, or via a separate include right after this one
   targeting #<dropdown_id>Panel .
 
-    {% include "components/shared/ui/dropdown.html" with
+    {% include "components/shared/ui/dropdown.django" with
         dropdown_type="menu"
         dropdown_id="freezeDropdown"
         dropdown_label="Freeze Columns Filter" %}

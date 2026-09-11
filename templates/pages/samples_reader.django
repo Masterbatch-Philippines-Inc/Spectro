@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.django" %}
 {% load static %}
 
 {% block content %}
@@ -45,7 +45,7 @@
             Offline
           </span>
         </div>
-        {% include "components/shared/ui/button.html" with btn_id="connectBtn" btn_variant="primary" btn_label=" " btn_extra_class="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]" btn_icon_svg='<span class="spinner"></span><span class="btn-label" id="connectLabel">Connect to Instrument</span>' %}
+        {% include "components/shared/ui/button.django" with btn_id="connectBtn" btn_variant="primary" btn_label=" " btn_extra_class="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]" btn_icon_svg='<span class="spinner"></span><span class="btn-label" id="connectLabel">Connect to Instrument</span>' %}
 
         <div id="deviceInfo" style="display:none;">
           <div class="h-px bg-[hsl(var(--border))] my-4"></div>
@@ -78,13 +78,13 @@
             <div class="w-11 h-11 rounded-[9px] border border-[hsl(var(--border))] flex items-center justify-center relative bg-[#18181b]"><svg viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg></div>
             <div><div class="text-[10.5px] text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Scan</div><div class="text-[12.5px] font-semibold">Black Reference</div></div>
             <div class="progress-track h-[3px] w-full bg-[hsl(var(--accent))] rounded-full overflow-hidden mt-0.5" style="display:none;" id="blackTrack"><div class="progress-fill h-full w-0 bg-[hsl(var(--foreground))] rounded-full transition-[width] duration-150 linear" id="blackFill" style="width: 0%;"></div></div>
-            {% include "components/shared/ui/button.html" with btn_id="blackBtn" btn_variant="secondary" btn_disabled=True btn_label=" " btn_extra_class="calib-btn w-full border border-[hsl(var(--border))] rounded-md cursor-pointer hover:bg-[hsl(var(--accent))]" btn_icon_svg='<span class="spinner"></span><span class="btn-label">Calibrate</span>' %}
+            {% include "components/shared/ui/button.django" with btn_id="blackBtn" btn_variant="secondary" btn_disabled=True btn_label=" " btn_extra_class="calib-btn w-full border border-[hsl(var(--border))] rounded-md cursor-pointer hover:bg-[hsl(var(--accent))]" btn_icon_svg='<span class="spinner"></span><span class="btn-label">Calibrate</span>' %}
           </div>
           <div class="calib-cell border border-[hsl(var(--border))] rounded-[9px] p-3.5 text-center bg-[hsl(var(--card))] flex flex-col items-center gap-2.5 relative" id="whiteCell">
             <div class="calib-check absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full bg-[hsl(var(--success))] border-2 border-[hsl(var(--card))] items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" width="10" height="10" stroke="#fff"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
             <div class="w-11 h-11 rounded-[9px] border border-[hsl(var(--border))] flex items-center justify-center relative bg-white shadow-[inset_0_0_0_1px_#e4e4e7]"><svg viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg></div>
             <div><div class="text-[10.5px] text-[hsl(var(--muted-foreground))] uppercase tracking-wide">Scan</div><div class="text-[12.5px] font-semibold">White Reference</div></div>
-            {% include "components/shared/ui/button.html" with btn_id="whiteBtn" btn_variant="secondary" btn_disabled=True btn_label=" " btn_extra_class="calib-btn w-full border border-[hsl(var(--border))] rounded-md cursor-pointer hover:bg-[hsl(var(--accent))]" btn_icon_svg='<span class="spinner"></span><span class="btn-label">Calibrate</span>' %}
+            {% include "components/shared/ui/button.django" with btn_id="whiteBtn" btn_variant="secondary" btn_disabled=True btn_label=" " btn_extra_class="calib-btn w-full border border-[hsl(var(--border))] rounded-md cursor-pointer hover:bg-[hsl(var(--accent))]" btn_icon_svg='<span class="spinner"></span><span class="btn-label">Calibrate</span>' %}
           </div>
         </div>
       </div>
@@ -112,7 +112,7 @@
 
                 <div class="field mb-3.5 relative">
                   <label for="productCodeGlobal" class="block text-xs font-semibold mb-1.5">Product Code</label>
-                  {% include "components/shared/ui/input.html" with input_id="productCodeGlobal" input_type="text" input_placeholder="e.g. XX00000E" input_class="w-full py-2.5 rounded-lg" input_autocomplete="off" input_maxlength="10" %}
+                  {% include "components/shared/ui/input.django" with input_id="productCodeGlobal" input_type="text" input_placeholder="e.g. XX00000E" input_class="w-full py-2.5 rounded-lg" input_autocomplete="off" input_maxlength="10" %}
                   <div id="productCodeSuggestions" class="absolute left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-md max-h-[180px] overflow-y-auto z-50" style="display:none;"></div>
                   <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Format: <strong>XX00000E</strong>, <strong>XX00000E-I</strong>, <strong>XX-X00000E</strong>, or <strong>XX-X00000E-I</strong> (2 letters, optional "-" + 1 letter, 4 to 5 digits, then "E", with an optional "-I" suffix).</div>
                   <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="productCodeGlobalErr" style="display:none;">Invalid format — must be 2 letters, optional "-" + 1 letter, 4 to 5 digits, then "E", with an optional "-I" suffix.</div>
@@ -222,12 +222,12 @@
                 </div>
 
                 <div class="flex gap-2.5">
-                  {% include "components/shared/ui/button.html" with btn_id="measureBtn1" btn_variant="primary" btn_label=" " btn_extra_class="flex-[2] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]" btn_icon_svg='<span class="spinner"></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span class="btn-label" id="measureLabel1">Read Reference</span>' %}
+                  {% include "components/shared/ui/button.django" with btn_id="measureBtn1" btn_variant="primary" btn_label=" " btn_extra_class="flex-[2] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]" btn_icon_svg='<span class="spinner"></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span class="btn-label" id="measureLabel1">Read Reference</span>' %}
                   <div id="rereadStdBtnWrap" style="display:none;" class="flex-1">
-                    {% include "components/shared/ui/button.html" with btn_id="rereadStdBtn" btn_variant="secondary" btn_label="Re-read" btn_extra_class="w-full border border-[hsl(var(--border))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:bg-[hsl(var(--accent))] transition" %}
+                    {% include "components/shared/ui/button.django" with btn_id="rereadStdBtn" btn_variant="secondary" btn_label="Re-read" btn_extra_class="w-full border border-[hsl(var(--border))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:bg-[hsl(var(--accent))] transition" %}
                   </div>
                   <div id="saveStdBtnWrap" style="display:none;" class="flex-1">
-                    {% include "components/shared/ui/button.html" with btn_id="saveStdBtn" btn_variant="primary" btn_label="Accept Reading" btn_extra_class="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer hover:opacity-90 transition" %}
+                    {% include "components/shared/ui/button.django" with btn_id="saveStdBtn" btn_variant="primary" btn_label="Accept Reading" btn_extra_class="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer hover:opacity-90 transition" %}
                   </div>
                 </div>
               </div>
@@ -278,10 +278,10 @@
 
               <div class="flex-1 min-h-0 flex flex-col sm:flex-row gap-3">
                 <div class="w-full sm:w-[130px] shrink-0 flex flex-row sm:flex-col gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0">
-                  {% include "components/shared/ui/button.html" with btn_id="readLightBtn"     btn_variant="primary" btn_label=" "              btn_extra_class="w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label">Read Light</span>' %}
-                  {% include "components/shared/ui/button.html" with btn_id="readDarkBtn"      btn_variant="primary" btn_label=" "              btn_extra_class="w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label">Read Dark</span>' %}
-                  {% include "components/shared/ui/button.html" with btn_id="measureBtn2"      btn_variant="primary" btn_label=" "              btn_extra_class="w-full border bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label" id="measureLabel2">Read Sample</span>' %}
-                  {% include "components/shared/ui/button.html" with btn_id="finishSessionBtn" btn_variant="primary" btn_label="Save all reading" btn_extra_class="w-full border bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))] hover:opacity-90 transition" btn_disabled=True %}
+                  {% include "components/shared/ui/button.django" with btn_id="readLightBtn"     btn_variant="primary" btn_label=" "              btn_extra_class="w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label">Read Light</span>' %}
+                  {% include "components/shared/ui/button.django" with btn_id="readDarkBtn"      btn_variant="primary" btn_label=" "              btn_extra_class="w-full bg-[hsl(var(--card))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label">Read Dark</span>' %}
+                  {% include "components/shared/ui/button.django" with btn_id="measureBtn2"      btn_variant="primary" btn_label=" "              btn_extra_class="w-full border bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))] hover:opacity-90 transition" btn_icon_svg='<span class="btn-label" id="measureLabel2">Read Sample</span>' %}
+                  {% include "components/shared/ui/button.django" with btn_id="finishSessionBtn" btn_variant="primary" btn_label="Save all reading" btn_extra_class="w-full border bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))] hover:opacity-90 transition" btn_disabled=True %}
                 </div>
 
                 <div class="flex-1 min-w-0 w-full border border-[hsl(var(--border))] rounded-lg overflow-auto relative">

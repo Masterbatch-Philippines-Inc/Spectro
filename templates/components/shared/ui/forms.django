@@ -5,7 +5,7 @@
    Shared form shell.
    Usage (from any page template):
 
-   {% include "components/shared/ui/forms.html" with
+   {% include "components/shared/ui/forms.django" with
        form_id="standardForm"
        form_action=some_url
        toast_stack="toastStack"

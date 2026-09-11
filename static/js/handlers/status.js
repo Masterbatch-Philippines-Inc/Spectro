@@ -2,7 +2,7 @@
 /*
  *  static/js/handlers/status.js
  *
- *  Populates templates/handlers/status.html based on the status code
+ *  Populates templates/handlers/status.django based on the status code
  *  Django rendered it with (see apps/spectro/modules/handlers.py).
  *  "Back to previous page" reads the last non-handler page visited,
  *  tracked in sessionStorage by app.js on every normal page load.

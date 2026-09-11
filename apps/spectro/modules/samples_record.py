@@ -471,7 +471,7 @@ def render_samples_record(request):
     context = {
         "search_product_codes_url": reverse("api_search_product_codes"),
     }
-    return render(request, "pages/samples_record.html", context)
+    return render(request, "pages/samples_record.django", context)
 
 
 @login_required

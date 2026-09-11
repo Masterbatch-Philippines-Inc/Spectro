@@ -7,7 +7,7 @@
  *  NEVER call fetch('http://localhost:5151/...') directly anymore --
  *  it calls the functions exported here instead.
  *
- *  Why this exists: samples_reader.html is unusable without a real
+ *  Why this exists: samples_reader.django is unusable without a real
  *  3NH instrument physically connected over BLE + the agent running.
  *  That makes it impossible to iterate on the wizard's UI/logic on a
  *  machine without the dongle. Flipping DEV to true below returns

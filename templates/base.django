@@ -13,13 +13,13 @@
   <body class="bg-background text-foreground font-sans transition-all duration-300">
     <div class="flex flex-col h-screen app bg-accent">
       <div class="flex-1 min-h-0 flex">
-        {% include "components/shared/global/sidebar.html" %}
+        {% include "components/shared/global/sidebar.django" %}
         <div id="sidebarBackdrop" class="hidden fixed inset-0 bg-black/40 z-30 md:hidden"></div>
         <main class="flex-1 min-w-0 flex flex-col overflow-hidden rounded-xl m-2 sm:m-4 bg-card shadow-md">
-        {% include "components/shared/global/header.html" %}
+        {% include "components/shared/global/header.django" %}
         {% block content %}{% endblock %}
-        {% include "components/shared/global/footer.html" %}
-        {% include "components/shared/ui/toast.html" %}
+        {% include "components/shared/global/footer.django" %}
+        {% include "components/shared/ui/toast.django" %}
         {% if messages %}
           <script>
             window.addEventListener('load', function () {
@@ -29,11 +29,11 @@
             });
           </script>
         {% endif %}
-        {% include "components/shared/ui/tooltip.html" %}
+        {% include "components/shared/ui/tooltip.django" %}
         </main>
       </div>
     </div>
-    {% include "components/shared/global/modals.html" %}
+    {% include "components/shared/global/modals.django" %}
     <script type="module" src="{% static 'js/base.js' %}"></script>
     {% block extra_js %}{% endblock %}
   </body>

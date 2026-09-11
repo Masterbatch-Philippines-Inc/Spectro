@@ -4,7 +4,7 @@ Shared scatter-graph SHELL only. Markup/ids are identical on every
 page -- what differs (data source, legend dot color, footnote copy,
 tooltip content) is supplied per page via params here + per-page JS.
 
-  {% include "components/shared/ui/scatter_graph.html" with
+  {% include "components/shared/ui/scatter_graph.django" with
       passed_dot_class="bg-muted-foreground/50"
       note_text="Tick rows in the table to filter which points are plotted." %}
 

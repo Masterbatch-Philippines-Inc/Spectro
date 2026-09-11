@@ -1,7 +1,7 @@
 
 /*
  *  Generic "menu"-variant dropdown handler.
- *  Works for any button+panel pair produced by dropdown.html's
+ *  Works for any button+panel pair produced by dropdown.django's
  *  dropdown_type="menu" branch, keyed off [data-dropdown-menu].
  *  No page-specific logic here -- selecting an option is the
  *  including page's responsibility (bind your own listeners to

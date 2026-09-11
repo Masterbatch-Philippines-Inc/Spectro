@@ -3,8 +3,8 @@
  *  Generic scatter-graph render engine.
  *  Paints into #scatterPoints (sidebar) and #scatterPointsModal (modal),
  *  reading whatever window.getScatterPlotPoints() returns. That function
- *  is defined per-page (samples_record.html reads its dataset table;
- *  samples_reader.html reads its live wizard session) -- this file has
+ *  is defined per-page (samples_record.django reads its dataset table;
+ *  samples_reader.django reads its live wizard session) -- this file has
  *  zero knowledge of where the points came from.
  *
  *  Axis range auto-scales to the data instead of a fixed -1..1: the
