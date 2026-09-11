@@ -25,6 +25,7 @@
   --color-warn-bg: hsl(var(--warn-bg));
   --color-warn-border: hsl(var(--warn-border));
   --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrainsMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --radius-xl: 12px;
   --radius-lg: 10px;
   --radius-md: 8px;

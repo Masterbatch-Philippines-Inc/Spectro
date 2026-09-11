@@ -2,6 +2,6 @@
   <div class="min-w-0">
   <div id="footerDate" class="hidden sm:inline whitespace-nowrap"></div>
   </div>
-    <a href="https://github.com/Masterbatch-Philippines-Inc/Spectro" class="text-center whitespace-nowrap font-bold">@Spectro</a>
+    <a href="https://github.com/Masterbatch-Philippines-Inc/Spectro" class="text-[14px] text-center whitespace-nowrap font-bold">Spectro</a>
   <div class="hidden sm:block text-right whitespace-nowrap">Version 0.0.4</div>
 </footer>

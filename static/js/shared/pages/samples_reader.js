@@ -1991,8 +1991,8 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       // so they must never be editable from Step 3.
       const identityLocked = !!row.dbLotSampleId;
       const lotCell = identityLocked
-        ? '<td class="py-[7px] px-2.5"><span class="lot-number-display font-mono text-sm font-semibold">' + row.name + '</span></td>'
-        : '<td class="py-[7px] px-2.5" data-action="lotNumber" tabindex="0"><span class="lot-number-display font-mono text-sm font-semibold cursor-text underline decoration-dotted">' + row.name + '</span></td>';
+        ? '<td class="py-[7px] px-2.5"><span class="lot-number-display font-mono text-sm">' + row.name + '</span></td>'
+        : '<td class="py-[7px] px-2.5" data-action="lotNumber" tabindex="0"><span class="lot-number-display font-mono text-sm cursor-text underline decoration-dotted">' + row.name + '</span></td>';
       const bagCell = identityLocked
         ? '<td class="py-[7px] px-2.5"><span class="bag-display font-mono text-sm">' + (row.bag ? row.bag : '<span class="text-muted-foreground">N/A</span>') + '</span></td>'
         : '<td class="py-[7px] px-2.5" data-action="bag" tabindex="0"><span class="bag-display font-mono text-sm cursor-text underline decoration-dotted">' + (row.bag ? row.bag : '<span class="text-muted-foreground italic">Click to add…</span>') + '</span></td>';
@@ -2007,7 +2007,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         + ' class="cursor-pointer hover:bg-accent border-b border-border' + selectedCls + '">'
         + '<td class="py-[7px] px-2.5 text-center"><div class="flex items-center justify-center" data-tooltip="Spectro Judgement: ' + dotTooltip + '"><span class="w-2.5 h-2.5 rounded-full inline-block ' + dotClass + '"></span></div></td>'
         + (identityLocked ? '<td class="py-[7px] px-2.5"></td>' : '<td class="py-[7px] px-2.5 text-center"><button type="button" data-action="delete" title="Delete this reading" class="w-6 h-6 rounded flex items-center justify-center text-muted-foreground hover:bg-danger-bg hover:text-danger cursor-pointer"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg></button></td>')
-        + '<td class="py-[7px] px-2.5 whitespace-nowrap" style="background:' + toCssBackgroundColor(row.colorSimulation) + '; color:' + textColorForHex(row.colorSimulation) + ';"><span class="font-mono text-sm font-semibold">' + row.colorSimulation + '</span></td>'
+        + '<td class="py-[7px] px-2.5 whitespace-nowrap" style="background:' + toCssBackgroundColor(row.colorSimulation) + '; color:' + textColorForHex(row.colorSimulation) + ';"><span class="font-mono text-sm">' + row.colorSimulation + '</span></td>'
         + '<td class="py-[7px] px-2.5 font-mono text-sm whitespace-nowrap">' + row.dateTime + rereadBadge + '</td>'
         + lotCell
         + bagCell
@@ -2033,6 +2033,8 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       historyTableBody.innerHTML = ids.map(function (id) { return renderRow(rows[id]); }).join('');
       if (historyEmpty) historyEmpty.style.display = ids.length ? 'none' : 'flex';
       if (historyCount) historyCount.textContent = ids.length + ' Sample' + (ids.length === 1 ? '' : 's');
+      const samplesTableWrap = document.getElementById('samplesTableWrap');
+      if (samplesTableWrap) samplesTableWrap.style.overflow = ids.length ? 'auto' : 'hidden';
       renderScatter();
       if (window.refreshFinishReadingState) window.refreshFinishReadingState();
       refreshReadSampleGate();

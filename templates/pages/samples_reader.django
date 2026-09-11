@@ -284,7 +284,7 @@
                   {% include "components/shared/ui/button.django" with btn_id="finishSessionBtn" btn_variant="primary" btn_label="Save all reading" btn_extra_class="w-full border bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))] hover:opacity-90 transition" btn_disabled=True %}
                 </div>
 
-                <div class="flex-1 min-w-0 w-full border border-[hsl(var(--border))] rounded-lg overflow-auto relative">
+                <div class="flex-1 min-w-0 w-full border border-[hsl(var(--border))] rounded-lg relative" id="samplesTableWrap">
                   <table class="w-full text-[11.5px] border-collapse" id="samplesTable">
                     <thead>
                       <tr>

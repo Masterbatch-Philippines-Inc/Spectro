@@ -184,21 +184,6 @@ export function initSamplesRecordPage(urls) {
       width: 'w-9',
     },
     {
-      renderHeader: function () {
-        return '<div class="flex items-center justify-center py-2"><input type="checkbox" id="selectAllCheckbox" class="w-3.5 h-3.5 accent-white cursor-pointer"></div>';
-      },
-      renderCell: function (row) {
-        // LT/DR reference rows can't be carried into a re-read session --
-        // disable their checkbox entirely rather than allow ticking them.
-        if (isReferenceRow(row)) {
-          return '<div class="flex items-center justify-center" data-tooltip="Reference rows cannot be re-read from here"><input type="checkbox" class="row-checkbox w-3.5 h-3.5 accent-foreground cursor-not-allowed" data-row-id="' + row.id + '" disabled></div>';
-        }
-        const checked = selectedRows.has(String(row.id)) ? 'checked' : '';
-        return '<div class="flex items-center justify-center"><input type="checkbox" class="row-checkbox w-3.5 h-3.5 accent-foreground cursor-pointer" data-row-id="' + row.id + '" ' + checked + '></div>';
-      },
-      width: 'w-[38px]',
-    },
-    {
       renderHeader: function () { return ''; },
       renderCell: function (row) {
         let icon;
@@ -214,6 +199,21 @@ export function initSamplesRecordPage(urls) {
         return '<div class="flex items-center justify-center" data-tooltip="' + (row.qcMessage || '') + '">' + icon + '</div>';
       },
       width: 'w-9',
+    },
+    {
+      renderHeader: function () {
+        return '<div class="flex items-center justify-center py-2"><input type="checkbox" id="selectAllCheckbox" class="w-3.5 h-3.5 accent-foreground cursor-pointer"></div>';
+      },
+      renderCell: function (row) {
+        // LT/DR reference rows can't be carried into a re-read session --
+        // disable their checkbox entirely rather than allow ticking them.
+        if (isReferenceRow(row)) {
+          return '<div class="flex items-center justify-center" data-tooltip="Reference rows cannot be re-read from here"><input type="checkbox" class="row-checkbox w-3.5 h-3.5 accent-foreground cursor-not-allowed" data-row-id="' + row.id + '" disabled></div>';
+        }
+        const checked = selectedRows.has(String(row.id)) ? 'checked' : '';
+        return '<div class="flex items-center justify-center"><input type="checkbox" class="row-checkbox w-3.5 h-3.5 accent-foreground cursor-pointer" data-row-id="' + row.id + '" ' + checked + '></div>';
+      },
+      width: 'w-[38px]',
     },
   ];
 
@@ -482,7 +482,9 @@ export function initSamplesRecordPage(urls) {
         const selectAllCheckbox = document.getElementById('selectAllCheckbox');
         if (!selectAllCheckbox) return;
         const selectableRows = dataset.filter(function (r) { return !isReferenceRow(r); });
-        selectAllCheckbox.checked = selectableRows.length > 0 && selectableRows.every(function (r) { return selectedRows.has(String(r.id)); });
+        const selectedCount = selectableRows.filter(function (r) { return selectedRows.has(String(r.id)); }).length;
+        selectAllCheckbox.checked = selectableRows.length > 0 && selectedCount === selectableRows.length;
+        selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < selectableRows.length;
         selectAllCheckbox.addEventListener('change', function () {
           if (selectAllCheckbox.checked) {
             selectableRows.forEach(function (r) { selectedRows.add(String(r.id)); });
@@ -509,7 +511,9 @@ export function initSamplesRecordPage(urls) {
             const allCheckbox = document.getElementById('selectAllCheckbox');
             if (allCheckbox) {
               const selectableRows = dataset.filter(function (r) { return !isReferenceRow(r); });
-              allCheckbox.checked = selectableRows.length > 0 && selectableRows.every(function (r) { return selectedRows.has(String(r.id)); });
+              const selectedCount = selectableRows.filter(function (r) { return selectedRows.has(String(r.id)); }).length;
+              allCheckbox.checked = selectableRows.length > 0 && selectedCount === selectableRows.length;
+              allCheckbox.indeterminate = selectedCount > 0 && selectedCount < selectableRows.length;
             }
 
             renderScatter();

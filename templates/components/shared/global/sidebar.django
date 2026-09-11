@@ -1,6 +1,6 @@
 {% load static %}
 {% if user.is_authenticated %}
-<aside id="sidebar" class="flex w-[230px] max-w-[80vw] overflow-hidden shrink-0 bg-accent flex-col fixed md:static inset-y-0 left-0 z-40 shadow-xl md:shadow-none" style="transition: transform .3s ease-in-out, width .25s ease;">
+<aside id="sidebar" class="flex w-[230px] max-w-[80vw] overflow-hidden shrink-0 bg-accent flex-col fixed md:static inset-y-0 left-0 z-40 shadow-xl md:shadow-none rounded-r-2xl" style="transition: transform .3s ease-in-out, width .25s ease;">
   <div id="sidebarContent" class="w-full flex flex-col h-full">
     <div class="flex items-center gap-2.5 px-4 py-3.5 mt-4">
       <img
@@ -44,16 +44,16 @@
     </div>
     <!-- Plot Graph -->
     {% if request.resolver_match.url_name == 'samples_record' %}
-      {% include "components/shared/ui/scatter_graph.django" with passed_dot_class="bg-muted-foreground/50" note_text="Tick rows in the table to filter which points are plotted." %}
+      {% include "components/shared/ui/scatter_graph.django" with passed_dot_class="bg-muted-foreground/50" note_text="Tip: Tick checkboxes in the table to filter which points are plotted." %}
     {% elif request.resolver_match.url_name == 'samples_reader' %}
-      {% include "components/shared/ui/scatter_graph.django" with passed_dot_class="bg-muted-foreground/50" note_text="Updates live as samples are read this session." %}
+      {% include "components/shared/ui/scatter_graph.django" with passed_dot_class="bg-muted-foreground/50" note_text="Tip: Live updates will be provided as samples are read during this session." %}
     {% else %}
       {% include "components/shared/ui/scatter_graph.django" with passed_dot_class="bg-muted-foreground/50" note_text="Select a page to view the graph." %}
     {% endif %}
     <!-- Account Nav. -->
     <nav id="sidebarAccount" class="p-2.5 mb-2 flex flex-col gap-0.5">
       <div class="relative" data-dropdown-menu>
-        <button data-sidebar="menu-button" data-size="lg" data-active="false" class="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[12.5px] font-medium text-foreground bg-card text-foreground w-full" type="button" id="accountMenuBtn" aria-haspopup="menu">
+        <button data-sidebar="menu-button" data-size="lg" data-active="false" class="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[12.5px] font-medium text-foreground bg-card text-foreground w-full shadow-md" type="button" id="accountMenuBtn" aria-haspopup="menu">
           <span data-slot="avatar" data-size="default" class="group/avatar relative flex size-8 shrink-0 overflow-hidden select-none data-[size=lg]:size-10 data-[size=sm]:size-6 h-8 w-8 rounded-lg grayscale">
             <span data-slot="avatar-fallback" class="flex size-full items-center justify-center bg-muted text-sm border border-border  text-foreground group-data-[size=sm]/avatar:text-xs rounded-lg">
             {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}

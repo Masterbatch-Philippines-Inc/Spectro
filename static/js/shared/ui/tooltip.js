@@ -27,6 +27,20 @@ function showTooltip(target, evt) {
   moveTooltip(evt);
 }
 
+// "Spectro Judgement: Pass" / "Spectro Judgement: Fail" tooltips get
+// their verdict word colored -- green for Pass, red for Fail -- while
+// every other tooltip (including "Spectro Judgement: -") stays plain.
+function updateTooltipJudgementColor(target) {
+  const tooltip = document.getElementById('uiTooltip');
+  if (!tooltip) return;
+  const text = target.getAttribute('data-tooltip') || '';
+  const match = text.match(/^Spectro Judgement:\s*(Pass|Fail)$/i);
+  if (!match) return;
+  const verdict = match[1];
+  const color = verdict.toLowerCase() === 'pass' ? 'hsl(var(--success))' : 'hsl(var(--danger))';
+  tooltip.innerHTML = 'Spectro Judgement: <span style="color:' + color + '; font-weight:700;">' + verdict + '</span>';
+}
+
 function moveTooltip(evt) {
   const tooltip = document.getElementById('uiTooltip');
   if (!tooltip || tooltip.classList.contains('hidden')) return;
@@ -50,6 +64,7 @@ export function initTooltips() {
     // same tooltip target
     if (target.contains(e.relatedTarget)) return;
     showTooltip(target, e);
+    updateTooltipJudgementColor(target);
   });
 
   document.addEventListener('mousemove', function (e) {

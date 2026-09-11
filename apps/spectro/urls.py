@@ -8,20 +8,20 @@ urlpatterns = [
 
     # Forgot Password
     path("forgot-password/", auth_views.PasswordResetView.as_view(
-        template_name="pages/auth/password_reset_form.html",
-        email_template_name="pages/auth/password_reset_email.html",
+        template_name="pages/auth/password_reset_form.django",
+        email_template_name="pages/auth/password_reset_email.django",
         subject_template_name="pages/auth/password_reset_subject.txt",
         success_url="/forgot-password/sent/",
     ), name="password_reset"),
     path("forgot-password/sent/", auth_views.PasswordResetDoneView.as_view(
-        template_name="pages/auth/password_reset_done.html",
+        template_name="pages/auth/password_reset_done.django",
     ), name="password_reset_done"),
     path("forgot-password/confirm/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(
-        template_name="pages/auth/password_reset_confirm.html",
+        template_name="pages/auth/password_reset_confirm.django",
         success_url="/forgot-password/complete/",
     ), name="password_reset_confirm"),
     path("forgot-password/complete/", auth_views.PasswordResetCompleteView.as_view(
-        template_name="pages/auth/password_reset_complete.html",
+        template_name="pages/auth/password_reset_complete.django",
     ), name="password_reset_complete"),
  
     # Samples Reader

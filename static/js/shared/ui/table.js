@@ -119,14 +119,14 @@ export function createDataTable(opts) {
     let html = '';
 
     leadingColumns.forEach(function (lc, idx) {
-      html += '<th data-col-index="' + idx + '" class="th-sticky bg-foreground text-primary-foreground ' + (lc.width || '') + ' border-b border-r border-foreground">' + lc.renderHeader() + '</th>';
+      html += '<th data-col-index="' + idx + '" class="th-sticky bg-accent text-primary ' + (lc.width || '') + ' border-b border-border/70">' + lc.renderHeader() + '</th>';
     });
 
     visibleColumns().forEach(function (col, idx) {
       const isSorted = sortState.key === col.key;
       const arrowUp = isSorted && sortState.dir === 'asc';
-      const base = col.headerClass || 'bg-foreground text-primary-foreground';
-      html += '<th data-col-key="' + col.key + '" data-col-index="' + (idx + colOffset()) + '" style="' + widthStyle(col) + '" class="th-sticky relative ' + base + ' border-b border-r border-foreground whitespace-nowrap font-bold text-[10.5px] uppercase tracking-wide">'
+      const base = col.headerClass || 'bg-accent text-primary';
+      html += '<th data-col-key="' + col.key + '" data-col-index="' + (idx + colOffset()) + '" style="' + widthStyle(col) + '" class="th-sticky relative ' + base + ' border-b border-border/70 whitespace-nowrap font-bold text-[12px] uppercase tracking-wide">'
         + '<button type="button" class="th-btn flex items-center gap-1.5 px-2.5 py-2 w-full hover:bg-white/10" data-sort-key="' + col.key + '">'
         + '<span>' + col.label + '</span>'
         + '<svg class="w-[9px] h-[9px] shrink-0 ' + (isSorted ? 'opacity-100' : 'opacity-35') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">'
