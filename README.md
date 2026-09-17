@@ -191,6 +191,8 @@ pnpm install
 
 ### Step 2: Configure environment variables
 
+`DJANGO_DEV_INSTRUMENT_SOURCE` toggles the Samples Reader's spectrometer source: `True` uses fake-but-plausible readings (no hardware/dongle needed), `False` talks to the real local agent. No code edit needed to switch — just update `.env` and reload.
+
 #### a. Copy `.env.example` to `.env`, run terminal in same directory and run:
 ```bash
 copy .env.example .env
