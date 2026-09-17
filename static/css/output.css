@@ -585,6 +585,9 @@
   .w-\[230px\] {
     width: 230px;
   }
+  .w-\[240px\] {
+    width: 240px;
+  }
   .w-\[min\(420px\,calc\(100vw-32px\)\)\] {
     width: min(420px, calc(100vw - 32px));
   }
@@ -1004,6 +1007,9 @@
   .p-10 {
     padding: calc(var(--spacing) * 10);
   }
+  .px-0\.5 {
+    padding-inline: calc(var(--spacing) * 0.5);
+  }
   .px-1 {
     padding-inline: var(--spacing);
   }
@@ -1216,6 +1222,9 @@
   }
   .whitespace-nowrap {
     white-space: nowrap;
+  }
+  .whitespace-pre {
+    white-space: pre;
   }
   .text-\[\#a1a1aa\] {
     color: #a1a1aa;
@@ -1842,6 +1851,14 @@ th.col-sticky {
 .mode-card.selected {
   border-color: hsl(var(--foreground));
   background: hsl(var(--accent));
+}
+.mention-input {
+  color: transparent !important;
+  caret-color: hsl(var(--foreground));
+}
+.mention-input::placeholder {
+  color: hsl(var(--muted-foreground));
+  opacity: 1;
 }
 .glow-border {
   animation: glowBorder 1.6s ease-in-out 3;

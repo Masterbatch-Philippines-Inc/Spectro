@@ -260,12 +260,22 @@ export function createDataTable(opts) {
   }
 
   function applySearch(query) {
-    const q = (query || '').trim().toLowerCase();
+    // query: a plain string (substring match) OR a predicate function
+    // (row) => boolean, used by @column: keyword targeted search.
+    const isFn = typeof query === 'function';
+    const q = isFn ? null : (query || '').trim().toLowerCase();
     let visibleCount = 0;
     if (tableBody) {
+      const dataset = getDataset();
       tableBody.querySelectorAll('tr').forEach(function (tr) {
-        const text = tr.textContent.toLowerCase();
-        const match = !q || text.includes(q);
+        let match;
+        if (isFn) {
+          const row = dataset.find(function (r) { return String(r.id) === String(tr.dataset.rowId); });
+          match = row ? query(row) : false;
+        } else {
+          const text = tr.textContent.toLowerCase();
+          match = !q || text.includes(q);
+        }
         tr.style.display = match ? '' : 'none';
         if (match) visibleCount++;
       });

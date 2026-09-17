@@ -7,6 +7,20 @@ import { createDataTable } from "../ui/table.js";
 import { showToast } from "../global/toast.js";
 import { renderScatter } from "../ui/scatter_graph.js";
 import { getCsrfToken } from "../utils/csrf.js";
+import { createMentionSearch } from "../ui/search_mentions.js";
+
+// Row-key -> "@slug" mapping for targeted search. Excludes the first 3
+// columns (colorSimulation, dateTime, stickerLot) and last 2
+// (specialPass, specialPassBy) per spec.
+const MENTION_SLUGS = {
+  bag: 'bag', internalLot: 'internal-lot', de00: 'delta-e00',
+  L: 'raw-l', C: 'raw-c', h: 'raw-h', a: 'raw-a', b: 'raw-b',
+  dL: 'delta-l', dC: 'delta-c', dH: 'delta-h', da: 'delta-a', db: 'delta-b',
+  colorOffset: 'color-offset', spectroJudgement: 'spectro-judgement',
+  stdDeUsed: 'std-de-used', visualJudgement: 'visual-judgement',
+  finalQcEval: 'final-qc-eval', reasonIfFail: 'reason-if-fail',
+  spectroRemarks: 'spectro-remarks',
+};
 
 // sessionStorage key the Samples Reader wizard reads on load to pick up
 // a "Re-Read Selected Samples" carry-over payload. See
@@ -131,6 +145,11 @@ export function initSamplesRecordPage(urls) {
       }
     },
   ];
+
+  const MENTION_COLUMNS = COLUMNS
+    .slice(3, COLUMNS.length - 2)
+    .filter(function (c) { return MENTION_SLUGS[c.key]; })
+    .map(function (c) { return { slug: MENTION_SLUGS[c.key], label: c.label, key: c.key }; });
 
   let dataset = [];
   let selectedRows = new Set();
@@ -720,11 +739,8 @@ export function initSamplesRecordPage(urls) {
               } catch (e) { /* sessionStorage unavailable -- nothing to restore */ }
               if (savedQuery && searchInput && !searchInput.disabled) {
                 searchInput.value = savedQuery;
-                const visibleCount = dataTable.applySearch(savedQuery);
-                const showNoResults = visibleCount === 0;
-                noResultsState.classList.toggle('hidden', !showNoResults);
-                noResultsState.classList.toggle('flex', showNoResults);
-                setTableAreaOverflowLocked(showNoResults);
+                if (mentionSearch) mentionSearch.refresh();
+                applyCurrentSearch();
               }
             }
           })
@@ -876,24 +892,40 @@ export function initSamplesRecordPage(urls) {
     function setTableAreaOverflowLocked(locked) {
       if (!tableArea) return;
       tableArea.style.overflow = locked ? 'hidden' : '';
+      // the no-results placeholder is absolutely positioned inside this
+      // scrollable container -- if it was scrolled right, the overlay
+      // would render off to the left of the visible viewport
+      if (locked) tableArea.scrollLeft = 0;
+    }
+
+    let mentionSearch = null;
+
+    function applyCurrentSearch() {
+      const value = searchInput.value;
+      const matcher = mentionSearch ? mentionSearch.buildMatcher() : null;
+      const visibleCount = dataTable.applySearch(matcher !== null ? matcher : value);
+      const q = value.trim();
+      const showNoResults = !!q && visibleCount === 0;
+      noResultsState.classList.toggle('hidden', !showNoResults);
+      noResultsState.classList.toggle('flex', showNoResults);
+      setTableAreaOverflowLocked(showNoResults);
+
+      try {
+        if (q) {
+          sessionStorage.setItem(SEARCH_SESSION_KEY, value);
+        } else {
+          sessionStorage.removeItem(SEARCH_SESSION_KEY);
+        }
+      } catch (e) { /* sessionStorage unavailable -- fail silently */ }
     }
 
     if (searchInput) {
-      searchInput.addEventListener('input', function () {
-        const visibleCount = dataTable.applySearch(searchInput.value);
-        const q = searchInput.value.trim();
-        const showNoResults = !!q && visibleCount === 0;
-        noResultsState.classList.toggle('hidden', !showNoResults);
-        noResultsState.classList.toggle('flex', showNoResults);
-        setTableAreaOverflowLocked(showNoResults);
-
-        try {
-          if (q) {
-            sessionStorage.setItem(SEARCH_SESSION_KEY, searchInput.value);
-          } else {
-            sessionStorage.removeItem(SEARCH_SESSION_KEY);
-          }
-        } catch (e) { /* sessionStorage unavailable -- fail silently */ }
+      const searchMentionPanel = document.getElementById('searchMentionPanel');
+      mentionSearch = createMentionSearch({
+        inputEl: searchInput,
+        panelEl: searchMentionPanel,
+        columns: MENTION_COLUMNS,
+        onChange: applyCurrentSearch,
       });
     }
 
@@ -901,6 +933,7 @@ export function initSamplesRecordPage(urls) {
     if (noResultsClearBtn) {
       noResultsClearBtn.addEventListener('click', function () {
         searchInput.value = '';
+        if (mentionSearch) mentionSearch.refresh();
         dataTable.applySearch('');
         try { sessionStorage.removeItem(SEARCH_SESSION_KEY); } catch (e) {}
         noResultsState.classList.add('hidden');
