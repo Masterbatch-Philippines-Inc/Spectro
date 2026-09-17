@@ -137,7 +137,7 @@ function paintScatterGroup(axisGroup, pointsGroup, points, range, tooltipId) {
     const isStd = pt.kind === 'standard';
     const isDarkStd = pt.kind === 'dark';
     const isLightStd = pt.kind === 'light';
-    const fixedColor = isStd ? '#17181f' : (isDarkStd ? '#BD93F9' : (isLightStd ? '#F1FA8C' : null));
+    const fixedColor = pt.color || (isStd ? '#17181f' : (isDarkStd ? '#BD93F9' : (isLightStd ? '#F1FA8C' : null)));
     const isSelected = !!pt.selected;
 
     const dot = document.createElementNS(SVG_NS, 'circle');

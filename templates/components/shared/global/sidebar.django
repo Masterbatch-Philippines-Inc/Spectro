@@ -46,7 +46,7 @@
     {% if request.resolver_match.url_name == 'samples_record' %}
       {% include "components/shared/ui/scatter_graph.django" with passed_dot_class="bg-muted-foreground/50" note_text="Tip: Tick checkboxes in the table to filter which points are plotted." %}
     {% elif request.resolver_match.url_name == 'samples_reader' %}
-      {% include "components/shared/ui/scatter_graph.django" with passed_dot_class="bg-muted-foreground/50" note_text="Updates live as samples are read this session." hide_selected_legend=True %}
+      {% include "components/shared/ui/scatter_graph.django" with passed_dot_class="bg-muted-foreground/50" note_text="Updates live as samples are read this session." hide_selected_legend=True standard_dot_color="#3b82f6" %}
     {% else %}
       {% include "components/shared/ui/scatter_graph.django" with passed_dot_class="bg-muted-foreground/50" note_text="Select a page to view the graph." %}
     {% endif %}

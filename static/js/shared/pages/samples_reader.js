@@ -622,6 +622,8 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
         showToast('toastStack', 'Standard raw values save into session', 'info');
 
+        renderScatter();
+
         completedSteps.add(2);
         renderStepper();
         if (window.lockStep2CardsAfterStep3) window.lockStep2CardsAfterStep3();
@@ -740,6 +742,20 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     const historyTableBody = document.getElementById('historyTableBody');
     if (!historyTableBody) return [];
     const points = [];
+    if (wizardStandard.raw && wizardStandard.raw.raw_l !== null && wizardStandard.raw.raw_l !== undefined) {
+      points.push({
+        id: 'wizard-standard',
+        name: wizardStandard.standardName || 'Standard',
+        da: 0,
+        db: 0,
+        rawA: wizardStandard.standardA,
+        rawB: wizardStandard.standardB,
+        passed: true,
+        pending: false,
+        kind: 'standard',
+        color: '#3b82f6',
+      });
+    }
     historyTableBody.querySelectorAll('tr[data-row-id]').forEach(function (tr) {
       const da = parseFloat(tr.dataset.da);
       const db = parseFloat(tr.dataset.db);
@@ -894,12 +910,12 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // server again. Toast only, no inline "saved" chip (that's reserved
     // for genuinely new codes going through saveProductCode()).
     function renderStandardHistoryCard(data) {
-      const card = document.getElementById('standardHistoryCard');
       const list = document.getElementById('standardHistoryList');
       const emptyEl = document.getElementById('standardHistoryEmpty');
-      if (!card || !list) return;
+      const placeholder = document.getElementById('standardHistoryPlaceholder');
+      if (!list) return;
+      if (placeholder) placeholder.style.display = 'none';
       const standards = data.standards || [];
-      card.style.display = 'block';
       if (!standards.length) {
         list.innerHTML = '';
         if (emptyEl) emptyEl.style.display = 'block';
@@ -917,8 +933,12 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     }
 
     function hideStandardHistoryCard() {
-      const card = document.getElementById('standardHistoryCard');
-      if (card) card.style.display = 'none';
+      const list = document.getElementById('standardHistoryList');
+      const emptyEl = document.getElementById('standardHistoryEmpty');
+      const placeholder = document.getElementById('standardHistoryPlaceholder');
+      if (list) list.innerHTML = '';
+      if (emptyEl) emptyEl.style.display = 'none';
+      if (placeholder) placeholder.style.display = 'flex';
     }
 
     function refreshStandardHistoryCard() {

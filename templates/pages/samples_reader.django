@@ -107,139 +107,140 @@
           <div id="step2LockedContent" class="opacity-40 pointer-events-none select-none transition-opacity duration-300">
             <div id="productCodeStep" class="mt-4">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-              <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
-                <p class="text-sm font-semibold m-0">Product Code</p>
-                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Start typing to match an existing code, or add a new one and press Enter to save.</p>
+                <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
+                  <p class="text-sm font-semibold m-0">Product Code</p>
+                  <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Start typing to match an existing code, or add a new one and press Enter to save.</p>
 
-                <div class="field mb-3.5 relative">
-                  <label for="productCodeGlobal" class="block text-xs font-semibold mb-1.5">Product Code</label>
-                  {% include "components/shared/ui/input.django" with input_id="productCodeGlobal" input_type="text" input_placeholder="e.g. XX00000E" input_class="w-full py-2.5 rounded-lg" input_autocomplete="off" input_maxlength="10" %}
-                  <div id="productCodeSuggestions" class="absolute left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-md max-h-[180px] overflow-y-auto z-50" style="display:none;"></div>
-                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Format: <strong>XX00000E</strong>, <strong>XX00000E-I</strong>, <strong>XX-X00000E</strong>, or <strong>XX-X00000E-I</strong> (2 letters, optional "-" + 1 letter, 4 to 5 digits, then "E", with an optional "-I" suffix).</div>
-                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="productCodeGlobalErr" style="display:none;">Invalid format — must be 2 letters, optional "-" + 1 letter, 4 to 5 digits, then "E", with an optional "-I" suffix.</div>
-                  <div class="hint text-[11px] text-[hsl(var(--success))] mt-[5px] leading-relaxed" id="productCodeGlobalMatch" style="display:none;">Matched an existing product code — its saved standards will be available below.</div>
-                  <div class="flex items-center gap-1.5 mt-[5px]" id="productCodeSavedChip" style="display:none;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--success))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    <span class="text-[11px] font-semibold text-[hsl(var(--success))]">Product code saved — <span id="productCodeSavedValue"></span></span>
+                  <div class="field mb-3.5 relative">
+                    <label for="productCodeGlobal" class="block text-xs font-semibold mb-1.5">Product Code</label>
+                    {% include "components/shared/ui/input.django" with input_id="productCodeGlobal" input_type="text" input_placeholder="e.g. XX00000E" input_class="w-full py-2.5 rounded-lg" input_autocomplete="off" input_maxlength="10" %}
+                    <div id="productCodeSuggestions" class="absolute left-0 right-0 mt-1 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-md max-h-[180px] overflow-y-auto z-50" style="display:none;"></div>
+                    <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Format: <strong>XX00000E</strong>, <strong>XX00000E-I</strong>, <strong>XX-X00000E</strong>, or <strong>XX-X00000E-I</strong> (2 letters, optional "-" + 1 letter, 4 to 5 digits, then "E", with an optional "-I" suffix).</div>
+                    <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="productCodeGlobalErr" style="display:none;">Invalid format — must be 2 letters, optional "-" + 1 letter, 4 to 5 digits, then "E", with an optional "-I" suffix.</div>
+                    <div class="hint text-[11px] text-[hsl(var(--success))] mt-[5px] leading-relaxed" id="productCodeGlobalMatch" style="display:none;">Matched an existing product code — its saved standards will be available below.</div>
+                    <div class="flex items-center gap-1.5 mt-[5px]" id="productCodeSavedChip" style="display:none;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--success))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      <span class="text-[11px] font-semibold text-[hsl(var(--success))]">Product code saved — <span id="productCodeSavedValue"></span></span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div id="standardHistoryCard" class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4" style="display:none;">
-                <p class="text-sm font-semibold m-0">Standards Used</p>
-                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Existing standards recorded under this product code - latest active one is highlighted.</p>
-                <div id="standardHistoryList" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto"></div>
-                <div id="standardHistoryEmpty" class="text-[12px] text-[hsl(var(--muted-foreground))] italic" style="display:none;">No standards recorded yet for this product code.</div>
-              </div>
+                <div id="standardHistoryCard" class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4 flex flex-col">
+                  <p class="text-sm font-semibold m-0">Standards Used</p>
+                  <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Existing standards recorded under this product code — latest active one is highlighted.</p>
+                  <div id="standardHistoryList" class="flex-1 flex flex-col gap-2 max-h-[220px] overflow-y-auto"></div>
+                  <div id="standardHistoryEmpty" class="text-[12px] text-[hsl(var(--muted-foreground))] italic" style="display:none;">No standards recorded yet for this product code.</div>
+                  <div id="standardHistoryPlaceholder" class="flex-1 flex items-center justify-center text-center text-[12px] text-[hsl(var(--muted-foreground))] italic">Select a product code first to see standards used here.</div>
+                </div>
               </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start" id="modeDetailsRow">
-            <div class="flex flex-col" id="modeColumnLeft">
-            <div id="modeSelect" class="relative">
-              <div id="modeSelectLockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
-                <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  Enter a valid product code above first
-                </div>
-              </div>
-              <div id="modeSelectContent" class="opacity-40 pointer-events-none select-none transition-opacity duration-300">
-                <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
-                  <p class="text-sm font-semibold m-0">What would you like to do?</p>
-                  <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Pick one — the fields below open automatically.</p>
-                  <div class="flex flex-col gap-2.5" id="modeCardGroup">
-                    <button type="button" class="mode-card flex items-start gap-3 border-[1.5px] border-[hsl(var(--border))] rounded-[10px] p-3.5 bg-[hsl(var(--card))] cursor-pointer text-left w-full transition hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))] border-[1.5px] border-[hsl(var(--border))]" id="modeCardNew" data-mode="new">
-                      <div class="mode-icon w-9 h-9 rounded-lg shrink-0 bg-[hsl(var(--accent))] border border-[hsl(var(--border))] flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg></div>
-                      <div class="mode-text flex-1 min-w-0"><div class="mode-title text-[13.5px] font-semibold mb-[3px]">New Standard + Sample</div><div class="mode-desc text-[11.5px] text-[hsl(var(--muted-foreground))] leading-relaxed">Register a brand-new product code and standard.</div></div>
-                    </button>
-                    <button type="button" class="mode-card flex items-start gap-3 border-[1.5px] border-[hsl(var(--border))] rounded-[10px] p-3.5 bg-[hsl(var(--card))] cursor-pointer text-left w-full transition hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))] border-[1.5px] border-[hsl(var(--border))]" id="modeCardExisting" data-mode="existing">
-                      <div class="mode-icon w-9 h-9 rounded-lg shrink-0 bg-[hsl(var(--accent))] border border-[hsl(var(--border))] flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-                      <div class="mode-text flex-1 min-w-0"><div class="mode-title text-[13.5px] font-semibold mb-[3px]">Use Existing Standard</div><div class="mode-desc text-[11.5px] text-[hsl(var(--muted-foreground))] leading-relaxed">Pick a product code and standard that already exist.</div></div>
-                    </button>
+              <div class="flex flex-col" id="modeColumnLeft">
+                <div id="modeSelect" class="relative">
+                  <div id="modeSelectLockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
+                    <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      Enter a valid product code above first
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            </div>
-            <div id="stepDetailsWrap" class="relative">
-              <div id="stepDetailsLockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
-                <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm text-center">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  Choose "New Standard + Sample" instead
-                </div>
-              </div>
-              <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4 opacity-40 pointer-events-none select-none transition-opacity duration-300" id="stepDetails">
-                <p class="text-sm font-semibold m-0">Standard Details</p>
-                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">New standard ΔE mandatory limit is <strong>1.00</strong>.</p>
-
-                <div class="seq-warning items-start gap-2 text-xs text-[hsl(var(--warn))] bg-[hsl(var(--warn-bg))] border border-[hsl(var(--warn-border))] rounded-lg py-2.5 px-3 mb-4 leading-relaxed" id="seqWarning" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" class="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="seqWarningText">Please complete the fields in order.</span></div>
-
-                <input type="hidden" id="prefixSelect" value="STD">
-                <input type="hidden" id="stdDeInput" value="1.00">
-
-                <div class="field mb-3.5" id="field_cma">
-                  <label for="cma_lot" class="block text-xs font-semibold mb-1.5">CMA/Lot Number</label>
-                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)]" id="cma_lot" placeholder="e.g. CMA-0001 or 0001A" autocomplete="off" value="CMA-">
-                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">1–5 digits, then an optional 1–2 letter suffix. The <strong>CMA-</strong> prefix is optional and can be deleted.</div>
-                  <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="cmaErr" style="display:none;">Invalid format — enter 4–5 digits (optionally starting with "CMA-"), then an optional 1–2 letters.</div>
-                </div>
-
-                <div class="field mb-3.5" id="field_dosage">
-                  <label for="dosage" class="block text-xs font-semibold mb-1.5">Dosage</label>
-                  <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)]" id="dosage" autocomplete="off" inputmode="decimal">
-                  <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Digits only — the "%" is fixed.</div>
-                  <div class="hint warn text-[11px] text-[hsl(var(--warn))] mt-[5px] leading-relaxed" id="dosageWarn" style="display:none;">Dosage is below the typical minimum of 1.000% — double check before continuing.</div>
-                </div>
-
-                <div class="preview-box border border-dashed border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--accent))] py-3 px-3.5 mt-[18px] mb-1">
-                  <div class="preview-label text-[10.5px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1.5 flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Reference Name Preview</div>
-                  <div class="preview-name font-mono text-sm font-semibold break-words" id="previewName"><span class="placeholder text-[#a1a1aa] font-normal">Fill in the fields above…</span></div>
-                </div>
-
-                <div class="h-px bg-[hsl(var(--border))] my-4"></div>
-                <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 w-full hover:opacity-90 transition" id="continueBtn"><span id="continueLabel">Continue to Measurement</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
-              </div>
-              <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4" id="stepMeasure" style="display:none;">
-                <p class="text-sm font-semibold m-0">Capture Reflectance</p>
-                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Place the spectrometer aperture flat on the reference sample.</p>
-
-                <div class="ref-chip bg-[hsl(var(--accent))] border border-[hsl(var(--border))] rounded-lg py-2.5 px-3 mb-[18px]">
-                  <div class="flex items-center justify-between"><div><div class="text-[10.5px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] font-semibold">Reference</div><div class="font-mono text-[13px] font-semibold" id="refChipName">—</div></div><button class="bg-transparent border-none text-[hsl(var(--muted-foreground))] text-[11.5px] cursor-pointer underline hover:text-[hsl(var(--foreground))] disabled:opacity-50 disabled:cursor-not-allowed" id="editRefBtn">Edit</button></div>
-                  <div class="text-[11px] text-[hsl(var(--muted-foreground))] mt-1.5 pt-1.5 border-t border-[hsl(var(--border))]">Standard ΔE Used: <span class="font-semibold text-[hsl(var(--foreground))] font-mono" id="refChipDe">1.00</span></div>
-                </div>
-
-                <div class="flex items-center justify-center py-4 pb-5">
-                  <svg class="aperture w-[88px] h-[88px]" id="apertureSvg1" viewBox="0 0 96 96">
-                    <circle class="pulse" cx="48" cy="48" r="30" fill="none" stroke="#a1a1aa" stroke-width="2" opacity="0"/>
-                    <circle cx="48" cy="48" r="38" fill="none" stroke="#e4e4e7" stroke-width="2"/>
-                    <g class="ring"><circle cx="48" cy="48" r="38" fill="none" stroke="#18181b" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="40 199"/></g>
-                    <circle cx="48" cy="48" r="22" fill="#18181b"/><circle cx="48" cy="48" r="8" fill="#fafafa"/>
-                  </svg>
-                </div>
-
-                <p class="text-center text-[13px] font-medium mb-1" id="statusText1">Ready to scan</p>
-                <p class="text-center text-[11.5px] text-[hsl(var(--muted-foreground))] mb-[18px]" id="statusSub1">Press the button below once the sample is in position.</p>
-
-                <div class="results" id="resultsBlock1" style="display:none;">
-                  <div class="grid grid-cols-5 gap-2 mb-4">
-                    <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">L*</div><div class="font-mono text-[13px] font-semibold" id="valL1">—</div></div>
-                    <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">C*</div><div class="font-mono text-[13px] font-semibold" id="valC1">—</div></div>
-                    <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">h°</div><div class="font-mono text-[13px] font-semibold" id="valH1">—</div></div>
-                    <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">a*</div><div class="font-mono text-[13px] font-semibold" id="valA1">—</div></div>
-                    <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">b*</div><div class="font-mono text-[13px] font-semibold" id="valB1">—</div></div>
+                  <div id="modeSelectContent" class="opacity-40 pointer-events-none select-none transition-opacity duration-300">
+                    <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
+                      <p class="text-sm font-semibold m-0">What would you like to do?</p>
+                      <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Pick one — the fields below open automatically.</p>
+                      <div class="flex flex-col gap-2.5" id="modeCardGroup">
+                        <button type="button" class="mode-card flex items-start gap-3 border-[1.5px] border-[hsl(var(--border))] rounded-[10px] p-3.5 bg-[hsl(var(--card))] cursor-pointer text-left w-full transition hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))] border-[1.5px] border-[hsl(var(--border))]" id="modeCardNew" data-mode="new">
+                          <div class="mode-icon w-9 h-9 rounded-lg shrink-0 bg-[hsl(var(--accent))] border border-[hsl(var(--border))] flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg></div>
+                          <div class="mode-text flex-1 min-w-0"><div class="mode-title text-[13.5px] font-semibold mb-[3px]">New Standard + Sample</div><div class="mode-desc text-[11.5px] text-[hsl(var(--muted-foreground))] leading-relaxed">Register a brand-new product code and standard.</div></div>
+                        </button>
+                        <button type="button" class="mode-card flex items-start gap-3 border-[1.5px] border-[hsl(var(--border))] rounded-[10px] p-3.5 bg-[hsl(var(--card))] cursor-pointer text-left w-full transition hover:bg-[hsl(var(--accent))] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[hsl(var(--accent))] border-[1.5px] border-[hsl(var(--border))]" id="modeCardExisting" data-mode="existing">
+                          <div class="mode-icon w-9 h-9 rounded-lg shrink-0 bg-[hsl(var(--accent))] border border-[hsl(var(--border))] flex items-center justify-center"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+                          <div class="mode-text flex-1 min-w-0"><div class="mode-title text-[13.5px] font-semibold mb-[3px]">Use Existing Standard</div><div class="mode-desc text-[11.5px] text-[hsl(var(--muted-foreground))] leading-relaxed">Pick a product code and standard that already exist.</div></div>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div class="flex gap-2.5">
-                  {% include "components/shared/ui/button.django" with btn_id="measureBtn1" btn_variant="primary" btn_label=" " btn_extra_class="flex-[2] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]" btn_icon_svg='<span class="spinner"></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span class="btn-label" id="measureLabel1">Read Reference</span>' %}
-                  <div id="rereadStdBtnWrap" style="display:none;" class="flex-1">
-                    {% include "components/shared/ui/button.django" with btn_id="rereadStdBtn" btn_variant="secondary" btn_label="Re-read" btn_extra_class="w-full border border-[hsl(var(--border))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:bg-[hsl(var(--accent))] transition" %}
+              </div>
+              <div id="stepDetailsWrap" class="relative">
+                <div id="stepDetailsLockOverlay" class="absolute inset-0 z-10 bg-[hsl(var(--background))]/70 backdrop-blur-[1px] flex items-start justify-center pt-10 rounded-[10px]">
+                  <div class="flex items-center gap-2 text-[12.5px] font-medium text-[hsl(var(-foreground))] bg-[hsl(var(--card))] border border-[2px] rounded-full py-1.5 px-3.5 shadow-sm text-center">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Choose "New Standard + Sample" instead
                   </div>
-                  <div id="saveStdBtnWrap" style="display:none;" class="flex-1">
-                    {% include "components/shared/ui/button.django" with btn_id="saveStdBtn" btn_variant="primary" btn_label="Accept Reading" btn_extra_class="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer hover:opacity-90 transition" %}
+                </div>
+                <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4 opacity-40 pointer-events-none select-none transition-opacity duration-300" id="stepDetails">
+                  <p class="text-sm font-semibold m-0">Standard Details</p>
+                  <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">New standard ΔE mandatory limit is <strong>1.00</strong>.</p>
+
+                  <div class="seq-warning items-start gap-2 text-xs text-[hsl(var(--warn))] bg-[hsl(var(--warn-bg))] border border-[hsl(var(--warn-border))] rounded-lg py-2.5 px-3 mb-4 leading-relaxed" id="seqWarning" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" class="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="seqWarningText">Please complete the fields in order.</span></div>
+
+                  <input type="hidden" id="prefixSelect" value="STD">
+                  <input type="hidden" id="stdDeInput" value="1.00">
+
+                  <div class="field mb-3.5" id="field_cma">
+                    <label for="cma_lot" class="block text-xs font-semibold mb-1.5">CMA/Lot Number</label>
+                    <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)]" id="cma_lot" placeholder="e.g. CMA-0001 or 0001A" autocomplete="off" value="CMA-">
+                    <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">1–5 digits, then an optional 1–2 letter suffix. The <strong>CMA-</strong> prefix is optional and can be deleted.</div>
+                    <div class="hint err text-[11px] text-[hsl(var(--danger))] mt-[5px] leading-relaxed" id="cmaErr" style="display:none;">Invalid format — enter 4–5 digits (optionally starting with "CMA-"), then an optional 1–2 letters.</div>
+                  </div>
+
+                  <div class="field mb-3.5" id="field_dosage">
+                    <label for="dosage" class="block text-xs font-semibold mb-1.5">Dosage</label>
+                    <input class="input w-full text-[13px] py-2.5 px-2.5 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))] outline-none focus:border-[hsl(var(--ring))] focus:ring-[3px] focus:ring-[rgba(161,161,170,.18)]" id="dosage" autocomplete="off" inputmode="decimal">
+                    <div class="hint text-[11px] text-[hsl(var(--muted-foreground))] mt-[5px] leading-relaxed">Digits only — the "%" is fixed.</div>
+                    <div class="hint warn text-[11px] text-[hsl(var(--warn))] mt-[5px] leading-relaxed" id="dosageWarn" style="display:none;">Dosage is below the typical minimum of 1.000% — double check before continuing.</div>
+                  </div>
+
+                  <div class="preview-box border border-dashed border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--accent))] py-3 px-3.5 mt-[18px] mb-1">
+                    <div class="preview-label text-[10.5px] font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-1.5 flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Reference Name Preview</div>
+                    <div class="preview-name font-mono text-sm font-semibold break-words" id="previewName"><span class="placeholder text-[#a1a1aa] font-normal">Fill in the fields above…</span></div>
+                  </div>
+
+                  <div class="h-px bg-[hsl(var(--border))] my-4"></div>
+                  <button class="btn bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 w-full hover:opacity-90 transition" id="continueBtn"><span id="continueLabel">Continue to Measurement</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+                </div>
+                <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4" id="stepMeasure" style="display:none;">
+                  <p class="text-sm font-semibold m-0">Capture Reflectance</p>
+                  <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Place the spectrometer aperture flat on the reference sample.</p>
+
+                  <div class="ref-chip bg-[hsl(var(--accent))] border border-[hsl(var(--border))] rounded-lg py-2.5 px-3 mb-[18px]">
+                    <div class="flex items-center justify-between"><div><div class="text-[10.5px] uppercase tracking-wide text-[hsl(var(--muted-foreground))] font-semibold">Reference</div><div class="font-mono text-[13px] font-semibold" id="refChipName">—</div></div><button class="bg-transparent border-none text-[hsl(var(--muted-foreground))] text-[11.5px] cursor-pointer underline hover:text-[hsl(var(--foreground))] disabled:opacity-50 disabled:cursor-not-allowed" id="editRefBtn">Edit</button></div>
+                    <div class="text-[11px] text-[hsl(var(--muted-foreground))] mt-1.5 pt-1.5 border-t border-[hsl(var(--border))]">Standard ΔE Used: <span class="font-semibold text-[hsl(var(--foreground))] font-mono" id="refChipDe">1.00</span></div>
+                  </div>
+
+                  <div class="flex items-center justify-center py-4 pb-5">
+                    <svg class="aperture w-[88px] h-[88px]" id="apertureSvg1" viewBox="0 0 96 96">
+                      <circle class="pulse" cx="48" cy="48" r="30" fill="none" stroke="#a1a1aa" stroke-width="2" opacity="0"/>
+                      <circle cx="48" cy="48" r="38" fill="none" stroke="#e4e4e7" stroke-width="2"/>
+                      <g class="ring"><circle cx="48" cy="48" r="38" fill="none" stroke="#18181b" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="40 199"/></g>
+                      <circle cx="48" cy="48" r="22" fill="#18181b"/><circle cx="48" cy="48" r="8" fill="#fafafa"/>
+                    </svg>
+                  </div>
+
+                  <p class="text-center text-[13px] font-medium mb-1" id="statusText1">Ready to scan</p>
+                  <p class="text-center text-[11.5px] text-[hsl(var(--muted-foreground))] mb-[18px]" id="statusSub1">Press the button below once the sample is in position.</p>
+
+                  <div class="results" id="resultsBlock1" style="display:none;">
+                    <div class="grid grid-cols-5 gap-2 mb-4">
+                      <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">L*</div><div class="font-mono text-[13px] font-semibold" id="valL1">—</div></div>
+                      <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">C*</div><div class="font-mono text-[13px] font-semibold" id="valC1">—</div></div>
+                      <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">h°</div><div class="font-mono text-[13px] font-semibold" id="valH1">—</div></div>
+                      <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">a*</div><div class="font-mono text-[13px] font-semibold" id="valA1">—</div></div>
+                      <div class="border border-[hsl(var(--border))] rounded-lg py-2.5 px-1 text-center bg-[hsl(var(--accent))]"><div class="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold mb-1">b*</div><div class="font-mono text-[13px] font-semibold" id="valB1">—</div></div>
+                    </div>
+                  </div>
+
+                  <div class="flex gap-2.5">
+                    {% include "components/shared/ui/button.django" with btn_id="measureBtn1" btn_variant="primary" btn_label=" " btn_extra_class="flex-[2] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--primary))]" btn_icon_svg='<span class="spinner"></span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg><span class="btn-label" id="measureLabel1">Read Reference</span>' %}
+                    <div id="rereadStdBtnWrap" style="display:none;" class="flex-1">
+                      {% include "components/shared/ui/button.django" with btn_id="rereadStdBtn" btn_variant="secondary" btn_label="Re-read" btn_extra_class="w-full border border-[hsl(var(--border))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer flex items-center justify-center gap-2 hover:bg-[hsl(var(--accent))] transition" %}
+                    </div>
+                    <div id="saveStdBtnWrap" style="display:none;" class="flex-1">
+                      {% include "components/shared/ui/button.django" with btn_id="saveStdBtn" btn_variant="primary" btn_label="Accept Reading" btn_extra_class="w-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border border-[hsl(var(--primary))] text-[13px] font-medium py-2.5 px-3.5 rounded-lg cursor-pointer hover:opacity-90 transition" %}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
             </div>
             <!-- FLOW A continued: measurement now lives inside stepDetailsWrap (see stepMeasure below stepDetails), sharing the same reserved space -->
             <div id="flowNewStandard" style="display:none;">
