@@ -121,6 +121,11 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Instrument DEV mode toggle -- read by static/js/shared/utils/env.js via
+# the samples_reader page context. True = fake measurements (no hardware
+# required), False = talk to the real local agent.
+DEV_INSTRUMENT_SOURCE = config('DJANGO_DEV_INSTRUMENT_SOURCE', default=False, cast=bool)
+
 # --- TAILWIND V4 CONFIGURATION ---
 TAILWIND_CLI_PATH = "npx"
 TAILWIND_CLI_AUTOMATIC_DOWNLOAD = False

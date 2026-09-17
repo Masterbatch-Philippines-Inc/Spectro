@@ -363,6 +363,9 @@
 {% block extra_js %}
 {{ product_code_options|json_script:"productCodeOptions" }}
 <script>
+  window.SPECTRO_ENV = {
+    devInstrumentSource: {{ dev_instrument_source|yesno:"true,false" }},
+  };
   window.SAMPLES_READER_URLS = {
     spectrometerInfo: "{% url 'api_spectrometer_info' %}",
     saveSpectrometerInfo: "{% url 'api_save_spectrometer_info' %}",

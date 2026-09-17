@@ -86,8 +86,10 @@ def render_samples_reader(request):
         .values_list("product_code", flat=True)
         .distinct()
     )
+    from django.conf import settings
     context = {
         "product_code_options": list(product_codes),
+        "dev_instrument_source": settings.DEV_INSTRUMENT_SOURCE,
     }
     return render(request, "pages/samples_reader.django", context)
 

@@ -24,10 +24,12 @@
  *  endpoint returns, so the calling code is identical in both modes.
  */
 
-// ============================================================
-// TOGGLE THIS -- the only line that should ever need touching.
-// ============================================================
-const DEV_SOURCE = false;  // true = DEV mode, false = real agent mode
+import { getDevInstrumentSource } from './instrument_env.js';
+
+// Sourced from DJANGO_DEV_INSTRUMENT_SOURCE in .env (see
+// apps/core/settings.py DEV_INSTRUMENT_SOURCE) -- no code edit needed
+// to flip DEV mode anymore.
+const DEV_SOURCE = getDevInstrumentSource();
 
 // ========================================================================
 // Do not touch anything below this line unless you know what you're doing.
