@@ -13,6 +13,7 @@ import { createMentionSearch } from "../ui/search_mentions.js";
 // columns (colorSimulation, dateTime, stickerLot) and last 2
 // (specialPass, specialPassBy) per spec.
 const MENTION_SLUGS = {
+  dateTime: 'date-time', stickerLot: 'sticker-lot',
   bag: 'bag', internalLot: 'internal-lot', de00: 'delta-e00',
   L: 'raw-l', C: 'raw-c', h: 'raw-h', a: 'raw-a', b: 'raw-b',
   dL: 'delta-l', dC: 'delta-c', dH: 'delta-h', da: 'delta-a', db: 'delta-b',
@@ -147,7 +148,7 @@ export function initSamplesRecordPage(urls) {
   ];
 
   const MENTION_COLUMNS = COLUMNS
-    .slice(3, COLUMNS.length - 2)
+    .slice(1, COLUMNS.length - 2)
     .filter(function (c) { return MENTION_SLUGS[c.key]; })
     .map(function (c) { return { slug: MENTION_SLUGS[c.key], label: c.label, key: c.key }; });
 
@@ -198,9 +199,32 @@ export function initSamplesRecordPage(urls) {
       ? Array.from(standardFilter.options).some(function (opt) { return opt.value !== ''; })
       : false;
     const shouldDisable = hasSelection || !hasStandardOptions;
-    if (rereadBtn) rereadBtn.disabled = !hasSelection;
+    if (rereadBtn) {
+      rereadBtn.disabled = !hasSelection;
+      rereadBtn.textContent = hasSelection ? ('Re-Read ' + selectedRows.size + ' Selected Samples') : 'Re-Read Selected Samples';
+    }
     if (standardFilter) standardFilter.disabled = shouldDisable;
     if (standardFilterBtn) standardFilterBtn.disabled = shouldDisable;
+  }
+
+  // Rows currently visible under the active search/filter, excluding
+  // reference (LT/DR) rows and the standard's own synthetic row --
+  // these are the only ones eligible for selection.
+  function selectableVisibleRows() {
+    return dataset.filter(function (r) {
+      if (isReferenceRow(r) || r.isStandardRow) return false;
+      const tr = document.querySelector('tr[data-row-id="' + r.id + '"]');
+      return !tr || tr.style.display !== 'none';
+    });
+  }
+
+  function syncSelectAllCheckboxState() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    if (!selectAllCheckbox) return;
+    const visible = selectableVisibleRows();
+    const selectedVisibleCount = visible.filter(function (r) { return selectedRows.has(String(r.id)); }).length;
+    selectAllCheckbox.checked = visible.length > 0 && selectedVisibleCount === visible.length;
+    selectAllCheckbox.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < visible.length;
   }
 
   const leadingColumns = [
@@ -522,17 +546,23 @@ export function initSamplesRecordPage(urls) {
         dataTable.applyFreeze(3);
       },
       onHeaderRendered: function () {
-                const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
         if (!selectAllCheckbox) return;
-        const selectableRows = dataset.filter(function (r) { return !isReferenceRow(r) && !r.isStandardRow; });
-        selectAllCheckbox.checked = selectableRows.length > 0 && selectableRows.every(function (r) { return selectedRows.has(String(r.id)); });
+        syncSelectAllCheckboxState();
+        if (selectAllCheckbox.dataset.bound) return; // header re-renders on sort/column toggle -- bind once
+        selectAllCheckbox.dataset.bound = 'true';
         selectAllCheckbox.addEventListener('change', function () {
+          // Selecting via the header checkbox only ever acts on
+          // currently visible (filtered) rows -- rows hidden by an
+          // active search stay untouched, whichever way they were.
+          const visible = selectableVisibleRows();
           if (selectAllCheckbox.checked) {
-            selectableRows.forEach(function (r) { selectedRows.add(String(r.id)); });
+            visible.forEach(function (r) { selectedRows.add(String(r.id)); });
           } else {
-            selectedRows.clear();
+            visible.forEach(function (r) { selectedRows.delete(String(r.id)); });
           }
           dataTable.renderBody();
+          reapplySearchFilterOnly();
           renderScatter();
           refreshRereadControls();
         });
@@ -549,13 +579,7 @@ export function initSamplesRecordPage(urls) {
             const tr = cb.closest('tr[data-row-id]');
             if (tr) tr.classList.toggle('bg-success-bg', cb.checked);
 
-            const allCheckbox = document.getElementById('selectAllCheckbox');
-            if (allCheckbox) {
-              const selectableRows = dataset.filter(function (r) { return !isReferenceRow(r) && !r.isStandardRow; });
-              const selectedCount = selectableRows.filter(function (r) { return selectedRows.has(String(r.id)); }).length;
-              allCheckbox.checked = selectableRows.length > 0 && selectedCount === selectableRows.length;
-              allCheckbox.indeterminate = selectedCount > 0 && selectedCount < selectableRows.length;
-            }
+            syncSelectAllCheckboxState();
 
             renderScatter();
             refreshRereadControls();
@@ -900,6 +924,16 @@ export function initSamplesRecordPage(urls) {
 
     let mentionSearch = null;
 
+    // Re-applies whatever search/filter is currently active, without
+    // touching the no-results state, saved session value, or select-all
+    // sync -- used after any renderBody() rebuild (e.g. select-all
+    // toggling checkboxes) wipes the previous row display:none values.
+    function reapplySearchFilterOnly() {
+      if (!searchInput || !searchInput.value.trim()) return;
+      const matcher = mentionSearch ? mentionSearch.buildMatcher() : null;
+      dataTable.applySearch(matcher !== null ? matcher : searchInput.value);
+    }
+
     function applyCurrentSearch() {
       const value = searchInput.value;
       const matcher = mentionSearch ? mentionSearch.buildMatcher() : null;
@@ -909,6 +943,7 @@ export function initSamplesRecordPage(urls) {
       noResultsState.classList.toggle('hidden', !showNoResults);
       noResultsState.classList.toggle('flex', showNoResults);
       setTableAreaOverflowLocked(showNoResults);
+      syncSelectAllCheckboxState();
 
       try {
         if (q) {
