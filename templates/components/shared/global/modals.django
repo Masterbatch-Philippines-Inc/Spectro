@@ -28,9 +28,13 @@ of a confirm popup.
       <g id="scatterAxisModal"></g>
       <g id="scatterPointsModal"></g>
     </svg>
-    <div class="flex items-center gap-3 mt-2 text-[13px] text-muted-foreground">
+    <div class="flex items-center gap-3 flex-wrap mt-2 text-[13px] text-muted-foreground">
       <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block bg-muted-foreground/50"></span>Passed</span>
       <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-danger inline-block"></span>Failed</span>
+      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#17181f;"></span>Standard</span>
+      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#F1FA8C;"></span>Light Std</span>
+      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#BD93F9;"></span>Dark Std</span>
+      <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#3b82f6;"></span>Selected</span>
     </div>
   </div>
 </div>

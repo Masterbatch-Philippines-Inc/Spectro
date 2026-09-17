@@ -134,12 +134,18 @@ function paintScatterGroup(axisGroup, pointsGroup, points, range, tooltipId) {
     const x = toSvgX(pt.da, range);
     const y = toSvgY(pt.db, range);
 
+    const isStd = pt.kind === 'standard';
+    const isDarkStd = pt.kind === 'dark';
+    const isLightStd = pt.kind === 'light';
+    const fixedColor = isStd ? '#17181f' : (isDarkStd ? '#BD93F9' : (isLightStd ? '#F1FA8C' : null));
+    const isSelected = !!pt.selected;
+
     const dot = document.createElementNS(SVG_NS, 'circle');
     dot.setAttribute('cx', x.toFixed(1));
     dot.setAttribute('cy', y.toFixed(1));
-    dot.setAttribute('r', pt.pending ? 3 : (pt.passed ? 2.4 : 3));
-    dot.setAttribute('fill', pt.pending ? 'hsl(var(--warn))' : (pt.passed ? 'hsl(var(--muted-foreground))' : 'hsl(var(--danger))'));
-    dot.setAttribute('opacity', pt.pending ? '0.95' : (pt.passed ? '0.6' : '0.95'));
+    dot.setAttribute('r', isSelected ? 3.6 : (fixedColor ? 3.2 : (pt.pending ? 3 : (pt.passed ? 2.4 : 3))));
+    dot.setAttribute('fill', isSelected ? '#3b82f6' : (fixedColor || (pt.pending ? 'hsl(var(--warn))' : (pt.passed ? 'hsl(var(--muted-foreground))' : 'hsl(var(--danger))'))));
+    dot.setAttribute('opacity', isSelected ? '1' : (fixedColor ? '0.95' : (pt.pending ? '0.95' : (pt.passed ? '0.6' : '0.95'))));
     dot.style.cursor = 'pointer';
 
     dot.addEventListener('mouseenter', function (e) { showScatterTooltip(e, pt, tooltipId); });
@@ -157,9 +163,11 @@ function fmtRaw(v) {
 function showScatterTooltip(evt, pt, tooltipId) {
   const tooltip = document.getElementById(tooltipId || 'scatterTooltip');
   if (!tooltip) return;
-  tooltip.innerHTML = '<div class="font-semibold">Lot: ' + pt.name + '</div>'
-    + '<div>Raw A: ' + fmtRaw(pt.rawA) + '</div>'
-    + '<div>Raw B: ' + fmtRaw(pt.rawB) + '</div>';
+  const isStd = pt.kind === 'standard';
+  tooltip.innerHTML = '<div class="font-semibold">' + (isStd ? 'Standard: ' : 'Lot: ') + pt.name + '</div>'
+    + (isStd
+      ? '<div class="text-muted-foreground italic">Reference (Δa*/Δb* = 0)</div>'
+      : ('<div>Δa*: ' + fmtRaw(pt.da) + '</div>' + '<div>Δb*: ' + fmtRaw(pt.db) + '</div>'));
   tooltip.classList.remove('hidden');
   moveScatterTooltip(evt, tooltipId);
 }

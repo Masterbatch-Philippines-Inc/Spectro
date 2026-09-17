@@ -426,6 +426,49 @@ def _serialize_lot_sample_row(lot_sample, standards_id, product_code=None):
         "stdDeUsed": std_de_used_row,
     }
 
+
+def _serialize_standard_row(standard):
+    """
+    Synthetic display-only row representing the active Standard's own
+    raw L*/a*/b*/C*/h° values, shown above the LT/DR reference rows in
+    the Samples Record table. Not a LotSample -- not selectable, not
+    counted toward any DB action.
+    """
+    def num(value):
+        return float(value) if value is not None else None
+
+    return {
+        "id": "std-" + str(standard.standards_id),
+        "lotSampleId": None,
+        "visualJudgementId": None,
+        "spectroJudgementId": None,
+        "colorSimulation": "-",
+        "dateTime": format_datetime_no_leading_zeros(standard.date_time),
+        "stickerLot": standard.standard_name,
+        "bag": "-",
+        "internalLot": "-",
+        "de00": None,
+        "L": num(standard.raw_l),
+        "C": num(standard.raw_c),
+        "h": num(standard.raw_h),
+        "a": num(standard.raw_a),
+        "b": num(standard.raw_b),
+        "dL": None, "dC": None, "dH": None, "da": None, "db": None,
+        "colorOffset": "-",
+        "spectroJudgement": "-",
+        "visualJudgement": "-",
+        "finalQcEval": "-",
+        "qcMatch": "standard",
+        "qcMessage": "This is the active color standard's own raw reading.",
+        "reasonIfFail": "",
+        "spectroRemarks": "",
+        "specialPass": False,
+        "specialPassBy": "",
+        "stdDeUsed": None,
+        "isStandardRow": True,
+    }
+
+
 def _build_threshold_changed_by_map(record):
     """
     Task: Excel export only -- maps each historical STD ΔE Used value
@@ -513,7 +556,8 @@ def get_lot_samples_for_standard(request):
     )
 
     product_code = standard.record.product_code if standard.record else None
-    rows = [_serialize_lot_sample_row(ls, standards_id, product_code) for ls in lot_samples]
+    rows = [_serialize_standard_row(standard)]
+    rows += [_serialize_lot_sample_row(ls, standards_id, product_code) for ls in lot_samples]
 
     return JsonResponse({"tone": "success", "message": "Samples loaded.", "rows": rows})
 

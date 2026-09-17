@@ -106,6 +106,7 @@
           </div>
           <div id="step2LockedContent" class="opacity-40 pointer-events-none select-none transition-opacity duration-300">
             <div id="productCodeStep" class="mt-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <div class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4">
                 <p class="text-sm font-semibold m-0">Product Code</p>
                 <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Start typing to match an existing code, or add a new one and press Enter to save.</p>
@@ -122,6 +123,13 @@
                     <span class="text-[11px] font-semibold text-[hsl(var(--success))]">Product code saved — <span id="productCodeSavedValue"></span></span>
                   </div>
                 </div>
+              </div>
+              <div id="standardHistoryCard" class="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-[10px] shadow-sm p-5 mb-4" style="display:none;">
+                <p class="text-sm font-semibold m-0">Standards Used</p>
+                <p class="text-[12.5px] text-[hsl(var(--muted-foreground))] mt-0.5 mb-4 leading-relaxed">Existing standards recorded under this product code - latest active one is highlighted.</p>
+                <div id="standardHistoryList" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto"></div>
+                <div id="standardHistoryEmpty" class="text-[12px] text-[hsl(var(--muted-foreground))] italic" style="display:none;">No standards recorded yet for this product code.</div>
+              </div>
               </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start" id="modeDetailsRow">

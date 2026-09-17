@@ -755,6 +755,8 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         rawB: isNaN(rawB) ? null : rawB,
         passed: tr.dataset.judgement === 'pass',
         pending: tr.dataset.pendingReread === '1',
+        kind: tr.dataset.kind,
+        selected: tr.classList.contains('bg-success-bg'),
       });
     });
     return points;
@@ -891,6 +893,40 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     // Selecting a code already known client-side -- no need to hit the
     // server again. Toast only, no inline "saved" chip (that's reserved
     // for genuinely new codes going through saveProductCode()).
+    function renderStandardHistoryCard(data) {
+      const card = document.getElementById('standardHistoryCard');
+      const list = document.getElementById('standardHistoryList');
+      const emptyEl = document.getElementById('standardHistoryEmpty');
+      if (!card || !list) return;
+      const standards = data.standards || [];
+      card.style.display = 'block';
+      if (!standards.length) {
+        list.innerHTML = '';
+        if (emptyEl) emptyEl.style.display = 'block';
+        return;
+      }
+      if (emptyEl) emptyEl.style.display = 'none';
+      const deText = (data.std_delta_e_used !== null && data.std_delta_e_used !== undefined) ? Number(data.std_delta_e_used).toFixed(2) : '1.00';
+      list.innerHTML = standards.map(function (std, idx) {
+        const isLatest = idx === 0; // ordered -is_active_standard, -date_time
+        return '<div class="flex items-center justify-between border border-[hsl(var(--border))] rounded-lg px-3 py-2' + (isLatest ? ' bg-[hsl(var(--accent))]' : '') + '">'
+          + '<span class="text-[12.5px] font-mono truncate pr-2' + (isLatest ? ' font-bold' : '') + '">' + std.standard_name + '</span>'
+          + '<span class="text-[11.5px] font-mono shrink-0' + (isLatest ? ' font-bold' : ' text-[hsl(var(--muted-foreground))]') + '">ΔE: ' + deText + '</span>'
+          + '</div>';
+      }).join('');
+    }
+
+    function hideStandardHistoryCard() {
+      const card = document.getElementById('standardHistoryCard');
+      if (card) card.style.display = 'none';
+    }
+
+    function refreshStandardHistoryCard() {
+      fetchStandardsForCurrentProductCode()
+        .then(renderStandardHistoryCard)
+        .catch(function () { hideStandardHistoryCard(); });
+    }
+
     function selectExistingCode(code) {
       const v = code.trim().toUpperCase();
       productCodeGlobal.value = v;
@@ -900,6 +936,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       productCodeSavedChip.style.display = 'none';
       showToast('toastStack', 'Using existing product code — ' + v, 'info');
       unlockModeSelect();
+      refreshStandardHistoryCard();
     }
 
     function validateProductCode() {
@@ -948,6 +985,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           }
           showToast('toastStack', result.data.message, result.data.tone || 'success');
           unlockModeSelect();
+          refreshStandardHistoryCard();
         })
         .catch(function () {
           showToast('toastStack', 'Network error — please try again.', 'error');
@@ -1032,6 +1070,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       setSectionInert(modeSelectContent, true);
       lockStepDetails();
       flowNewStandard.style.display = 'none';
+      hideStandardHistoryCard();
 
       // reset the Capture Reflectance card back to its pre-read state
       if (stepMeasureCard) stepMeasureCard.style.display = 'none';
@@ -1085,6 +1124,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         flowNewStandard.style.display = 'none';
         [modeCardNew, modeCardExisting].forEach(function (c) { c.classList.remove('selected'); });
         selectedMode = null;
+        hideStandardHistoryCard();
       }
     });
     productCodeGlobal.addEventListener('focus', function () { renderSuggestions(productCodeGlobal.value.trim()); });

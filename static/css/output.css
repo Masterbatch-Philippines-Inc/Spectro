@@ -1079,6 +1079,9 @@
   .pr-0 {
     padding-right: 0px;
   }
+  .pr-2 {
+    padding-right: calc(var(--spacing) * 2);
+  }
   .pr-6 {
     padding-right: calc(var(--spacing) * 6);
   }

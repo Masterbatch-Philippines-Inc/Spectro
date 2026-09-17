@@ -205,7 +205,7 @@ export function createDataTable(opts) {
     let html = '';
 
     dataset.forEach(function (row) {
-      html += '<tr data-row-id="' + row.id + '" class="hover:bg-accent">';
+      html += '<tr data-row-id="' + row.id + '" class="hover:bg-accent' + (row.isStandardRow ? ' font-bold' : '') + '">';
 
       leadingColumns.forEach(function (lc, idx) {
         html += '<td data-col-index="' + idx + '" class="bg-card border-b border-border px-2.5 py-2">' + lc.renderCell(row) + '</td>';

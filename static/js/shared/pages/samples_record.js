@@ -18,6 +18,14 @@ function isReferenceRow(row) {
   return name.startsWith('LT ') || name.startsWith('DR ');
 }
 
+function rowKind(row) {
+  if (row.isStandardRow) return 'standard';
+  const name = (row.stickerLot || '').trim().toUpperCase();
+  if (name.startsWith('LT ')) return 'light';
+  if (name.startsWith('DR ')) return 'dark';
+  return null;
+}
+
 export function initSamplesRecordPage(urls) {
   const COLUMNS = [
     {
@@ -62,6 +70,7 @@ export function initSamplesRecordPage(urls) {
     {
       key: 'visualJudgement', label: 'Visual Judgement', type: 'string',
       render: function (row) {
+        if (row.isStandardRow) return '<span class="text-muted-foreground">-</span>';
         const vjColor = row.visualJudgement === 'Pass'
           ? 'text-success'
           : (row.visualJudgement === 'Fail' ? 'text-danger' : 'text-muted-foreground');
@@ -89,6 +98,7 @@ export function initSamplesRecordPage(urls) {
     {
       key: 'reasonIfFail', label: 'Reason for Fail (if not color)', type: 'editable',
       render: function (row) {
+        if (row.isStandardRow) return '<span class="text-muted-foreground">-</span>';
         const empty = !row.reasonIfFail;
         return '<div class="editable-cell rounded-md px-1.5 py-1 cursor-text min-w-[140px] max-w-[220px] whitespace-normal ' + (empty ? 'text-muted-foreground italic' : '') + '" data-action="reasonIfFail" data-row-id="' + row.id + '">' + (empty ? 'Click to add…' : row.reasonIfFail) + '</div>';
       }
@@ -96,6 +106,7 @@ export function initSamplesRecordPage(urls) {
     {
       key: 'spectroRemarks', label: 'Spectro Remarks', type: 'editable',
       render: function (row) {
+        if (row.isStandardRow) return '<span class="text-muted-foreground">-</span>';
         const empty = !row.spectroRemarks;
         return '<div class="editable-cell rounded-md px-1.5 py-1 cursor-text min-w-[140px] max-w-[220px] whitespace-normal ' + (empty ? 'text-muted-foreground italic' : '') + '" data-action="spectroRemarks" data-row-id="' + row.id + '">' + (empty ? 'Click to add…' : row.spectroRemarks) + '</div>';
       }
@@ -103,12 +114,14 @@ export function initSamplesRecordPage(urls) {
     {
       key: 'specialPass', label: 'Special Pass?', type: 'bool',
       render: function (row) {
+        if (row.isStandardRow) return '<span class="text-muted-foreground">-</span>';
         return '<div class="text-center"><input type="checkbox" class="special-pass-checkbox w-3.5 h-3.5 accent-foreground cursor-pointer" data-row-id="' + row.id + '"' + (row.specialPass ? ' checked' : '') + '></div>';
       }
     },
     {
       key: 'specialPassBy', label: 'Special Pass BY', type: 'select',
       render: function (row) {
+        if (row.isStandardRow) return '<span class="text-muted-foreground">-</span>';
         const disabled = !row.specialPass;
         const options = ['Ana Solomon', 'Jinky Villacampa', 'Ernie Pio', 'Elton Ang'];
         return '<select class="special-pass-by-select text-[11.5px] px-2 py-1 pr-6 rounded-md border border-border bg-card min-w-[110px] cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed disabled:bg-muted" data-row-id="' + row.id + '"' + (disabled ? ' disabled' : '') + '>'
@@ -131,6 +144,7 @@ export function initSamplesRecordPage(urls) {
   // then LT-prefixed, then everything else, each group keeping the
   // server's original relative order (stable sort).
   function defaultSortRank(row) {
+    if (row.isStandardRow) return -1;
     const name = (row.stickerLot || '').trim().toUpperCase();
     if (name.startsWith('DR')) return 0;
     if (name.startsWith('LT')) return 1;
@@ -176,6 +190,9 @@ export function initSamplesRecordPage(urls) {
         return '';
       },
       renderCell: function (row) {
+        if (row.isStandardRow) {
+          return '<div class="flex items-center justify-center" data-tooltip="Standard Data"><span class="w-2.5 h-2.5 rounded-full inline-block bg-[hsl(var(--primary))]"></span></div>';
+        }
         const isPass = row.spectroJudgement === 'PASSED';
         const label = row.spectroJudgement === '-' ? '-' : (isPass ? 'Pass' : 'Fail');
         const dotColor = row.spectroJudgement === '-' ? 'bg-muted-foreground' : (isPass ? 'bg-success' : 'bg-danger');
@@ -193,6 +210,8 @@ export function initSamplesRecordPage(urls) {
           icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--warn))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>';
         } else if (row.qcMatch === 'reference') {
           icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>';
+        } else if (row.qcMatch === 'standard') {
+          icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="hsl(var(--primary))" stroke="hsl(var(--primary))" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.63 22 9.24 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.24 8.91 8.63 12 2"/></svg>';
         } else {
           icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="hsl(var(--danger))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
         }
@@ -205,10 +224,11 @@ export function initSamplesRecordPage(urls) {
         return '<div class="flex items-center justify-center py-2"><input type="checkbox" id="selectAllCheckbox" class="w-3.5 h-3.5 accent-foreground cursor-pointer"></div>';
       },
       renderCell: function (row) {
-        // LT/DR reference rows can't be carried into a re-read session --
-        // disable their checkbox entirely rather than allow ticking them.
-        if (isReferenceRow(row)) {
-          return '<div class="flex items-center justify-center" data-tooltip="Reference rows cannot be re-read from here"><input type="checkbox" class="row-checkbox w-3.5 h-3.5 accent-foreground cursor-not-allowed" data-row-id="' + row.id + '" disabled></div>';
+        // LT/DR reference rows and the standard's own row can't be
+        // carried into a re-read session -- disable their checkbox
+        // entirely rather than allow ticking them.
+        if (isReferenceRow(row) || row.isStandardRow) {
+          return '<div class="flex items-center justify-center" data-tooltip="This row cannot be selected for re-read"><input type="checkbox" class="row-checkbox w-3.5 h-3.5 accent-foreground cursor-not-allowed" data-row-id="' + row.id + '" disabled></div>';
         }
         const checked = selectedRows.has(String(row.id)) ? 'checked' : '';
         return '<div class="flex items-center justify-center"><input type="checkbox" class="row-checkbox w-3.5 h-3.5 accent-foreground cursor-pointer" data-row-id="' + row.id + '" ' + checked + '></div>';
@@ -386,17 +406,21 @@ export function initSamplesRecordPage(urls) {
     }
 
     window.getScatterPlotPoints = function () {
-      const base = dataset.filter(function (r) { return r.da !== null && r.db !== null && r.da !== undefined && r.db !== undefined; });
-      const visible = selectedRows.size === 0 ? base : base.filter(function (r) { return selectedRows.has(String(r.id)); });
+      const visible = dataset.filter(function (r) {
+        return r.isStandardRow || (r.da !== null && r.db !== null && r.da !== undefined && r.db !== undefined);
+      });
       return visible.map(function (r) {
+        const kind = rowKind(r);
         return {
           id: r.id,
           name: r.stickerLot,
-          da: r.da,
-          db: r.db,
+          da: kind === 'standard' ? 0 : r.da,
+          db: kind === 'standard' ? 0 : r.db,
           rawA: r.a,
           rawB: r.b,
           passed: r.spectroJudgement === 'PASSED',
+          kind: kind,
+          selected: selectedRows.has(String(r.id)),
         };
       });
     };
@@ -479,12 +503,10 @@ export function initSamplesRecordPage(urls) {
         dataTable.applyFreeze(3);
       },
       onHeaderRendered: function () {
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+                const selectAllCheckbox = document.getElementById('selectAllCheckbox');
         if (!selectAllCheckbox) return;
-        const selectableRows = dataset.filter(function (r) { return !isReferenceRow(r); });
-        const selectedCount = selectableRows.filter(function (r) { return selectedRows.has(String(r.id)); }).length;
-        selectAllCheckbox.checked = selectableRows.length > 0 && selectedCount === selectableRows.length;
-        selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < selectableRows.length;
+        const selectableRows = dataset.filter(function (r) { return !isReferenceRow(r) && !r.isStandardRow; });
+        selectAllCheckbox.checked = selectableRows.length > 0 && selectableRows.every(function (r) { return selectedRows.has(String(r.id)); });
         selectAllCheckbox.addEventListener('change', function () {
           if (selectAllCheckbox.checked) {
             selectableRows.forEach(function (r) { selectedRows.add(String(r.id)); });
@@ -510,7 +532,7 @@ export function initSamplesRecordPage(urls) {
 
             const allCheckbox = document.getElementById('selectAllCheckbox');
             if (allCheckbox) {
-              const selectableRows = dataset.filter(function (r) { return !isReferenceRow(r); });
+              const selectableRows = dataset.filter(function (r) { return !isReferenceRow(r) && !r.isStandardRow; });
               const selectedCount = selectableRows.filter(function (r) { return selectedRows.has(String(r.id)); }).length;
               allCheckbox.checked = selectableRows.length > 0 && selectedCount === selectableRows.length;
               allCheckbox.indeterminate = selectedCount > 0 && selectedCount < selectableRows.length;

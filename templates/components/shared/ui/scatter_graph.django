@@ -33,9 +33,13 @@ care whether points came from a dataset table or a live wizard session.
     <g id="scatterPoints"></g>
   </svg>
 
-  <div class="flex items-center gap-3 mt-2 text-[12px] text-muted-foreground">
+  <div class="flex items-center gap-3 flex-wrap mt-2 text-[12px] text-muted-foreground">
     <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block {{ passed_dot_class|default:'bg-muted-foreground/50' }}"></span>Passed</span>
     <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-danger inline-block"></span>Failed</span>
+    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#17181f;"></span>Standard</span>
+    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#F1FA8C;"></span>Light Std</span>
+    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#BD93F9;"></span>Dark Std</span>
+    {% if not hide_selected_legend %}<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full inline-block" style="background:#3b82f6;"></span>Selected</span>{% endif %}
   </div>
   <div class="mt-1 text-[9px] text-muted-foreground italic">{{ note_text|default:"" }}</div>
 </div>
