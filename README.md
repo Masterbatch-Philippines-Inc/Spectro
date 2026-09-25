@@ -76,9 +76,25 @@
   - Color Simulation column shows a color swatch alongside its stored value
   - Visual Judgement is an editable dropdown (Passed/Failed), saving immediately and recording who judged it
   - Reason for Fail and Spectro Remarks are click-to-edit text cells, saving automatically on Enter or on click-away
-  - Special Pass and Special Pass By are visible but intentionally locked from editing for now
-  - Supports column sorting, freeze-column pinning, and live search filtering
+  - Special Pass and Special Pass By are editable: ticking Special Pass unlocks a Special Pass By dropdown, saving immediately and recording who overrode it (with change history)
+  - Final QC Evaluation column cross-checks each sample's lot/bag against the external QC program's own records, with a status icon/tooltip per row
+  - Supports column sorting, freeze-column pinning, and live search filtering (including `@column: keyword` targeted search)
+- **Generate Report**: exports the current product code/standard's samples to a formatted Excel file (openpyxl), with conditional pass/fail coloring
+- **Re-Read Selected Samples**: select existing samples and carry them into the Samples Reader wizard to re-measure and update their readings in place, with a full audit trail of the old values
 - **Δa\*/Δb\* scatter graph**: plots every sample in the current table, color-coded to match the table's pass/fail judgement, with a maximizable popup view
+
+### Samples Reader (Value Reader) Page
+- 3-step wizard: **Setup the Instrument** → **Choose Product Code** → **Read the Sample**
+- **Step 1 — Instrument**: connect to the spectrometer over BLE via the local agent, then calibrate black and white references before continuing; connection/calibration state persists across page navigation until disconnected
+- **Step 2 — Product Code & Standard**: type-ahead product code search/create, then either register a New Standard + Sample (captures a fresh reference reading) or use an Existing Standard already on record
+- **Step 3 — Samples**: Read Light / Read Dark reference rows (new-standard flow) and Read Sample for production samples, each auto-computing ΔE\*00 and pass/fail against the active Standard ΔE Used
+  - Visual Judgement (Pass/Fail/None) and Special Pass (with Special Pass By) are set per sample here too, and are mandatory before saving
+  - Lot Number and Visual Judgement are required per row; Special Pass, Bag, and Remarks are optional
+  - During a Re-Read session, Visual Judgement/Special Pass/Remarks stay locked per row until that row is actually re-measured
+- A dev-only instrument mode (`DJANGO_DEV_INSTRUMENT_SOURCE`) returns fake-but-plausible readings so the wizard can be developed without physical hardware attached
+
+### Authentication (cont'd)
+- Forgot Password flow: request a reset email, follow the link, set a new password (Django's built-in `auth_views`)
 
 ### Shared UI
 - Toast notifications with four tones (info, success, warning, danger)
@@ -86,6 +102,7 @@
 - Reusable button, dropdown, input, data table, scatter graph, and modal/popup components, each built once and reused across pages with different parameters
 - Sidebar and header automatically highlight/update based on which page is currently open
 - Dark mode toggle, remembered across page navigation
+- Shared error/maintenance page (400/403/404/500/503) with a "take me back" button
 
 ---
 
@@ -106,6 +123,7 @@ spectro/
 │   │   ├── settings.py
 │   │   ├── urls.py                 # root urls, includes apps.spectro.urls
 │   │   ├── wsgi.py
+│   │   ├── db_router.py            # Bridge between Spectro and QC program tables
 │   │   └── asgi.py
 │   │
 │   └── spectro/                    # App 2 — the actual product
@@ -117,17 +135,19 @@ spectro/
 │       │   ├── auth_models.py      # User(AbstractUser) → AUTH_USER_MODEL
 │       │   └── spectro_models.py   # every other ERD table
 │       └── modules/                # one file per page/unit of work
-│           ├── auth/
-│           │   └── login.py
+│           ├── authentication.py
+│           ├── handlers.py
 │           ├── samples_reader.py
 │           └── samples_record.py
 │
 ├── templates/
-│   ├── base.django                   # shared page shell
+│   ├── base.django                 # shared page shell
 │   ├── components/
 │   │   └── shared/
 │   │       ├── global/             # site-wide structural pieces (sidebar, header, footer, modals, cards)
 │   │       └── ui/                 # reusable, parameterized UI components (table, dropdown, forms, etc.)
+│   ├── handlers/
+│   │       └── status.django       # shared 400/403/404/500/503 error page
 │   ├── auth/
 │   │   └── login.django
 │   └── pages/
@@ -140,9 +160,11 @@ spectro/
     └── js/
         ├── base.js                 # dynamic script loader
         └── shared/
-            ├── app.js               # orchestrator: calls every component's init function
-            ├── global/               # JS behind the global/ templates
-            └── ui/                   # JS behind the ui/ components
+            ├── app.js              # orchestrator: calls every component's init function
+            ├── global/             # JS behind the global/ templates
+            ├── ui/                 # JS behind the ui/ components
+            ├── pages/              # one file per page (samples_reader.js, samples_record.js)
+            └── utils/              # csrf.js, instrument_env.js, instrument_dev.js (agent bridge)
 ```
 
 <br>
@@ -314,6 +336,10 @@ python manage.py collectstatic --noinput --ignore=input.css --ignore=design-toke
 **Static assets load through a single orchestrator.** `base.js` dynamically loads every shared script and waits for all of them before calling `initApp()` in `app.js`, which is the single place every component's startup behavior is registered.
 
 **Templates follow a shared-shell + component-library pattern.** `base.django` includes the sidebar, header, footer, toast container, and modal container automatically. Reusable pieces live under `templates/components/shared/`, split into `global/` (structural, once-per-page pieces) and `ui/` (smaller, reusable, parameterized building blocks).
+
+**Multi-database routing.** `settings.DATABASES` defines two aliases, default and server. apps/core/db_router.py's QcProgramRouter routes only QcProgramRecord reads/writes to server — every other model stays on default.
+
+**The local agent is called through one choke point.** static/js/shared/utils/instrument_dev.js is the only file that talks to the local hardware agent `(localhost:5151)` or returns DEV-mode fake data -> samples_reader.js never calls the agent directly.
 
 <br>
 
