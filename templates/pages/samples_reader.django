@@ -316,6 +316,9 @@
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap">Δb*</th>
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap w-[140px] min-w-[140px] max-w-[140px]">Color Offset</th>
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap w-[140px] min-w-[140px] max-w-[140px]">Judgement</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap w-[130px] min-w-[130px] max-w-[130px]">Visual Judgement</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap w-9 text-center">Special Pass?</th>
+                        <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap w-[130px] min-w-[130px] max-w-[130px]">Special Pass BY</th>
                         <th class="th-sticky bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-left py-2 px-2.5 font-semibold text-[12px] uppercase whitespace-nowrap w-[140px] min-w-[140px] max-w-[200px]">Spectro Remarks</th>
                     </tr>
                     </thead>

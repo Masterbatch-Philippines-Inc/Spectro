@@ -22,6 +22,9 @@ from apps.spectro.models import (
     SpectroDeltaValues,
     SpectroJudgement,
     LotSamplesChangeLog,
+    VisualJudgement,
+    SpecialCase,
+    SpecialCaseChangelog,
 )
 
 # Accepts both the original XX00000E(-I)? shape and the newer
@@ -560,6 +563,22 @@ def save_sample_readings(request):
                     std_de_used=1.00 if is_reference else threshold,
                 )
 
+                vj_value = (row.get("visualJudgement") or "").strip()
+                if vj_value in ("Pass", "Fail"):
+                    VisualJudgement.objects.create(
+                        lot_sample=lot_sample,
+                        is_pass=(vj_value == "Pass"),
+                        judged_by=changed_by,
+                    )
+
+                special_pass_by = (row.get("specialPassBy") or "").strip()
+                if row.get("specialPass") and special_pass_by:
+                    SpecialCase.objects.create(
+                        lot_sample=lot_sample,
+                        is_pass=True,
+                        passed_by=special_pass_by,
+                    )
+
                 saved_ids.append(lot_sample.lot_samples_id)
 
             # --- re-read rows: snapshot old values, then update in place ---
@@ -636,6 +655,42 @@ def save_sample_readings(request):
                         standard=standard,
                         std_de_used=1.00 if is_reference else threshold,
                     )
+
+                vj_value = (row.get("visualJudgement") or "").strip()
+                if vj_value in ("Pass", "Fail"):
+                    vj_is_pass = (vj_value == "Pass")
+                    old_vj = VisualJudgement.objects.filter(lot_sample=lot_sample).order_by("-date_time").first()
+                    if old_vj:
+                        old_vj.is_pass = vj_is_pass
+                        old_vj.judged_by = changed_by
+                        old_vj.save(update_fields=["is_pass", "judged_by"])
+                    else:
+                        VisualJudgement.objects.create(
+                            lot_sample=lot_sample,
+                            is_pass=vj_is_pass,
+                            judged_by=changed_by,
+                        )
+
+                special_pass_by = (row.get("specialPassBy") or "").strip()
+                if row.get("specialPass") and special_pass_by:
+                    old_special = SpecialCase.objects.filter(lot_sample=lot_sample).order_by("-date_time").first()
+                    if old_special and old_special.passed_by and old_special.passed_by != special_pass_by:
+                        SpecialCaseChangelog.objects.create(
+                            special_case_ref=old_special,
+                            is_pass=old_special.is_pass,
+                            old_passed_by=old_special.passed_by,
+                            user=request.user,
+                        )
+                    if old_special:
+                        old_special.is_pass = True
+                        old_special.passed_by = special_pass_by
+                        old_special.save(update_fields=["is_pass", "passed_by"])
+                    else:
+                        SpecialCase.objects.create(
+                            lot_sample=lot_sample,
+                            is_pass=True,
+                            passed_by=special_pass_by,
+                        )
 
                 saved_ids.append(lot_sample.lot_samples_id)
     except Exception as e:

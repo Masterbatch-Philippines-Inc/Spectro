@@ -2035,8 +2035,30 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           de: d.de00, L: sci.L, C: sci.C, h: sci.h, a: sci.a, b: sci.b,
           dL: d.dL, dC: d.dC, dH: d.dH, da: d.da, db: d.db,
           passed: passed,
+          visualJudgement: '', specialPass: false, specialPassBy: '',
         };
       });
+    }
+
+    const SPECIAL_PASS_BY_OPTIONS = ['Ana Solomon', 'Jinky Villacampa', 'Ernie Pio', 'Elton Ang'];
+
+    function renderVisualJudgementSelect(row) {
+      const vj = row.visualJudgement || '';
+      const color = vj === 'Pass' ? 'hsl(var(--success))' : (vj === 'Fail' ? 'hsl(var(--danger))' : '');
+      const locked = !!row.pendingReread;
+      return '<select class="visual-judgement-select font-bold text-[11.5px] px-2 py-1 pr-6 rounded-md border border-border bg-card min-w-[100px] cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed disabled:bg-muted" data-row-id="' + row.id + '" style="color:' + color + ';"' + (locked ? ' disabled title="Re-read this sample first"' : '') + '>'
+        + '<option value=""' + (vj === '' ? ' selected' : '') + '>None</option>'
+        + '<option value="Pass"' + (vj === 'Pass' ? ' selected' : '') + '>Passed</option>'
+        + '<option value="Fail"' + (vj === 'Fail' ? ' selected' : '') + '>Failed</option>'
+        + '</select>';
+    }
+
+    function renderSpecialPassBySelect(row) {
+      const disabled = !row.specialPass || !!row.pendingReread;
+      return '<select class="special-pass-by-select text-[11.5px] px-2 py-1 pr-6 rounded-md border border-border bg-card min-w-[100px] cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed disabled:bg-muted" data-row-id="' + row.id + '"' + (disabled ? ' disabled' : '') + (row.pendingReread ? ' title="Re-read this sample first"' : '') + '>'
+        + '<option value=""' + (row.specialPassBy ? '' : ' selected') + '>Select…</option>'
+        + SPECIAL_PASS_BY_OPTIONS.map(function (name) { return '<option' + (row.specialPassBy === name ? ' selected' : '') + '>' + name + '</option>'; }).join('')
+        + '</select>';
     }
 
     function renderRow(row) {
@@ -2084,7 +2106,12 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
         + '<td class="py-[7px] px-2.5 font-mono text-sm">' + row.db.toFixed(2) + '</td>'
         + '<td class="py-[7px] px-2.5 text-sm">' + row.colorOffset + '</td>'
         + '<td class="py-[7px] px-2.5 text-sm font-bold ' + judgementCellClass + '">' + judgementCellText + '</td>'
-        + '<td class="py-[7px] px-2.5" data-action="remarks" tabindex="0">' + (row.remarks ? row.remarks : '<span class="text-muted-foreground italic">Click to add…</span>') + '</td>'
+        + '<td class="py-[7px] px-2.5">' + renderVisualJudgementSelect(row) + '</td>'
+        + '<td class="py-[7px] px-2.5 text-center"><input type="checkbox" class="special-pass-checkbox w-3.5 h-3.5 accent-foreground cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed" data-row-id="' + row.id + '"' + (row.specialPass ? ' checked' : '') + (row.pendingReread ? ' disabled title="Re-read this sample first"' : '') + '></td>'
+        + '<td class="py-[7px] px-2.5">' + renderSpecialPassBySelect(row) + '</td>'
+        + (row.pendingReread
+          ? '<td class="py-[7px] px-2.5 text-muted-foreground italic" title="Re-read this sample first">' + (row.remarks ? row.remarks : 'Click to add…') + '</td>'
+          : '<td class="py-[7px] px-2.5" data-action="remarks" tabindex="0">' + (row.remarks ? row.remarks : '<span class="text-muted-foreground italic">Click to add…</span>') + '</td>')
         + '</tr>';
     }
 
@@ -2122,6 +2149,7 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           de: 0, L: 0, C: 0, h: 0, a: 0, b: 0,
           dL: 0, dC: 0, dH: 0, da: 0, db: 0,
           passed: false,
+          visualJudgement: '', specialPass: false, specialPassBy: '',
           dbLotSampleId: lot.lotSampleId,
           pendingReread: true,
         };
@@ -2130,6 +2158,11 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
     };
 
     historyTableBody.addEventListener('click', function (e) {
+      if (e.target.closest('.visual-judgement-select, .special-pass-checkbox, .special-pass-by-select')) {
+        e.stopPropagation();
+        return;
+      }
+
       const deleteBtn = e.target.closest('[data-action="delete"]');
       if (deleteBtn) {
         e.stopPropagation();
@@ -2177,6 +2210,33 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       if (isEditingLotNumber) return;
       const row = e.target.closest('tr[data-row-id]');
       if (row) selectRow(row.dataset.rowId);
+    });
+
+    historyTableBody.addEventListener('change', function (e) {
+      const vSel = e.target.closest('.visual-judgement-select');
+      if (vSel) {
+        const id = vSel.dataset.rowId;
+        if (rows[id] && !rows[id].pendingReread) rows[id].visualJudgement = vSel.value;
+        return;
+      }
+      const spCb = e.target.closest('.special-pass-checkbox');
+      if (spCb) {
+        const id = spCb.dataset.rowId;
+        if (!rows[id] || rows[id].pendingReread) return;
+        rows[id].specialPass = spCb.checked;
+        const sel = historyTableBody.querySelector('.special-pass-by-select[data-row-id="' + id + '"]');
+        if (sel) {
+          sel.disabled = !spCb.checked;
+          if (!spCb.checked) { sel.value = ''; rows[id].specialPassBy = ''; }
+        }
+        return;
+      }
+      const spSel = e.target.closest('.special-pass-by-select');
+      if (spSel) {
+        const id = spSel.dataset.rowId;
+        if (rows[id] && !rows[id].pendingReread) rows[id].specialPassBy = spSel.value;
+        return;
+      }
     });
 
     document.addEventListener('click', function (e) {
@@ -2498,6 +2558,13 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
       });
     };
 
+    // Mandatory: every row must have a Visual Judgement set before saving.
+    window.hasMissingVisualJudgement = function () {
+      return Object.keys(rows).some(function (id) {
+        return !rows[id].visualJudgement;
+      });
+    };
+
     // Re-Read Selected Samples: block Finish Reading while any
     // carried-over row is still an un-re-measured placeholder.
     window.hasPendingRereadRows = function () {
@@ -2516,6 +2583,9 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
           remarks: r.remarks,
           de: r.de, L: r.L, C: r.C, h: r.h, a: r.a, b: r.b,
           dL: r.dL, dC: r.dC, dH: r.dH, da: r.da, db: r.db,
+          visualJudgement: r.visualJudgement || '',
+          specialPass: !!r.specialPass,
+          specialPassBy: r.specialPassBy || '',
         };
       });
     };
@@ -2742,6 +2812,12 @@ export function initSamplesReaderPage(urls, productCodeOptions) {
 
       if (window.hasInvalidLotNumbers && window.hasInvalidLotNumbers()) {
         showToast('toastStack', 'Rename lot number samples before saving.', 'error');
+        finishSessionBtn.disabled = false;
+        return;
+      }
+
+      if (window.hasMissingVisualJudgement && window.hasMissingVisualJudgement()) {
+        showToast('toastStack', 'Set Visual Judgement (Passed/Failed) for every sample before saving.', 'error');
         finishSessionBtn.disabled = false;
         return;
       }
